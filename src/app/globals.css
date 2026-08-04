@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --background: #07140f;
+  --foreground: #e8efe9;
+  --panel: #0c1f17;
+  --muted: #8aa396;
+  --line: rgba(232, 239, 233, 0.12);
+  --line-strong: rgba(232, 239, 233, 0.2);
+  --accent: #c8f560;
+  --accent-dim: rgba(200, 245, 96, 0.12);
+  --court: #2d6a4f;
+  --amber: #f4a261;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
+}
+
+body {
+  background:
+    radial-gradient(ellipse 90% 60% at 10% -10%, rgba(45, 106, 79, 0.45), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 95% 10%, rgba(200, 245, 96, 0.08), transparent 45%),
+    linear-gradient(180deg, #0a1c14 0%, var(--background) 45%, #050d0a 100%);
+  color: var(--foreground);
+  font-family: var(--font-sans), "IBM Plex Sans", sans-serif;
+}
+
+/* Range inputs */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--line-strong);
+  border-radius: 2px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+::selection {
+  background: var(--accent);
+  color: #0b1a14;
+}
