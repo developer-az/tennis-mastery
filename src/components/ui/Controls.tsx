@@ -28,11 +28,13 @@ export function PlayerStrokePicker() {
                 key={p.id}
                 type="button"
                 onClick={() => setPlayer(p.id)}
-                className="rounded-md px-3 py-2 text-left text-sm transition-all duration-300"
+                aria-pressed={active}
+                className="cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-all duration-200 hover:brightness-110"
                 style={{
-                  background: active ? p.color : "transparent",
+                  background: active ? p.color : "rgba(232,239,233,0.04)",
                   color: active ? "#f8f6f0" : "var(--foreground)",
-                  boxShadow: active ? `0 0 0 1px ${p.accent}` : "0 0 0 1px var(--line)",
+                  outline: active ? `2px solid ${p.accent}` : "1px solid var(--line)",
+                  outlineOffset: 0,
                 }}
               >
                 <span className="block font-medium leading-tight">{p.shortName}</span>
