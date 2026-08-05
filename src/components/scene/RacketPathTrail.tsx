@@ -3,17 +3,20 @@
 import { useMemo } from "react";
 import { Line } from "@react-three/drei";
 import * as THREE from "three";
-import type { StrokeProfile } from "@/types/biomechanics";
+import type { Anthropometrics, StrokeProfile } from "@/types/biomechanics";
 import { sampleStroke } from "@/lib/kinematics";
+import { computeSkeletonPose } from "@/lib/skeletonPose";
 
-/** Sample racket tip positions across the stroke for path visualization */
+/** Sample racket tip positions across the stroke using the same FK as the skeleton */
 export function RacketPathTrail({
   stroke,
+  anthropometrics,
   visible,
   accent,
   currentT,
 }: {
   stroke: StrokeProfile;
+  anthropometrics: Anthropometrics;
   visible: boolean;
   accent: string;
   currentT: number;
@@ -24,26 +27,16 @@ export function RacketPathTrail({
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
       const pose = sampleStroke(stroke, t);
-      const j = pose.joints;
-      const mirror = stroke.handedness === "left" ? -1 : 1;
-      // Approximate tip in world space (matches skeleton mapping roughly)
-      const x =
-        0.35 * mirror +
-        Math.sin((j.hipYaw + j.spineTwist) * mirror * 0.017) * 0.4 +
-        j.shoulderAbduction * 0.004 * mirror;
-      const y =
-        1.1 +
-        j.shoulderFlexion * 0.008 +
-        j.racketPathElevation * 0.01 -
-        j.elbowFlexion * 0.003;
-      const z =
-        0.2 +
-        Math.cos((j.hipYaw + j.spineTwist) * 0.017) * 0.35 +
-        j.shoulderFlexion * 0.005;
-      pts.push(new THREE.Vector3(x, Math.max(0.15, y), z));
+      const skeleton = computeSkeletonPose(
+        pose.joints,
+        anthropometrics,
+        stroke.handedness,
+        stroke.oneHanded,
+      );
+      pts.push(skeleton.racketTip.clone());
     }
     return pts;
-  }, [stroke]);
+  }, [stroke, anthropometrics]);
 
   if (!visible) return null;
 
@@ -52,7 +45,16 @@ export function RacketPathTrail({
 
   return (
     <group>
-      <Line points={points} color={accent} lineWidth={1} transparent opacity={0.25} dashed dashSize={0.08} gapSize={0.05} />
+      <Line
+        points={points}
+        color={accent}
+        lineWidth={1}
+        transparent
+        opacity={0.25}
+        dashed
+        dashSize={0.08}
+        gapSize={0.05}
+      />
       {active.length > 1 && (
         <Line points={active} color={accent} lineWidth={3} transparent opacity={0.9} />
       )}

@@ -12,7 +12,7 @@ import { AngleOverlays } from "./AngleOverlays";
 import { RacketPathTrail } from "./RacketPathTrail";
 import { TennisCourt } from "./TennisCourt";
 
-const PLAYER_Z = 11.5;
+const PLAYER_Z = -11.5; // −Z baseline; local +Z (face-forward) points at the net
 const LOOK_AT: [number, number, number] = [0, 1.1, PLAYER_Z];
 
 /** High-resolution playback clock shared with the 3D scene (avoids 60fps React). */
@@ -48,10 +48,11 @@ function CameraRig() {
 
   useEffect(() => {
     const positions: Record<typeof mode, [number, number, number]> = {
-      orbit: [3.2, 2.1, PLAYER_Z + 4.2],
+      // Player faces +Z (toward net). Behind = further from net; front = toward net.
+      orbit: [3.2, 2.1, PLAYER_Z - 4.2],
       side: [5.5, 1.6, PLAYER_Z + 0.2],
-      behind: [0.3, 1.8, PLAYER_Z + 5.5],
-      front: [0.2, 1.7, PLAYER_Z - 4.8],
+      behind: [0.3, 1.8, PLAYER_Z - 5.5],
+      front: [0.2, 1.7, PLAYER_Z + 4.8],
     };
     camera.position.set(...positions[mode]);
     controls.current?.target.set(...LOOK_AT);
@@ -102,23 +103,26 @@ function AnimatedAthlete() {
   const showAngles = useCoachStore((s) => s.showAngles);
   const showRacketPath = useCoachStore((s) => s.showRacketPath);
   const showGroundForce = useCoachStore((s) => s.showGroundForce);
+  // Subscribe so scrubbing while paused re-renders the skeleton immediately.
+  const scrubT = useCoachStore((s) => s.t);
+  const playing = useCoachStore((s) => s.playing);
 
   const player = getPlayer(playerId)!;
   const stroke = player.strokes[strokeType];
 
   const [, bump] = useReducer((n: number) => n + 1, 0);
   const frame = useRef(0);
-  const pose = useRef(sampleStroke(stroke, 0));
 
   useFrame(() => {
-    pose.current = sampleStroke(stroke, playbackT);
     frame.current += 1;
-    if (frame.current % 2 === 0) bump();
+    // Throttle React commits while playing; pose is sampled from the shared clock.
+    if (playing && frame.current % 2 === 0) bump();
   });
 
-  const p = pose.current;
+  const p = sampleStroke(stroke, playing ? playbackT : scrubT);
 
   return (
+    // Local +Z is face-forward. Standing on the −Z baseline aims the athlete at the net.
     <group position={[0, 0, PLAYER_Z]}>
       <BiomechanicalSkeleton
         key={playerId}
@@ -132,15 +136,18 @@ function AnimatedAthlete() {
       />
       <AngleOverlays
         joints={p.joints}
+        anthropometrics={player.anthropometrics}
         visible={showAngles}
         accent={player.accent}
         handedness={stroke.handedness}
+        oneHanded={stroke.oneHanded}
       />
       <RacketPathTrail
         stroke={stroke}
+        anthropometrics={player.anthropometrics}
         visible={showRacketPath}
         accent={player.accent}
-        currentT={playbackT}
+        currentT={playing ? playbackT : scrubT}
       />
       <GroundForce
         visible={showGroundForce}
@@ -206,7 +213,7 @@ export function FormCanvas() {
           gl.setClearColor(new THREE.Color("#0b1a14"));
         }}
       >
-        <PerspectiveCamera makeDefault position={[3.2, 2.1, PLAYER_Z + 4.2]} fov={42} />
+        <PerspectiveCamera makeDefault position={[3.2, 2.1, PLAYER_Z - 4.2]} fov={42} />
         <Suspense fallback={null}>
           <SceneContent />
         </Suspense>
