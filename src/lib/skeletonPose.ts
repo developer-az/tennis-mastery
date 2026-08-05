@@ -11,8 +11,7 @@ import { deg } from "@/lib/kinematics";
  * Keyframes are authored right-handed. Left-handed poses mirror across the
  * sagittal plane (yaw/twist signs and lateral offsets).
  *
- * FormCanvas places the athlete at the +Z baseline and rotates the group by π
- * about Y so local +Z faces the net at z = 0.
+ * FormCanvas places the athlete on the −Z baseline so local +Z faces the net at z = 0.
  */
 
 export interface SkeletonPosePoints {
@@ -99,23 +98,20 @@ function armChain(
     .normalize();
   const wrist = elbow.clone().add(foreDir.clone().multiplyScalar(forearm));
 
-  const racketDir = foreDir.clone();
-  const horiz = new THREE.Vector3(racketDir.x, 0, racketDir.z);
-  if (horiz.lengthSq() > 1e-4) {
-    const pitchAxis = new THREE.Vector3()
-      .crossVectors(horiz.normalize(), new THREE.Vector3(0, 1, 0))
-      .normalize();
-    if (pitchAxis.lengthSq() > 1e-4) {
-      racketDir.applyQuaternion(
-        new THREE.Quaternion().setFromAxisAngle(pitchAxis, -deg(racketPathElevation)),
-      );
-    }
-  }
-  // Keep the racket head slightly proud of a pure forearm continuation for readability.
-  racketDir.y += 0.12;
-  racketDir.x += Math.sin(deg(racketFaceAngle * mirror)) * 0.2;
+  // Elevation: positive raises the tip toward +Y, negative drops it.
+  // Face angle: tilts the tip laterally in the player's hitting-side direction.
+  const elevRad = deg(Math.max(-80, Math.min(80, racketPathElevation)));
+  const faceRad = deg(racketFaceAngle * mirror);
+  const racketDir = foreDir.clone().normalize();
+  const up = new THREE.Vector3(0, 1, 0);
+  const lateral = new THREE.Vector3(mirror, 0, 0).applyQuaternion(torsoQ).normalize();
+  // Spherical blend keeps tip height stable regardless of handedness / arm plane.
+  racketDir.addScaledVector(up, Math.sin(elevRad));
+  racketDir.addScaledVector(lateral, Math.sin(faceRad) * 0.35);
+  // Mild forward bias so the head stays ahead of the handle for groundstrokes.
+  racketDir.addScaledVector(new THREE.Vector3(0, 0, 1).applyQuaternion(torsoQ), 0.15);
   if (racketDir.lengthSq() < 1e-6) {
-    racketDir.set(0, 0.2, 1);
+    racketDir.set(0, 0.25, 1).applyQuaternion(torsoQ);
   }
   const tip = withRacket
     ? wrist.clone().add(racketDir.normalize().multiplyScalar(RACKET_LENGTH))
@@ -133,28 +129,38 @@ function bentLeg(
   shank: number,
   side: number,
 ): { knee: THREE.Vector3; ankle: THREE.Vector3 } {
+  // Sagittal bend: hip flex brings thigh forward; knee flex folds shank back under the thigh.
+  const hipRad = deg(Math.max(0, Math.min(80, hipFlex)));
+  const kneeRad = deg(Math.max(0, Math.min(140, kneeFlex)));
+
   const thighDir = new THREE.Vector3(
-    side * 0.04,
-    -Math.cos(deg(hipFlex)),
-    Math.sin(deg(hipFlex)) * 0.45,
+    side * 0.03,
+    -Math.cos(hipRad * 0.65),
+    Math.sin(hipRad * 0.65),
   )
     .applyQuaternion(bodyQ)
     .normalize();
   const knee = hip.clone().add(thighDir.clone().multiplyScalar(thigh));
 
-  const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(bodyQ);
-  let axis = new THREE.Vector3().crossVectors(thighDir, fwd);
-  if (axis.lengthSq() < 1e-5) axis = new THREE.Vector3(1, 0, 0).applyQuaternion(bodyQ);
-  axis.normalize();
-
+  // Fold shank opposite the thigh's forward component so the foot plants under the hip.
+  const lateral = new THREE.Vector3(1, 0, 0).applyQuaternion(bodyQ).normalize();
   const shankDir = thighDir
     .clone()
-    .applyQuaternion(new THREE.Quaternion().setFromAxisAngle(axis, deg(kneeFlex)))
+    .applyQuaternion(new THREE.Quaternion().setFromAxisAngle(lateral, kneeRad * 0.85))
     .normalize();
-  if (shankDir.y > 0) shankDir.negate();
+  if (shankDir.y > -0.15) {
+    // Keep the foot below the knee for readable stance.
+    shankDir.y = -Math.abs(shankDir.y) - 0.35;
+    shankDir.normalize();
+  }
 
   const ankle = knee.clone().add(shankDir.multiplyScalar(shank));
-  ankle.y = Math.max(0.02, ankle.y);
+  // Plant on the court plane without collapsing segment length visually.
+  if (ankle.y < 0.03) {
+    const lift = 0.03 - ankle.y;
+    knee.y += lift * 0.35;
+    ankle.y = 0.03;
+  }
   return { knee, ankle };
 }
 

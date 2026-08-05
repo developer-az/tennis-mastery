@@ -56,8 +56,8 @@ export function TennisCourt() {
         <meshStandardMaterial color="#333" />
       </mesh>
 
-      {/* Ambient atmosphere lights bounce */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 12]}>
+      {/* Stance highlight near the athlete baseline */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, -12]}>
         <circleGeometry args={[2.2, 48]} />
         <meshStandardMaterial color="#52b788" transparent opacity={0.35} />
       </mesh>

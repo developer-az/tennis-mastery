@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Line, Text } from "@react-three/drei";
+import { Billboard, Line, Text } from "@react-three/drei";
 import * as THREE from "three";
 import type { Anthropometrics, JointAngles } from "@/types/biomechanics";
 import { deg } from "@/lib/kinematics";
@@ -111,17 +111,18 @@ export function AngleOverlays({
       {overlays.map((o) => (
         <group key={o.id}>
           <Line points={o.points} color={accent} lineWidth={2} transparent opacity={0.85} />
-          <Text
-            position={o.labelPos}
-            fontSize={0.07}
-            color={accent}
-            anchorX="left"
-            anchorY="middle"
-            outlineWidth={0.008}
-            outlineColor="#0a0f0c"
-          >
-            {o.label}
-          </Text>
+          <Billboard position={o.labelPos}>
+            <Text
+              fontSize={0.07}
+              color={accent}
+              anchorX="left"
+              anchorY="middle"
+              outlineWidth={0.008}
+              outlineColor="#0a0f0c"
+            >
+              {o.label}
+            </Text>
+          </Billboard>
         </group>
       ))}
     </group>
