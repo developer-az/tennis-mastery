@@ -147,7 +147,7 @@ function AnimatedAthlete() {
         anthropometrics={player.anthropometrics}
         visible={showRacketPath}
         accent={player.accent}
-        currentT={playbackT}
+        currentT={playing ? playbackT : scrubT}
       />
       <GroundForce
         visible={showGroundForce}
