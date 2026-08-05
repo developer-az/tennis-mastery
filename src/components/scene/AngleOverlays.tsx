@@ -3,14 +3,17 @@
 import { useMemo } from "react";
 import { Line, Text } from "@react-three/drei";
 import * as THREE from "three";
-import type { JointAngles } from "@/types/biomechanics";
+import type { Anthropometrics, JointAngles } from "@/types/biomechanics";
 import { deg } from "@/lib/kinematics";
+import { computeSkeletonPose } from "@/lib/skeletonPose";
 
 interface AngleArcProps {
   joints: JointAngles;
+  anthropometrics: Anthropometrics;
   visible: boolean;
   accent: string;
   handedness: "right" | "left";
+  oneHanded: boolean;
 }
 
 function makeArc(
@@ -19,66 +22,87 @@ function makeArc(
   fromDir: THREE.Vector3,
   angleDeg: number,
   radius: number,
-  segments = 24,
 ): THREE.Vector3[] {
   const pts: THREE.Vector3[] = [];
   const n = Math.max(2, Math.abs(Math.round(angleDeg / 4)));
   const q = new THREE.Quaternion();
   const a = axis.clone().normalize();
+  const base = fromDir.clone().normalize();
   for (let i = 0; i <= n; i++) {
     const t = (i / n) * deg(angleDeg);
     q.setFromAxisAngle(a, t);
-    pts.push(origin.clone().add(fromDir.clone().normalize().multiplyScalar(radius).applyQuaternion(q)));
+    pts.push(origin.clone().add(base.clone().multiplyScalar(radius).applyQuaternion(q)));
   }
-  // ensure we use segments param for lint
-  void segments;
   return pts;
 }
 
-export function AngleOverlays({ joints, visible, accent, handedness }: AngleArcProps) {
-  const mirror = handedness === "left" ? -1 : 1;
-
+export function AngleOverlays({
+  joints,
+  anthropometrics,
+  visible,
+  accent,
+  handedness,
+  oneHanded,
+}: AngleArcProps) {
   const overlays = useMemo(() => {
     if (!visible) return [];
 
-    const hip = new THREE.Vector3(0, 0.95, 0);
-    const shoulder = new THREE.Vector3(0.2 * mirror, 1.45, 0);
-    const elbow = new THREE.Vector3(0.25 * mirror, 1.2, 0.25);
-    const knee = new THREE.Vector3(-0.12 * mirror, 0.55, 0.05);
+    const pose = computeSkeletonPose(joints, anthropometrics, handedness, oneHanded);
+    const mirror = handedness === "left" ? -1 : 1;
+
+    const elbowOrigin = pose.hitElbow;
+    const upper = new THREE.Vector3().subVectors(pose.hitShoulder, pose.hitElbow).normalize();
+    const fore = new THREE.Vector3().subVectors(pose.hitWrist, pose.hitElbow).normalize();
+    let elbowAxis = new THREE.Vector3().crossVectors(upper, fore);
+    if (elbowAxis.lengthSq() < 1e-5) elbowAxis = new THREE.Vector3(mirror, 0, 0);
+    elbowAxis.normalize();
+
+    const kneeOrigin = pose.leadKnee;
+    const thigh = new THREE.Vector3().subVectors(pose.leadHip, pose.leadKnee).normalize();
+    const shank = new THREE.Vector3().subVectors(pose.leadAnkle, pose.leadKnee).normalize();
+    let kneeAxis = new THREE.Vector3().crossVectors(thigh, shank);
+    if (kneeAxis.lengthSq() < 1e-5) kneeAxis = new THREE.Vector3(1, 0, 0);
+    kneeAxis.normalize();
 
     return [
       {
         id: "elbow",
         label: `Elbow ${Math.round(joints.elbowFlexion)}°`,
-        points: makeArc(elbow, new THREE.Vector3(mirror, 0, 0), new THREE.Vector3(0, -1, 0.2), joints.elbowFlexion, 0.22),
-        labelPos: elbow.clone().add(new THREE.Vector3(0.2 * mirror, 0.05, 0.15)),
+        points: makeArc(elbowOrigin, elbowAxis, upper, Math.max(8, joints.elbowFlexion), 0.2),
+        labelPos: pose.hitElbow.clone().add(new THREE.Vector3(0.15 * mirror, 0.08, 0.1)),
       },
       {
         id: "knee",
         label: `Lead knee ${Math.round(joints.leadKneeFlexion)}°`,
-        points: makeArc(knee, new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, -1, 0), joints.leadKneeFlexion, 0.2),
-        labelPos: knee.clone().add(new THREE.Vector3(-0.25 * mirror, 0, 0.1)),
+        points: makeArc(kneeOrigin, kneeAxis, thigh, Math.max(8, joints.leadKneeFlexion), 0.18),
+        labelPos: pose.leadKnee.clone().add(new THREE.Vector3(-0.2 * mirror, 0.05, 0.1)),
       },
       {
         id: "shoulder",
         label: `Shoulder IR ${Math.round(joints.shoulderInternalRotation)}°`,
         points: makeArc(
-          shoulder,
+          pose.hitShoulder,
           new THREE.Vector3(0, 1, 0),
           new THREE.Vector3(0, 0, 1),
           joints.shoulderInternalRotation,
-          0.25,
+          0.22,
         ),
-        labelPos: shoulder.clone().add(new THREE.Vector3(0.15 * mirror, 0.2, 0.1)),
+        labelPos: pose.hitShoulder.clone().add(new THREE.Vector3(0.12 * mirror, 0.18, 0.08)),
       },
       {
         id: "xfactor",
         label: `Trunk ${Math.round(Math.abs(joints.spineTwist))}°`,
-        points: makeArc(hip, new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1), joints.spineTwist * mirror, 0.35),
-        labelPos: hip.clone().add(new THREE.Vector3(0, 0.35, 0.3)),
+        points: makeArc(
+          pose.pelvis,
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(0, 0, 1),
+          joints.spineTwist * mirror,
+          0.32,
+        ),
+        labelPos: pose.pelvis.clone().add(new THREE.Vector3(0, 0.32, 0.28)),
       },
     ];
-  }, [joints, visible, mirror]);
+  }, [joints, anthropometrics, visible, handedness, oneHanded]);
 
   if (!visible) return null;
 

@@ -119,7 +119,8 @@ function AnimatedAthlete() {
   const p = pose.current;
 
   return (
-    <group position={[0, 0, PLAYER_Z]}>
+    // Face the net: local +Z is face-forward; net sits at world z = 0.
+    <group position={[0, 0, PLAYER_Z]} rotation={[0, Math.PI, 0]}>
       <BiomechanicalSkeleton
         key={playerId}
         joints={p.joints}
@@ -132,12 +133,15 @@ function AnimatedAthlete() {
       />
       <AngleOverlays
         joints={p.joints}
+        anthropometrics={player.anthropometrics}
         visible={showAngles}
         accent={player.accent}
         handedness={stroke.handedness}
+        oneHanded={stroke.oneHanded}
       />
       <RacketPathTrail
         stroke={stroke}
+        anthropometrics={player.anthropometrics}
         visible={showRacketPath}
         accent={player.accent}
         currentT={playbackT}
