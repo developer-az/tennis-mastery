@@ -103,6 +103,9 @@ function AnimatedAthlete() {
   const showAngles = useCoachStore((s) => s.showAngles);
   const showRacketPath = useCoachStore((s) => s.showRacketPath);
   const showGroundForce = useCoachStore((s) => s.showGroundForce);
+  // Subscribe so scrubbing while paused re-renders the skeleton immediately.
+  const scrubT = useCoachStore((s) => s.t);
+  const playing = useCoachStore((s) => s.playing);
 
   const player = getPlayer(playerId)!;
   const stroke = player.strokes[strokeType];
@@ -112,11 +115,11 @@ function AnimatedAthlete() {
 
   useFrame(() => {
     frame.current += 1;
-    // Throttle React commits; pose is sampled from the shared playback clock.
-    if (frame.current % 2 === 0) bump();
+    // Throttle React commits while playing; pose is sampled from the shared clock.
+    if (playing && frame.current % 2 === 0) bump();
   });
 
-  const p = sampleStroke(stroke, playbackT);
+  const p = sampleStroke(stroke, playing ? playbackT : scrubT);
 
   return (
     // Local +Z is face-forward. Standing on the −Z baseline aims the athlete at the net.
