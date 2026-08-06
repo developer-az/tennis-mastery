@@ -28,8 +28,14 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — the lab lives at `/lab`.
+Open [http://localhost:3000](http://localhost:3000) — the form lab lives at `/lab`, gear lab at `/gear`.
+
+## Gear lab
+
+- **Rackets** — modern frames (2019+) via the [Racqix Tennis Racquet Dataset](https://www.racqix.com/en/tennis-racquet-dataset) API, with offline snapshot fallback. Visualizes ideal launch angle, swing path, and style.
+- **Strings** — curated catalog with spin potential, control comparison, and tension-response modeling.
+- **Grips** — overgrips and replacement grips with tack / cushion / absorbency feel breakdowns.
 
 ## Data notes
 
-Phase timings, racket speeds, spin rates, X-factor, and GRF estimates are synthesized from peer-reviewed tennis biomechanics literature (Elliott, Reid, Fleisig, Bahamonde, ITF coaching resources) and public match-tracking ranges. They are coaching-grade reconstructions for learning, not a claim of single-session mocap ownership.
+Phase timings, racket speeds, spin rates, X-factor, and GRF estimates are synthesized from peer-reviewed tennis biomechanics literature (Elliott, Reid, Fleisig, Bahamonde, ITF coaching resources) and public match-tracking ranges. They are coaching-grade reconstructions for learning, not a claim of single-session mocap ownership. Gear scores are similarly coaching-grade models, not lab certificates.

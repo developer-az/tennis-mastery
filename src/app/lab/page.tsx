@@ -16,12 +16,14 @@ export default function LabPage() {
             Biomechanics lab
           </span>
         </div>
-        <Link
-          href="/"
-          className="text-xs text-[var(--muted)] transition hover:text-[var(--foreground)]"
-        >
-          ← Home
-        </Link>
+        <nav className="flex items-center gap-4 text-xs text-[var(--muted)]">
+          <Link href="/gear" className="transition hover:text-[var(--foreground)]">
+            Gear lab
+          </Link>
+          <Link href="/" className="transition hover:text-[var(--foreground)]">
+            ← Home
+          </Link>
+        </nav>
       </header>
       <CoachLab />
     </div>
