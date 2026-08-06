@@ -15,6 +15,9 @@ export default function Home() {
           <a href="#athletes" className="transition hover:text-[var(--foreground)]">
             Athletes
           </a>
+          <Link href="/gear" className="transition hover:text-[var(--foreground)]">
+            Gear
+          </Link>
           <Link
             href="/lab"
             className="rounded-md bg-[var(--accent)] px-4 py-2 font-medium text-[#0b1a14] transition hover:brightness-110"
@@ -95,13 +98,13 @@ export default function Home() {
               >
                 Enter the lab
               </Link>
-              <a
-                href="#method"
+              <Link
+                href="/gear"
                 className="rounded-md px-6 py-3 text-[var(--foreground)] transition hover:bg-white/5"
                 style={{ boxShadow: "0 0 0 1px var(--line)" }}
               >
-                How it works
-              </a>
+                Explore gear
+              </Link>
             </div>
           </div>
         </section>
@@ -177,6 +180,53 @@ export default function Home() {
             className="mt-8 inline-block rounded-md bg-[var(--accent)] px-6 py-3 font-medium text-[#0b1a14] transition hover:brightness-110"
           >
             Compare them in 3D
+          </Link>
+        </section>
+
+        <section id="gear" className="border-t border-[var(--line)] px-6 py-20 md:px-10">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+            Gear lab
+          </p>
+          <h2 className="mt-3 max-w-xl font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
+            Rackets, strings, and grips — finally visual.
+          </h2>
+          <p className="mt-4 max-w-2xl text-[var(--muted)] leading-relaxed">
+            The daily feel players argue about: launch angle and swing path by frame, spin
+            potential and tension tradeoffs by string, tack vs dry vs cushion by grip. Search
+            your exact setup and see what it actually encourages.
+          </p>
+          <div className="mt-10 grid gap-8 md:grid-cols-3">
+            {[
+              {
+                title: "Modern rackets",
+                body: "Live Racqix specs with coaching models for ideal launch, low-to-high path, and overall style.",
+              },
+              {
+                title: "String beds",
+                body: "Spin potential, control comparisons, and a tension slider that shows how the pocket changes.",
+              },
+              {
+                title: "Overgrips & bases",
+                body: "What makes Tourna dry, Wilson Pro thin, leather connected — and when each is reasonable.",
+              },
+            ].map((item, i) => (
+              <div
+                key={item.title}
+                className="border-t border-[var(--line)] pt-5"
+                style={{ animation: `rise 0.7s ease-out ${0.1 * i}s both` }}
+              >
+                <h3 className="font-[family-name:var(--font-display)] text-lg tracking-tight">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">{item.body}</p>
+              </div>
+            ))}
+          </div>
+          <Link
+            href="/gear"
+            className="mt-10 inline-block rounded-md bg-[var(--accent)] px-6 py-3 font-medium text-[#0b1a14] transition hover:brightness-110"
+          >
+            Open gear lab
           </Link>
         </section>
       </main>
