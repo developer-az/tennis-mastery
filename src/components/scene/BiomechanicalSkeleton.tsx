@@ -90,8 +90,8 @@ export function BiomechanicalSkeleton({
   const jointColor = accent;
   const mirror = handedness === "left" ? -1 : 1;
 
-  // Feet point face-forward (+Z local); slight yaw from hip so stance reads clearly.
-  const footYaw = joints.hipYaw * mirror * 0.4;
+  // Feet stay mostly court-aligned (+Z = toward net); only a light hip-yaw cue.
+  const footYaw = joints.hipYaw * mirror * 0.18;
 
   return (
     <group ref={group} position={[0, 0.02, 0]}>

@@ -97,6 +97,22 @@ function GroundForce({ visible, peakN, kneeFlex }: { visible: boolean; peakN: nu
   );
 }
 
+/** Clear visual: arrow from the stance toward the net (+Z). */
+function NetDirectionCue() {
+  return (
+    <group position={[0, 0.04, 0.6]}>
+      <mesh position={[0, 0, 0.55]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.025, 0.025, 1.1, 8]} />
+        <meshBasicMaterial color="#c8f560" transparent opacity={0.55} />
+      </mesh>
+      <mesh position={[0, 0, 1.2]} rotation={[-Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[0.09, 0.22, 10]} />
+        <meshBasicMaterial color="#c8f560" transparent opacity={0.75} />
+      </mesh>
+    </group>
+  );
+}
+
 function AnimatedAthlete() {
   const playerId = useCoachStore((s) => s.playerId);
   const strokeType = useCoachStore((s) => s.stroke);
@@ -154,6 +170,7 @@ function AnimatedAthlete() {
         peakN={stroke.metrics.kineticChain.peakGrfN}
         kneeFlex={p.joints.leadKneeFlexion}
       />
+      <NetDirectionCue />
     </group>
   );
 }
