@@ -67,29 +67,51 @@ export function enrichRacket(r: RacqixRow): RacketProfile | null {
   }
   const openPat = mains <= 16 && crosses <= 19;
   const densePat = mains >= 18 || crosses >= 20;
+  const blob = `${r.model} ${r.slug} ${summary}`.toLowerCase();
+  const spinCue = /\b(spin|aero|vcore|boom|extreme|graphene.*extreme|rpm|shape|whip)\b/.test(blob);
+  const powerCue = /\b(power|drive|ezone|boom|radical mp|evoke|inspire)\b/.test(blob);
+  const controlCue = /\b(control|blade|prestige|pro staff|tfight|gravity|vcore pro|precision|player.?s?)\b/.test(
+    blob,
+  );
 
   if (scores.power == null) {
-    scores.power = clamp(38 + (ra - 60) * 1.8 + (hs - 98) * 2.0 + (305 - weight) * 0.25 + (bal - 320) * 0.2);
+    scores.power = clamp(
+      48 +
+        (ra - 60) * 1.5 +
+        (hs - 98) * 2.0 +
+        (305 - weight) * 0.25 +
+        (bal - 320) * 0.2 +
+        (powerCue ? 10 : 0) -
+        (controlCue && !spinCue ? 5 : 0),
+    );
   }
   if (scores.spin == null) {
     scores.spin = clamp(
-      52 + (openPat ? 8 : densePat ? -6 : 0) + (hs - 98) * 1.4 + (ra - 62) * 0.5 + (sw - 310) * 0.08,
+      54 +
+        (openPat ? 14 : densePat ? -8 : 0) +
+        (hs - 98) * 1.5 +
+        (ra - 62) * 0.45 +
+        (sw - 310) * 0.06 +
+        (spinCue ? 16 : 0) -
+        (densePat && controlCue ? 6 : 0),
     );
   }
   if (scores.control == null) {
     scores.control = clamp(
-      48 +
-        (densePat ? 10 : openPat ? -4 : 0) +
+      52 +
+        (densePat ? 12 : openPat ? -4 : 0) +
         (weight - 295) * 0.4 +
-        (98 - hs) * 1.6 +
+        (98 - hs) * 1.7 +
         (66 - ra) * 0.7 +
-        (320 - bal) * 0.15,
+        (320 - bal) * 0.15 +
+        (controlCue ? 10 : 0) -
+        (powerCue && !controlCue ? 6 : 0),
     );
   }
 
-  const p = scores.power!;
-  const sp = scores.spin!;
-  const c = scores.control!;
+  const p = clamp(scores.power!);
+  const sp = clamp(scores.spin!);
+  const c = clamp(scores.control!);
   const launch = 3.8 + (hs - 95) * 0.28 + (p - 50) * 0.045 - (densePat ? 0.35 : 0) + (openPat ? 0.4 : 0);
   const swingPath =
     16 + (sp - 50) * 0.22 + (openPat ? 3.5 : 0) - (densePat ? 2 : 0) - (ra - 65) * 0.12;
@@ -97,7 +119,7 @@ export function enrichRacket(r: RacqixRow): RacketProfile | null {
   let style: string;
   if (hs >= 104 && p >= 70) style = "Forgiving power frame";
   else if (densePat && c >= 72 && hs <= 98) style = "Precision player's frame";
-  else if (sp >= 78 && openPat && p >= 68) style = "Heavy-spin baseliner";
+  else if (sp >= 78 && openPat && p >= 65) style = "Heavy-spin baseliner";
   else if (sp >= 70 && openPat) style = "Modern shape / RPMS";
   else if (c >= 70 && p >= 55 && p <= 72 && hs <= 100) style = "Controlled all-courter";
   else if (p >= 74 && c <= 60) style = "Easy depth & pace";

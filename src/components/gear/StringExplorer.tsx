@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import type { StringProfile } from "@/types/equipment";
 import { materialLabel, shapeLabel } from "@/lib/equipment/strings";
 import { SpinPotentialRing, TensionCurve } from "./StringVisuals";
@@ -11,6 +11,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
   const [material, setMaterial] = useState("all");
   const [selectedId, setSelectedId] = useState(strings[0]?.id ?? "");
   const [compareId, setCompareId] = useState(strings[1]?.id ?? strings[0]?.id ?? "");
+  const [tensionById, setTensionById] = useState<Record<string, number>>({});
   const deferredQuery = useDeferredValue(query);
 
   const filtered = useMemo(() => {
@@ -22,22 +23,12 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
     });
   }, [strings, deferredQuery, material]);
 
-  useEffect(() => {
-    if (!filtered.some((s) => s.id === selectedId)) {
-      setSelectedId(filtered[0]?.id ?? "");
-    }
-  }, [filtered, selectedId]);
-
-  const selected = filtered.find((s) => s.id === selectedId) ?? filtered[0];
+  const selected = filtered.find((s) => s.id === selectedId) ?? filtered[0] ?? null;
   const compare = strings.find((s) => s.id === compareId) ?? strings[0];
-  const [lo, hi] = selected
-    ? selected.tensionRangeLbs
-    : ([48, 58] as [number, number]);
-  const [tension, setTension] = useState(selected?.recommendedTensionLbs ?? 52);
-
-  useEffect(() => {
-    if (selected) setTension(selected.recommendedTensionLbs);
-  }, [selected]);
+  const tension = selected
+    ? (tensionById[selected.id] ?? selected.recommendedTensionLbs)
+    : 52;
+  const [lo, hi] = selected ? selected.tensionRangeLbs : ([48, 58] as [number, number]);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
@@ -118,7 +109,12 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                   max={hi}
                   step={0.5}
                   value={tension}
-                  onChange={(e) => setTension(parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    setTensionById((prev) => ({
+                      ...prev,
+                      [selected.id]: parseFloat(e.target.value),
+                    }))
+                  }
                   className="mt-3 w-full"
                 />
               </label>

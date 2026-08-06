@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import type { GripProfile } from "@/types/equipment";
 import { GripFeelVisual } from "./GripVisuals";
 
@@ -21,13 +21,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
     });
   }, [grips, deferredQuery, kind]);
 
-  useEffect(() => {
-    if (!filtered.some((g) => g.id === selectedId)) {
-      setSelectedId(filtered[0]?.id ?? "");
-    }
-  }, [filtered, selectedId]);
-
-  const selected = filtered.find((g) => g.id === selectedId) ?? filtered[0];
+  const selected = filtered.find((g) => g.id === selectedId) ?? filtered[0] ?? null;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">

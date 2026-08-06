@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import type { RacketCatalogMeta, RacketProfile } from "@/types/equipment";
 import { LaunchAngleVisual, SwingPathVisual } from "./RacketVisuals";
 import { ScoreGrid } from "./ScoreMeter";
@@ -38,13 +38,8 @@ export function RacketExplorer({
     });
   }, [initialRackets, deferredQuery, brand, style]);
 
-  useEffect(() => {
-    if (!filtered.some((r) => r.slug === selectedSlug)) {
-      setSelectedSlug(filtered[0]?.slug ?? "");
-    }
-  }, [filtered, selectedSlug]);
-
-  const selected = filtered.find((r) => r.slug === selectedSlug) ?? filtered[0];
+  const selected =
+    filtered.find((r) => r.slug === selectedSlug) ?? filtered[0] ?? null;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
