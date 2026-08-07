@@ -34,7 +34,7 @@ export function CoachLab() {
             Interactive 3D form
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Drag to orbit · scroll to zoom · scrub the timeline to freeze any phase
+            Athlete faces the net (lime arrow) · drag to orbit · scrub any phase
           </p>
         </div>
       </section>

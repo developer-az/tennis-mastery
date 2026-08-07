@@ -109,7 +109,9 @@ function armChain(
   racketDir.addScaledVector(up, Math.sin(elevRad));
   racketDir.addScaledVector(lateral, Math.sin(faceRad) * 0.35);
   // Mild forward bias so the head stays ahead of the handle for groundstrokes.
-  racketDir.addScaledVector(new THREE.Vector3(0, 0, 1).applyQuaternion(torsoQ), 0.15);
+  // Stronger bias when the tip is not intentionally elevated (contact / punch phases).
+  const forwardBias = 0.22 + Math.max(0, 0.18 - Math.abs(elevRad) * 0.25);
+  racketDir.addScaledVector(new THREE.Vector3(0, 0, 1).applyQuaternion(torsoQ), forwardBias);
   if (racketDir.lengthSq() < 1e-6) {
     racketDir.set(0, 0.25, 1).applyQuaternion(torsoQ);
   }

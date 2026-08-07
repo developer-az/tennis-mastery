@@ -57,7 +57,7 @@ export function PlayerStrokePicker() {
                 key={s}
                 type="button"
                 onClick={() => setStroke(s)}
-                className="rounded-md px-3 py-1.5 text-sm transition-colors duration-200"
+                className="cursor-pointer rounded-md px-3 py-1.5 text-sm transition-colors duration-200 hover:brightness-110"
                 style={{
                   background: active ? "var(--accent)" : "transparent",
                   color: active ? "#0b1a14" : "var(--foreground)",
