@@ -7,12 +7,19 @@ import { PHASE_LABELS, sampleStroke } from "@/lib/kinematics";
 
 const STROKES = Object.keys(STROKE_LABELS) as StrokeType[];
 
+const CAMERA_LABELS: Record<"orbit" | "side" | "behind" | "front", string> = {
+  orbit: "Orbit",
+  side: "Side",
+  behind: "Behind",
+  front: "Front (net)",
+};
+
 export function PlayerStrokePicker() {
   const playerId = useCoachStore((s) => s.playerId);
   const stroke = useCoachStore((s) => s.stroke);
   const setPlayer = useCoachStore((s) => s.setPlayer);
   const setStroke = useCoachStore((s) => s.setStroke);
-  const player = PLAYERS.find((p) => p.id === playerId)!;
+  const player = PLAYERS.find((p) => p.id === playerId) ?? PLAYERS[0];
 
   return (
     <div className="space-y-5">
@@ -52,11 +59,14 @@ export function PlayerStrokePicker() {
         <div className="flex flex-wrap gap-2">
           {STROKES.map((s) => {
             const active = s === stroke;
+            const label = player.strokes[s]?.label ?? STROKE_LABELS[s];
             return (
               <button
                 key={s}
                 type="button"
                 onClick={() => setStroke(s)}
+                aria-pressed={active}
+                title={label}
                 className="cursor-pointer rounded-md px-3 py-1.5 text-sm transition-colors duration-200 hover:brightness-110"
                 style={{
                   background: active ? "var(--accent)" : "transparent",
@@ -70,6 +80,9 @@ export function PlayerStrokePicker() {
             );
           })}
         </div>
+        <p className="mt-2 text-xs text-[var(--accent)]">
+          {player.strokes[stroke]?.label ?? STROKE_LABELS[stroke]}
+        </p>
       </div>
 
       <p className="text-sm leading-relaxed text-[var(--muted)]">{player.playingStyle}</p>
@@ -88,9 +101,10 @@ export function PlaybackControls() {
   const playerId = useCoachStore((s) => s.playerId);
   const strokeType = useCoachStore((s) => s.stroke);
 
-  const player = PLAYERS.find((p) => p.id === playerId)!;
+  const player = PLAYERS.find((p) => p.id === playerId) ?? PLAYERS[0];
   const stroke = player.strokes[strokeType];
   const pose = sampleStroke(stroke, t);
+  const contactT = stroke.keyframes.find((k) => k.phase === "contact")?.t ?? 0.72;
 
   return (
     <div className="space-y-3">
@@ -117,18 +131,65 @@ export function PlaybackControls() {
             <span>{PHASE_LABELS[pose.phase]}</span>
             <span>{Math.round(t * 100)}%</span>
           </div>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.001}
-            value={t}
-            onChange={(e) => {
-              setPlaying(false);
-              setT(Number(e.target.value));
-            }}
-            className="mt-1 w-full accent-[var(--accent)]"
-          />
+          <div className="relative mt-1">
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.001}
+              value={t}
+              onChange={(e) => {
+                setPlaying(false);
+                setT(Number(e.target.value));
+              }}
+              className="relative z-10 w-full accent-[var(--accent)]"
+              aria-label="Scrub stroke phase"
+            />
+            <div
+              className="pointer-events-none absolute inset-x-0 top-1/2 h-0 -translate-y-1/2"
+              aria-hidden
+            >
+              {stroke.keyframes.map((kf) => (
+                <span
+                  key={`${kf.phase}-${kf.t}`}
+                  className="absolute h-1.5 w-px -translate-x-1/2 bg-[var(--line-strong)]"
+                  style={{ left: `${kf.t * 100}%` }}
+                  title={PHASE_LABELS[kf.phase]}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setPlaying(false);
+                setT(contactT);
+              }}
+              className="rounded px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--muted)] transition hover:text-[var(--foreground)]"
+              style={{ boxShadow: "0 0 0 1px var(--line)" }}
+            >
+              Jump to contact
+            </button>
+            {(["ready", "acceleration", "followThrough"] as const).map((phase) => {
+              const frame = stroke.keyframes.find((k) => k.phase === phase);
+              if (!frame) return null;
+              return (
+                <button
+                  key={phase}
+                  type="button"
+                  onClick={() => {
+                    setPlaying(false);
+                    setT(frame.t);
+                  }}
+                  className="rounded px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--muted)] transition hover:text-[var(--foreground)]"
+                  style={{ boxShadow: "0 0 0 1px var(--line)" }}
+                >
+                  {PHASE_LABELS[phase]}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
       <div className="flex items-center gap-3 text-sm">
@@ -138,6 +199,7 @@ export function PlaybackControls() {
             key={v}
             type="button"
             onClick={() => setSpeed(v)}
+            aria-pressed={speed === v}
             className="rounded px-2 py-0.5 text-xs transition"
             style={{
               background: speed === v ? "var(--line-strong)" : "transparent",
@@ -171,6 +233,7 @@ export function ViewToggles() {
     <button
       type="button"
       onClick={() => set(!on)}
+      aria-pressed={on}
       className="rounded-md px-2.5 py-1.5 text-xs transition"
       style={{
         background: on ? "var(--accent-dim)" : "transparent",
@@ -192,19 +255,32 @@ export function ViewToggles() {
         {toggle("Racket path", showRacketPath, setShowRacketPath)}
         {toggle("Ground force", showGroundForce, setShowGroundForce)}
       </div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+        Camera
+      </p>
       <div className="flex flex-wrap gap-2">
         {(["orbit", "side", "behind", "front"] as const).map((m) => (
           <button
             key={m}
             type="button"
             onClick={() => setCameraMode(m)}
-            className="rounded-md px-2.5 py-1.5 text-xs capitalize transition"
+            aria-pressed={cameraMode === m}
+            title={
+              m === "orbit"
+                ? "Free orbit — drag to rotate"
+                : m === "side"
+                  ? "Side-on coaching angle"
+                  : m === "behind"
+                    ? "Behind the athlete looking to the net"
+                    : "From the net looking back at the athlete"
+            }
+            className="rounded-md px-2.5 py-1.5 text-xs transition"
             style={{
               background: cameraMode === m ? "var(--line-strong)" : "transparent",
               boxShadow: "0 0 0 1px var(--line)",
             }}
           >
-            {m}
+            {CAMERA_LABELS[m]}
           </button>
         ))}
       </div>

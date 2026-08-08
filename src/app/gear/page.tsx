@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { GearLab } from "@/components/gear/GearLab";
@@ -69,7 +70,15 @@ export default async function GearPage() {
         </div>
       </section>
 
-      <GearLab rackets={rackets} racketMeta={meta} strings={STRINGS} grips={GRIPS} />
+      <Suspense
+        fallback={
+          <div className="mx-auto w-full max-w-6xl px-6 py-16 text-sm text-[var(--muted)] md:px-10">
+            Loading gear lab…
+          </div>
+        }
+      >
+        <GearLab rackets={rackets} racketMeta={meta} strings={STRINGS} grips={GRIPS} />
+      </Suspense>
 
       <footer className="border-t border-[var(--line)] px-6 py-8 text-xs text-[var(--muted)] md:px-10">
         <p>

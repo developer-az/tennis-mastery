@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { PLAYERS } from "@/data/players";
 import { useCoachStore } from "@/store/coachStore";
+import { setupSummary, useGearStore } from "@/store/gearStore";
 import { sampleStroke } from "@/lib/kinematics";
 
 function Metric({
@@ -122,6 +124,70 @@ export function MetricsPanel() {
           </div>
         </dl>
       </div>
+
+      <SetupBridge
+        athleteLaunch={m.launchAngleDeg}
+        athleteSwingPath={m.swingPathDeg}
+        athleteLabel={player.shortName}
+      />
+    </div>
+  );
+}
+
+function SetupBridge({
+  athleteLaunch,
+  athleteSwingPath,
+  athleteLabel,
+}: {
+  athleteLaunch: number;
+  athleteSwingPath: number;
+  athleteLabel: string;
+}) {
+  const setup = useGearStore((s) => s.setup);
+  const hasGear = Boolean(setup.racketLabel || setup.stringLabel || setup.gripLabel);
+
+  return (
+    <div className="mt-5 border-t border-[var(--line)] pt-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+        Your gear setup
+      </p>
+      {hasGear ? (
+        <>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/90">
+            {setupSummary(setup)}
+          </p>
+          {setup.racketLabel ? (
+            <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
+              {athleteLabel}&apos;s stroke targets ~{athleteLaunch.toFixed(1)}° launch and ~
+              {athleteSwingPath.toFixed(0)}° low-to-high path. Open Gear lab to see whether your
+              frame&apos;s ideal launch/swing window sits above, on, or flatter than that pattern.
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-[var(--muted)]">
+              Add a racket in Gear lab to compare its ideal launch/swing path with this stroke.
+            </p>
+          )}
+          <Link
+            href="/gear"
+            className="mt-3 inline-block text-xs font-medium text-[var(--accent)] transition hover:brightness-110"
+          >
+            Edit setup in Gear lab →
+          </Link>
+        </>
+      ) : (
+        <>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            Save a racket, string, and grip in Gear lab — it stays in this browser and shows up here
+            while you study form.
+          </p>
+          <Link
+            href="/gear"
+            className="mt-3 inline-block rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
+          >
+            Build my setup
+          </Link>
+        </>
+      )}
     </div>
   );
 }
