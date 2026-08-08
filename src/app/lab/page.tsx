@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { CoachLab } from "@/components/layout/CoachLab";
+import { LabUrlSync } from "@/components/lab/LabUrlSync";
 
 export default function LabPage() {
   return (
@@ -25,6 +27,9 @@ export default function LabPage() {
           </Link>
         </nav>
       </header>
+      <Suspense fallback={null}>
+        <LabUrlSync />
+      </Suspense>
       <CoachLab />
     </div>
   );

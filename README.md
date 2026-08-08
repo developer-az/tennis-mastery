@@ -30,6 +30,17 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) — the form lab lives at `/lab`, gear lab at `/gear`.
 
+## Deploy (Vercel recommended)
+
+Strokeform is a Next.js App Router app with API routes and ISR for the Racqix racket catalog. **Vercel** is the intended host (zero-config Node runtime, live `/api/equipment/*`, and daily revalidation on `/gear`).
+
+```bash
+npm run build   # verify locally
+npx vercel      # or connect the GitHub repo in the Vercel dashboard
+```
+
+GitHub Pages is a poor fit without a static-export rewrite: there is no `output: 'export'`, rackets use ISR, and equipment APIs need a Node server.
+
 ## Gear lab
 
 - **Rackets** — modern frames (2019+) via the [Racqix Tennis Racquet Dataset](https://www.racqix.com/en/tennis-racquet-dataset) API, with offline snapshot fallback. Visualizes ideal launch angle, swing path, and style.

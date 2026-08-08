@@ -162,16 +162,27 @@ export default function Home() {
             {PLAYERS.map((p) => (
               <li key={p.id} className="flex flex-col gap-2 py-6 md:flex-row md:items-baseline md:justify-between">
                 <div>
-                  <p className="font-[family-name:var(--font-display)] text-xl tracking-tight">
+                  <Link
+                    href={`/lab?player=${p.id}`}
+                    className="font-[family-name:var(--font-display)] text-xl tracking-tight transition hover:text-[var(--accent)]"
+                  >
                     {p.name}
-                  </p>
+                  </Link>
                   <p className="text-sm text-[var(--muted)]">
                     {p.nationality} · {p.era}
                   </p>
                 </div>
-                <p className="max-w-md text-sm text-[var(--foreground)]/80 md:text-right">
-                  {p.playingStyle}
-                </p>
+                <div className="md:text-right">
+                  <p className="max-w-md text-sm text-[var(--foreground)]/80">
+                    {p.playingStyle}
+                  </p>
+                  <Link
+                    href={`/lab?player=${p.id}`}
+                    className="mt-2 inline-block text-xs font-medium text-[var(--accent)] transition hover:brightness-110"
+                  >
+                    Open in lab →
+                  </Link>
+                </div>
               </li>
             ))}
           </ul>

@@ -341,6 +341,13 @@ const alcarazDefaults: StrokeLibrary = fillStrokes(
     forehand: cloneStroke(nadalForehand, {
       handedness: "right",
       label: "Forehand (Explosive)",
+      // Reuse Nadal FH geometry (RH-canonical FK) but rewrite lefty-specific cues.
+      keyframes: nadalForehand.keyframes.map((kf) => ({
+        ...kf,
+        coachingCue: kf.coachingCue
+          .replace(/\blefty\b/gi, "athletic")
+          .replace(/Wide base, coiled athletic stance/i, "Wide base, coiled righty stance — ready to explode"),
+      })),
       metrics: {
         peakRacketSpeedMs: 30.8,
         avgSpinRpm: 3400,
@@ -354,6 +361,7 @@ const alcarazDefaults: StrokeLibrary = fillStrokes(
         researchNotes: [
           "Modern semi-western/western hybrid with extreme athleticism.",
           "High RPM + net clearance creates clay/hard versatility.",
+          "Motion geometry adapted from published heavy-topspin patterns; cues rewritten for a right-handed athlete.",
         ],
         sources: nadalForehand.metrics.sources,
         kineticChain: {
