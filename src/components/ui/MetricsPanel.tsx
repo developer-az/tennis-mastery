@@ -156,11 +156,19 @@ function SetupBridge({
           <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/90">
             {setupSummary(setup)}
           </p>
-          {setup.racketLabel ? (
+          {setup.racketLabel &&
+          setup.racketLaunchDeg != null &&
+          setup.racketSwingPathDeg != null ? (
             <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
-              {athleteLabel}&apos;s stroke targets ~{athleteLaunch.toFixed(1)}° launch and ~
-              {athleteSwingPath.toFixed(0)}° low-to-high path. Open Gear lab to see whether your
-              frame&apos;s ideal launch/swing window sits above, on, or flatter than that pattern.
+              {athleteLabel}&apos;s stroke targets ~{athleteLaunch.toFixed(1)}° launch / ~
+              {athleteSwingPath.toFixed(0)}° path. Your {setup.racketLabel} models ~
+              {setup.racketLaunchDeg.toFixed(1)}° launch / ~{setup.racketSwingPathDeg.toFixed(0)}°
+              path
+              {setup.racketLaunchDeg - athleteLaunch > 2
+                ? " — a bit loftier than this pattern; expect easier net clearance."
+                : athleteLaunch - setup.racketLaunchDeg > 2
+                  ? " — flatter than this pattern; reward clean, penetrating contact."
+                  : " — close to this stroke's launch window."}
             </p>
           ) : (
             <p className="mt-2 text-xs text-[var(--muted)]">

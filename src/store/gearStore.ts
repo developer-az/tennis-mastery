@@ -7,6 +7,8 @@ import type { EquipmentTab } from "@/types/equipment";
 export interface MySetup {
   racketSlug: string | null;
   racketLabel: string | null;
+  racketLaunchDeg: number | null;
+  racketSwingPathDeg: number | null;
   stringId: string | null;
   stringLabel: string | null;
   tensionLbs: number | null;
@@ -19,7 +21,12 @@ interface GearState {
   tab: EquipmentTab;
   setup: MySetup;
   setTab: (tab: EquipmentTab) => void;
-  setRacket: (slug: string, label: string) => void;
+  setRacket: (
+    slug: string,
+    label: string,
+    idealLaunchAngleDeg?: number,
+    idealSwingPathDeg?: number,
+  ) => void;
   setString: (id: string, label: string, tensionLbs?: number, gaugeMm?: number) => void;
   setTension: (tensionLbs: number) => void;
   setGauge: (gaugeMm: number) => void;
@@ -30,6 +37,8 @@ interface GearState {
 const emptySetup: MySetup = {
   racketSlug: null,
   racketLabel: null,
+  racketLaunchDeg: null,
+  racketSwingPathDeg: null,
   stringId: null,
   stringLabel: null,
   tensionLbs: null,
@@ -44,9 +53,15 @@ export const useGearStore = create<GearState>()(
       tab: "rackets",
       setup: emptySetup,
       setTab: (tab) => set({ tab }),
-      setRacket: (slug, label) =>
+      setRacket: (slug, label, idealLaunchAngleDeg, idealSwingPathDeg) =>
         set((s) => ({
-          setup: { ...s.setup, racketSlug: slug, racketLabel: label },
+          setup: {
+            ...s.setup,
+            racketSlug: slug,
+            racketLabel: label,
+            racketLaunchDeg: idealLaunchAngleDeg ?? s.setup.racketLaunchDeg,
+            racketSwingPathDeg: idealSwingPathDeg ?? s.setup.racketSwingPathDeg,
+          },
         })),
       setString: (id, label, tensionLbs, gaugeMm) =>
         set((s) => ({

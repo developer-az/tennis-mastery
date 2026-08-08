@@ -254,7 +254,12 @@ export function RacketExplorer({
             <button
               type="button"
               onClick={() =>
-                setRacket(selected.slug, `${selected.brand} ${selected.model}`)
+                setRacket(
+                  selected.slug,
+                  `${selected.brand} ${selected.model}`,
+                  selected.idealLaunchAngleDeg,
+                  selected.idealSwingPathDeg,
+                )
               }
               className="mt-4 rounded-md px-4 py-2 text-sm font-medium transition hover:brightness-110"
               style={{
