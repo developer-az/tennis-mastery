@@ -8,11 +8,16 @@ import { ScoreMeter } from "./ScoreMeter";
 export function TensionCurve({
   string,
   tension,
+  gaugeMm,
 }: {
   string: StringProfile;
   tension: number;
+  gaugeMm?: number;
 }) {
-  const outcome = useMemo(() => tensionOutcome(string, tension), [string, tension]);
+  const outcome = useMemo(
+    () => tensionOutcome(string, tension, gaugeMm),
+    [string, tension, gaugeMm],
+  );
   const [lo, hi] = string.tensionRangeLbs;
 
   // sparkline across tension range
@@ -23,14 +28,14 @@ export function TensionCurve({
     const spn: string[] = [];
     for (let i = 0; i <= steps; i++) {
       const t = lo + ((hi - lo) * i) / steps;
-      const o = tensionOutcome(string, t);
+      const o = tensionOutcome(string, t, gaugeMm);
       const x = (i / steps) * 200;
       ctrl.push(`${x},${100 - o.control}`);
       pwr.push(`${x},${100 - o.power}`);
       spn.push(`${x},${100 - o.spin}`);
     }
     return { ctrl: ctrl.join(" "), pwr: pwr.join(" "), spn: spn.join(" ") };
-  }, [string, lo, hi]);
+  }, [string, lo, hi, gaugeMm]);
 
   const markerX = ((tension - lo) / Math.max(1, hi - lo)) * 200;
 
@@ -65,15 +70,18 @@ export function TensionCurve({
       </svg>
 
       <div className="grid gap-3">
-        <ScoreMeter label="Power @ tension" value={outcome.power} accent="#f4a261" />
-        <ScoreMeter label="Control @ tension" value={outcome.control} />
-        <ScoreMeter label="Spin potential @ tension" value={outcome.spin} accent="#7dd3fc" />
-        <ScoreMeter label="Comfort @ tension" value={outcome.comfort} accent="#e9c46a" />
+        <ScoreMeter label="Power @ tension/gauge" value={outcome.power} accent="#f4a261" />
+        <ScoreMeter label="Control @ tension/gauge" value={outcome.control} />
+        <ScoreMeter label="Spin potential @ tension/gauge" value={outcome.spin} accent="#7dd3fc" />
+        <ScoreMeter label="Comfort @ tension/gauge" value={outcome.comfort} accent="#e9c46a" />
+        <ScoreMeter label="Stiffness feel" value={outcome.stiffness} accent="#e8efe9" />
+        <ScoreMeter label="Durability @ gauge" value={outcome.durability} accent="#f4a261" />
       </div>
 
       <div className="mt-4 space-y-2 border-t border-[var(--line)] pt-4 text-sm">
         <p className="text-[var(--foreground)]/90">{outcome.dwellHint}</p>
         <p className="text-[var(--muted)]">{outcome.launchHint}</p>
+        <p className="text-[var(--muted)]">{outcome.gaugeHint}</p>
       </div>
     </div>
   );
