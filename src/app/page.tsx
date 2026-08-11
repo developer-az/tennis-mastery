@@ -199,26 +199,29 @@ export default function Home() {
             Gear lab
           </p>
           <h2 className="mt-3 max-w-xl font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
-            Rackets, strings, and grips — finally visual.
+            Rackets, strings, grips, and lead tape — finally visual.
           </h2>
           <p className="mt-4 max-w-2xl text-[var(--muted)] leading-relaxed">
-            The daily feel players argue about: launch angle and swing path by frame, spin
-            potential and tension tradeoffs by string, tack vs dry vs cushion by grip. Search
-            your exact setup and see what it actually encourages.
+            Compare new gear to what you have already tested. Filter down to poly 1.30, browse
+            product portraits, and place virtual lead tape to see launch and swing-path shifts.
           </p>
-          <div className="mt-10 grid gap-8 md:grid-cols-3">
+          <div className="mt-10 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 title: "Modern rackets",
-                body: "Live Racqix specs with coaching models for ideal launch, low-to-high path, and overall style.",
+                body: "Live Racqix specs with portraits, filters, and vs-my-setup launch and swing deltas.",
               },
               {
                 title: "String beds",
-                body: "Spin potential, control comparisons, and a tension slider that shows how the pocket changes.",
+                body: "Material, gauge, and shape filters — learn a category, then compare to your tested bed.",
               },
               {
                 title: "Overgrips & bases",
-                body: "What makes Tourna dry, Wilson Pro thin, leather connected — and when each is reasonable.",
+                body: "What makes Tourna dry, Wilson Pro thin, leather connected — compared to your grip.",
+              },
+              {
+                title: "Lead tape",
+                body: "Drag virtual strips on tip, 3/9, throat, or handle and watch swingweight and launch change.",
               },
             ].map((item, i) => (
               <div

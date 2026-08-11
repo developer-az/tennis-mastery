@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { STRINGS } from "@/data/equipment/strings";
+import { withStringImages } from "@/lib/equipment/media/urls";
 
 export async function GET() {
   return NextResponse.json({
@@ -8,6 +9,6 @@ export async function GET() {
       count: STRINGS.length,
       note: "Scores are coaching-grade composites at mid recommended tension.",
     },
-    strings: STRINGS,
+    strings: withStringImages(STRINGS),
   });
 }

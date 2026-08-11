@@ -6,8 +6,9 @@ import { setupSummary, useGearStore } from "@/store/gearStore";
 export function MySetupBar() {
   const setup = useGearStore((s) => s.setup);
   const clearSetup = useGearStore((s) => s.clearSetup);
+  const tapeG = setup.leadTape?.pieces?.reduce((n, p) => n + p.massG, 0) ?? 0;
   const hasAny =
-    setup.racketSlug || setup.stringId || setup.gripId;
+    setup.racketSlug || setup.stringId || setup.gripId || tapeG > 0;
 
   return (
     <div
@@ -23,7 +24,7 @@ export function MySetupBar() {
             {setupSummary(setup)}
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Saved in this browser. Use “Save to my setup” on any racket, string, or grip.
+            Saved in this browser. Use “Save to my setup” on gear, or customize lead tape on its tab.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -64,6 +65,11 @@ export function MySetupBar() {
           {setup.gripLabel ? (
             <li className="rounded bg-[var(--amber)]/15 px-2 py-1 text-[var(--amber)]">
               Grip · {setup.gripLabel}
+            </li>
+          ) : null}
+          {tapeG > 0 ? (
+            <li className="rounded bg-[var(--accent)]/15 px-2 py-1 text-[var(--accent)]">
+              Lead tape · +{tapeG}g
             </li>
           ) : null}
         </ul>

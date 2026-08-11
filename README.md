@@ -43,9 +43,12 @@ GitHub Pages is a poor fit without a static-export rewrite: there is no `output:
 
 ## Gear lab
 
-- **Rackets** — modern frames (2019+) via the [Racqix Tennis Racquet Dataset](https://www.racqix.com/en/tennis-racquet-dataset) API, with offline snapshot fallback. Visualizes ideal launch angle, swing path, and style.
-- **Strings** — curated catalog with spin potential, control comparison, and tension-response modeling.
-- **Grips** — overgrips and replacement grips with tack / cushion / absorbency feel breakdowns.
+- **Rackets** — modern frames (2019+) via the [Racqix Tennis Racquet Dataset](https://www.racqix.com/en/tennis-racquet-dataset) API, with offline snapshot fallback. Stylized product portraits, filters (including string pattern), and compare-to-my-setup deltas for launch angle and swing path.
+- **Strings** — curated catalog with material / gauge / shape filters (e.g. poly 1.30), category learning blurbs, spin potential, and tension-response modeling.
+- **Grips** — overgrips and replacement grips with portraits plus tack / cushion / absorbency comparisons vs your saved grip.
+- **Lead tape** — place and drag virtual strips on tip, 3/9, throat, or handle; see swingweight, balance, launch, and swing-path changes. Saved with My setup.
+
+Equipment JSON APIs at `/api/equipment/{rackets,strings,grips}` include `imageUrl` fields. SVG portraits: `/api/equipment/{rackets,strings,grips}/[id]/image`. Zone docs: `/api/equipment/lead-tape/zones`.
 
 ## Data notes
 

@@ -86,6 +86,19 @@ export function matchesEquipmentSearch(
   // Fast path: plain substring on any field (keeps "pure aero", "blade")
   if (hayLower.includes(q)) return true;
 
+  // Gauge-style tokens: "1.30" / "1.3" against numeric fields (gaugesMm joined)
+  const gaugeToken = q.match(/\b(1\.\d{1,2})\b/);
+  if (gaugeToken) {
+    const target = parseFloat(gaugeToken[1]);
+    for (const field of fields) {
+      if (typeof field === "number" && Math.abs(field - target) <= 0.02) return true;
+      if (typeof field === "string") {
+        const nums = field.match(/1\.\d{1,2}/g);
+        if (nums?.some((n) => Math.abs(parseFloat(n) - target) <= 0.02)) return true;
+      }
+    }
+  }
+
   const qCompact = compactKey(q);
   if (!qCompact) return true;
 
@@ -96,7 +109,7 @@ export function matchesEquipmentSearch(
   // avoids "Classic X" → "…cx…" false positives from prose summaries.
   if (primaryCompactBlob.includes(qCompact)) return true;
   for (const t of primaryTokens) {
-    if (t.includes(qCompact) || qCompact.includes(t) && t.length >= 3) {
+    if (t.includes(qCompact) || (qCompact.includes(t) && t.length >= 3)) {
       if (t.includes(qCompact)) return true;
     }
   }

@@ -3,32 +3,46 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import type { GripProfile } from "@/types/equipment";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
+import { gripImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
 import { GripFeelVisual } from "./GripVisuals";
 import { ScoreMeter } from "./ScoreMeter";
+import { EquipmentThumb } from "./EquipmentThumb";
+import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
 
 const MAX_COMPARE = 3;
 
 export function GripExplorer({ grips }: { grips: GripProfile[] }) {
-  const setupGripId = useGearStore((s) => s.setup.gripId);
+  const setup = useGearStore((s) => s.setup);
+  const setupGripId = setup.gripId;
   const setGrip = useGearStore((s) => s.setGrip);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | "overgrip" | "replacement">("all");
+  const [texture, setTexture] = useState("all");
   const [selectedId, setSelectedId] = useState(
     setupGripId && grips.some((g) => g.id === setupGripId)
       ? setupGripId
       : (grips[0]?.id ?? ""),
   );
   const [compareIds, setCompareIds] = useState<string[]>(() => {
-    const defaults = grips.slice(0, 2).map((g) => g.id);
-    return defaults;
+    if (setupGripId) {
+      const other = grips.find((g) => g.id !== setupGripId)?.id;
+      return [setupGripId, ...(other ? [other] : [])];
+    }
+    return grips.slice(0, 2).map((g) => g.id);
   });
   const deferredQuery = useDeferredValue(query);
+
+  const textures = useMemo(
+    () => Array.from(new Set(grips.map((g) => g.texture))).sort(),
+    [grips],
+  );
 
   const filtered = useMemo(() => {
     const q = deferredQuery.trim();
     return grips.filter((g) => {
       if (kind !== "all" && g.kind !== kind) return false;
+      if (texture !== "all" && g.texture !== texture) return false;
       if (!q) return true;
       return matchesEquipmentSearch(
         q,
@@ -40,7 +54,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
         g.kind,
       );
     });
-  }, [grips, deferredQuery, kind]);
+  }, [grips, deferredQuery, kind, texture]);
 
   const selected = filtered.find((g) => g.id === selectedId) ?? filtered[0] ?? null;
   const inSetup = selected != null && selected.id === setupGripId;
@@ -56,32 +70,80 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
     });
   };
 
+  const vsSetupRows: CompareDeltaRow[] = selected
+    ? [
+        {
+          key: "tack",
+          label: "Tackiness",
+          value: selected.tackiness,
+          baseline: setup.gripTackiness,
+          delta: numericDelta(selected.tackiness, setup.gripTackiness),
+        },
+        {
+          key: "cushion",
+          label: "Cushion",
+          value: selected.cushion,
+          baseline: setup.gripCushion,
+          delta: numericDelta(selected.cushion, setup.gripCushion),
+        },
+        {
+          key: "absorb",
+          label: "Absorbency",
+          value: selected.absorbency,
+          baseline: setup.gripAbsorbency,
+          delta: numericDelta(selected.absorbency, setup.gripAbsorbency),
+        },
+        {
+          key: "dur",
+          label: "Durability",
+          value: selected.durability,
+          baseline: setup.gripDurability,
+          delta: numericDelta(selected.durability, setup.gripDurability),
+        },
+      ]
+    : [];
+
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
       <div className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search Tourna, Super Grap, leather…"
             aria-label="Search grips"
-            className="w-full flex-1 rounded-md border border-[var(--line)] bg-black/20 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
           />
-          <select
-            value={kind}
-            onChange={(e) => setKind(e.target.value as typeof kind)}
-            aria-label="Grip kind"
-            className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
-          >
-            <option value="all">All grips</option>
-            <option value="overgrip">Overgrips</option>
-            <option value="replacement">Replacement grips</option>
-          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              value={kind}
+              onChange={(e) => setKind(e.target.value as typeof kind)}
+              aria-label="Grip kind"
+              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            >
+              <option value="all">All grips</option>
+              <option value="overgrip">Overgrips</option>
+              <option value="replacement">Replacement grips</option>
+            </select>
+            <select
+              value={texture}
+              onChange={(e) => setTexture(e.target.value)}
+              aria-label="Texture"
+              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            >
+              <option value="all">Any texture</option>
+              {textures.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <p className="text-xs text-[var(--muted)]">
           {filtered.length} grip{filtered.length === 1 ? "" : "s"}
-          {kind !== "all" || deferredQuery ? " match" : " in catalog"}
+          {kind !== "all" || texture !== "all" || deferredQuery ? " match" : " in catalog"}
           {" · "}
           Compare up to {MAX_COMPARE} (checkboxes)
         </p>
@@ -97,7 +159,9 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                   className="flex shrink-0 items-center px-2"
                   title={inCompare ? "Remove from compare" : "Add to compare"}
                 >
-                  <span className="sr-only">Compare {g.brand} {g.name}</span>
+                  <span className="sr-only">
+                    Compare {g.brand} {g.name}
+                  </span>
                   <input
                     type="checkbox"
                     checked={inCompare}
@@ -109,21 +173,28 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                   type="button"
                   onClick={() => setSelectedId(g.id)}
                   aria-pressed={active}
-                  className={`flex min-w-0 flex-1 flex-col gap-0.5 px-2 py-3 text-left transition ${
+                  className={`flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left transition ${
                     active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
                   }`}
                 >
-                  <span className="flex items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
-                    {g.brand} {g.name}
-                    {saved ? (
-                      <span className="rounded bg-[var(--amber)]/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-[var(--amber)]">
-                        Setup
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="text-xs text-[var(--muted)]">
-                    {g.kind === "overgrip" ? "Overgrip" : "Replacement"} · {g.texture} ·{" "}
-                    {g.thicknessMm} mm
+                  <EquipmentThumb
+                    src={gripImageUrl(g)}
+                    alt={`${g.brand} ${g.name}`}
+                    size="sm"
+                  />
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="flex items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
+                      {g.brand} {g.name}
+                      {saved ? (
+                        <span className="rounded bg-[var(--amber)]/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-[var(--amber)]">
+                          Setup
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="text-xs text-[var(--muted)]">
+                      {g.kind === "overgrip" ? "Overgrip" : "Replacement"} · {g.texture} ·{" "}
+                      {g.thicknessMm} mm
+                    </span>
                   </span>
                 </button>
               </li>
@@ -139,33 +210,54 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
 
       {selected && (
         <div className="space-y-6" key={selected.id} style={{ animation: "rise 0.45s ease-out both" }}>
-          <header>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
-              {selected.kind === "overgrip" ? "Overgrip" : "Replacement grip"}
-            </p>
-            <h3 className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
-              {selected.brand} {selected.name}
-            </h3>
-            <p className="mt-2 text-sm text-[var(--muted)]">Best for: {selected.bestFor}</p>
-            <p className="mt-1 text-sm text-[var(--foreground)]/85">{selected.uniqueTrait}</p>
-            <button
-              type="button"
-              onClick={() => setGrip(selected.id, `${selected.brand} ${selected.name}`)}
-              className="mt-4 rounded-md px-4 py-2 text-sm font-medium transition hover:brightness-110"
-              style={{
-                background: inSetup ? "rgba(244,162,97,0.15)" : "var(--accent)",
-                color: inSetup ? "var(--amber)" : "#0b1a14",
-                boxShadow: inSetup ? "0 0 0 1px var(--amber)" : "none",
-              }}
-            >
-              {inSetup ? "Saved in my setup" : "Save to my setup"}
-            </button>
+          <header className="flex flex-wrap gap-5">
+            <EquipmentThumb
+              src={gripImageUrl(selected)}
+              alt={`${selected.brand} ${selected.name}`}
+              size="lg"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
+                {selected.kind === "overgrip" ? "Overgrip" : "Replacement grip"}
+              </p>
+              <h3 className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
+                {selected.brand} {selected.name}
+              </h3>
+              <p className="mt-2 text-sm text-[var(--muted)]">Best for: {selected.bestFor}</p>
+              <p className="mt-1 text-sm text-[var(--foreground)]/85">{selected.uniqueTrait}</p>
+              <button
+                type="button"
+                onClick={() =>
+                  setGrip(selected.id, `${selected.brand} ${selected.name}`, {
+                    tackiness: selected.tackiness,
+                    cushion: selected.cushion,
+                    absorbency: selected.absorbency,
+                    durability: selected.durability,
+                  })
+                }
+                className="mt-4 rounded-md px-4 py-2 text-sm font-medium transition hover:brightness-110"
+                style={{
+                  background: inSetup ? "rgba(244,162,97,0.15)" : "var(--accent)",
+                  color: inSetup ? "var(--amber)" : "#0b1a14",
+                  boxShadow: inSetup ? "0 0 0 1px var(--amber)" : "none",
+                }}
+              >
+                {inSetup ? "Saved in my setup" : "Save to my setup"}
+              </button>
+            </div>
           </header>
 
           <GripFeelVisual grip={selected} />
 
           <p className="text-sm leading-relaxed text-[var(--muted)]">{selected.notes}</p>
           <p className="text-sm leading-relaxed text-[var(--foreground)]/85">{selected.feel}</p>
+
+          <CompareToSetup
+            title={setup.gripLabel ? `Vs ${setup.gripLabel}` : "Vs my setup"}
+            subtitle="Compare tack, cushion, and absorbency to the grip you already use."
+            rows={vsSetupRows}
+            emptyHint="Save a grip to My setup to compare against what you have tested on court."
+          />
 
           <section className="border-t border-[var(--line)] pt-6">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -181,7 +273,15 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
               {compareGrips.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setCompareIds(selected ? [selected.id] : [])}
+                  onClick={() =>
+                    setCompareIds(
+                      setupGripId
+                        ? [setupGripId]
+                        : selected
+                          ? [selected.id]
+                          : [],
+                    )
+                  }
                   className="text-xs text-[var(--muted)] transition hover:text-[var(--foreground)]"
                 >
                   Clear compare
@@ -205,9 +305,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
               </div>
             )}
 
-            {compareGrips.length >= 2 && (
-              <GripCompareTable grips={compareGrips} />
-            )}
+            {compareGrips.length >= 2 && <GripCompareTable grips={compareGrips} />}
           </section>
         </div>
       )}
@@ -232,6 +330,7 @@ function GripCompareColumn({
         background: highlight ? "rgba(244,162,97,0.06)" : "transparent",
       }}
     >
+      <EquipmentThumb src={gripImageUrl(grip)} alt={`${grip.brand} ${grip.name}`} size="md" />
       <div>
         <p className="font-[family-name:var(--font-display)] text-sm tracking-tight">
           {grip.brand} {grip.name}
@@ -252,7 +351,11 @@ function GripCompareColumn({
 }
 
 function GripCompareTable({ grips }: { grips: GripProfile[] }) {
-  const rows: { key: keyof GripProfile | "thickness"; label: string; get: (g: GripProfile) => string | number }[] = [
+  const rows: {
+    key: keyof GripProfile | "thickness";
+    label: string;
+    get: (g: GripProfile) => string | number;
+  }[] = [
     { key: "tackiness", label: "Tackiness", get: (g) => g.tackiness },
     { key: "cushion", label: "Cushion", get: (g) => g.cushion },
     { key: "absorbency", label: "Absorbency", get: (g) => g.absorbency },
@@ -278,9 +381,7 @@ function GripCompareTable({ grips }: { grips: GripProfile[] }) {
           {rows.map((row) => {
             const numeric = grips.every((g) => typeof row.get(g) === "number");
             const values = grips.map((g) => row.get(g));
-            const max = numeric
-              ? Math.max(...(values as number[]))
-              : null;
+            const max = numeric ? Math.max(...(values as number[])) : null;
             return (
               <tr key={row.label} className="border-t border-[var(--line)]">
                 <td className="py-2 pr-3 text-[var(--muted)]">{row.label}</td>
