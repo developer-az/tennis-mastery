@@ -3,17 +3,26 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import type { StringProfile } from "@/types/equipment";
 import {
+  GAUGE_FILTER_OPTIONS,
   gaugeLabel,
+  matchesMaterialFilter,
   materialLabel,
+  parseGaugeFromQuery,
+  parsePolyIntent,
   shapeLabel,
+  stringCategoryBlurb,
+  stringHasGauge,
   stringStiffness,
   tensionOutcome,
   tensionRangeOverlaps,
 } from "@/lib/equipment/strings";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
+import { stringImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
 import { SpinPotentialRing, TensionCurve } from "./StringVisuals";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
+import { EquipmentThumb } from "./EquipmentThumb";
+import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
 
 type TensionFilter = "all" | "soft" | "mid" | "firm" | "target";
 
@@ -25,6 +34,8 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
 
   const [query, setQuery] = useState("");
   const [material, setMaterial] = useState("all");
+  const [shape, setShape] = useState("all");
+  const [gaugeFilter, setGaugeFilter] = useState("all");
   const [tensionFilter, setTensionFilter] = useState<TensionFilter>("all");
   const [targetTension, setTargetTension] = useState(setup.tensionLbs ?? 52);
   const [selectedId, setSelectedId] = useState(
@@ -32,7 +43,11 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
       ? setup.stringId
       : (strings[0]?.id ?? ""),
   );
-  const [compareId, setCompareId] = useState(strings[1]?.id ?? strings[0]?.id ?? "");
+  const [compareId, setCompareId] = useState(
+    setup.stringId && strings.some((s) => s.id === setup.stringId)
+      ? setup.stringId
+      : (strings[1]?.id ?? strings[0]?.id ?? ""),
+  );
   const [tensionById, setTensionById] = useState<Record<string, number>>(() =>
     setup.stringId && setup.tensionLbs != null
       ? { [setup.stringId]: setup.tensionLbs }
@@ -45,25 +60,53 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
 
   const filtered = useMemo(() => {
     const q = deferredQuery.trim();
+    const gaugeFromQuery = parseGaugeFromQuery(q);
+    const polyFromQuery = parsePolyIntent(q);
+    const gaugeTarget =
+      gaugeFilter !== "all" ? parseFloat(gaugeFilter) : gaugeFromQuery;
+    // Strip gauge/poly tokens from text search so "poly 1.30" does not over-constrain name match
+    const textQuery = q
+      .replace(/\b(1\.\d{1,2}|16g|17g|17l|15g|15l|18g)\b/gi, " ")
+      .replace(/\b(poly|polyester|co-?poly|copoly)\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
     return strings.filter((s) => {
-      if (material !== "all" && s.material !== material) return false;
+      const materialFilter = material !== "all" ? material : polyFromQuery ? "poly" : "all";
+      if (!matchesMaterialFilter(s, materialFilter)) return false;
+      if (shape !== "all" && s.shape !== shape) return false;
+      if (gaugeTarget != null && !stringHasGauge(s, gaugeTarget)) return false;
       if (tensionFilter === "soft" && s.recommendedTensionLbs > 50) return false;
       if (tensionFilter === "mid" && (s.recommendedTensionLbs < 50 || s.recommendedTensionLbs > 54))
         return false;
       if (tensionFilter === "firm" && s.recommendedTensionLbs < 55) return false;
       if (tensionFilter === "target" && !tensionRangeOverlaps(s, targetTension, 2)) return false;
-      if (!q) return true;
+      if (!textQuery) return true;
       return matchesEquipmentSearch(
-        q,
+        textQuery,
         s.brand,
         s.name,
         s.material,
         s.shape,
+        s.gaugesMm.join(" "),
         s.bestFor,
         s.feel,
       );
     });
-  }, [strings, deferredQuery, material, tensionFilter, targetTension]);
+  }, [strings, deferredQuery, material, shape, gaugeFilter, tensionFilter, targetTension]);
+
+  const categoryActive =
+    (material !== "all" ||
+      shape !== "all" ||
+      gaugeFilter !== "all" ||
+      parsePolyIntent(deferredQuery) ||
+      parseGaugeFromQuery(deferredQuery) != null) &&
+    filtered.length > 0;
+
+  const categoryGauge =
+    gaugeFilter !== "all" ? parseFloat(gaugeFilter) : parseGaugeFromQuery(deferredQuery);
+  const categoryMaterial =
+    material !== "all" ? material : parsePolyIntent(deferredQuery) ? "poly" : "all";
 
   const selected = filtered.find((s) => s.id === selectedId) ?? filtered[0] ?? null;
   const compare = strings.find((s) => s.id === compareId) ?? strings[0];
@@ -76,19 +119,63 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
   const [lo, hi] = selected ? selected.tensionRangeLbs : ([48, 58] as [number, number]);
   const selectedOutcome = selected ? tensionOutcome(selected, tension, gauge) : null;
   const compareGauge = compare
-    ? (gaugeById[compare.id] ?? compare.gaugesMm[0] ?? 1.25)
+    ? (gaugeById[compare.id] ??
+      (setup.stringId === compare.id && setup.gaugeMm != null
+        ? setup.gaugeMm
+        : null) ??
+      compare.gaugesMm[0] ??
+      1.25)
     : 1.25;
   const compareOutcome = compare
     ? tensionOutcome(
         compare,
         Math.min(
           compare.tensionRangeLbs[1],
-          Math.max(compare.tensionRangeLbs[0], tension),
+          Math.max(
+            compare.tensionRangeLbs[0],
+            setup.stringId === compare.id && setup.tensionLbs != null
+              ? setup.tensionLbs
+              : tension,
+          ),
         ),
         compareGauge,
       )
     : null;
   const inSetup = selected != null && selected.id === setup.stringId;
+
+  const vsSetupRows: CompareDeltaRow[] =
+    selected && selectedOutcome
+      ? [
+          {
+            key: "spin",
+            label: "Spin",
+            value: selectedOutcome.spin,
+            baseline: setup.stringSpin,
+            delta: numericDelta(selectedOutcome.spin, setup.stringSpin),
+          },
+          {
+            key: "control",
+            label: "Control",
+            value: selectedOutcome.control,
+            baseline: setup.stringControl,
+            delta: numericDelta(selectedOutcome.control, setup.stringControl),
+          },
+          {
+            key: "power",
+            label: "Power",
+            value: selectedOutcome.power,
+            baseline: setup.stringPower,
+            delta: numericDelta(selectedOutcome.power, setup.stringPower),
+          },
+          {
+            key: "comfort",
+            label: "Comfort",
+            value: selectedOutcome.comfort,
+            baseline: setup.stringComfort,
+            delta: numericDelta(selectedOutcome.comfort, setup.stringComfort),
+          },
+        ]
+      : [];
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
@@ -97,7 +184,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search RPM, ALU Power, Hyper-G…"
+            placeholder="Search RPM, ALU Power, poly 1.30…"
             aria-label="Search strings"
             className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
           />
@@ -109,12 +196,41 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
             >
               <option value="all">All materials</option>
-              <option value="polyester">Polyester</option>
-              <option value="co-poly">Co-poly</option>
+              <option value="poly">Poly family (poly + co-poly)</option>
+              <option value="polyester">Polyester only</option>
+              <option value="co-poly">Co-poly only</option>
               <option value="multifilament">Multifilament</option>
               <option value="synthetic-gut">Synthetic gut</option>
               <option value="natural-gut">Natural gut</option>
               <option value="hybrid">Hybrid</option>
+            </select>
+            <select
+              value={shape}
+              onChange={(e) => setShape(e.target.value)}
+              aria-label="Shape"
+              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            >
+              <option value="all">Any shape</option>
+              <option value="round">Round</option>
+              <option value="octagonal">Octagonal</option>
+              <option value="hexagonal">Hexagonal</option>
+              <option value="pentagonal">Pentagonal</option>
+              <option value="triangular">Triangular</option>
+              <option value="twisted">Twisted</option>
+              <option value="textured">Textured</option>
+            </select>
+            <select
+              value={gaugeFilter}
+              onChange={(e) => setGaugeFilter(e.target.value)}
+              aria-label="Gauge"
+              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            >
+              <option value="all">Any gauge</option>
+              {GAUGE_FILTER_OPTIONS.map((g) => (
+                <option key={g} value={String(g)}>
+                  {g.toFixed(2)} mm ({gaugeLabel(g)})
+                </option>
+              ))}
             </select>
             <select
               value={tensionFilter}
@@ -129,7 +245,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               <option value="target">Fits my tension…</option>
             </select>
             {tensionFilter === "target" ? (
-              <label className="col-span-2 flex items-center gap-2 sm:col-span-1">
+              <label className="col-span-2 flex items-center gap-2 sm:col-span-2">
                 <span className="sr-only">Target tension</span>
                 <input
                   type="number"
@@ -144,16 +260,59 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                 <span className="shrink-0 text-xs text-[var(--muted)]">lbs</span>
               </label>
             ) : (
-              <p className="col-span-2 self-center text-xs text-[var(--muted)] sm:col-span-1">
-                Filter by recommended tension or overlap with your number.
+              <p className="col-span-2 self-center text-xs text-[var(--muted)]">
+                Filter by material, gauge (e.g. 1.30), shape, or tension.
               </p>
             )}
           </div>
         </div>
 
+        {categoryActive ? (
+          <div
+            className="rounded-md px-3 py-3 text-sm leading-relaxed"
+            style={{
+              background: "rgba(125,211,252,0.06)",
+              boxShadow: "inset 0 0 0 1px rgba(125,211,252,0.25)",
+            }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-300">
+              Category · {filtered.length} match
+              {filtered.length === 1 ? "" : "es"}
+            </p>
+            <p className="mt-2 text-[var(--foreground)]/90">
+              {stringCategoryBlurb(categoryMaterial, categoryGauge, shape)}
+            </p>
+            <ul className="mt-3 max-h-48 space-y-1.5 overflow-y-auto text-xs text-[var(--muted)]">
+              {[...filtered]
+                .sort((a, b) => b.spin - a.spin)
+                .slice(0, 12)
+                .map((s) => (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(s.id)}
+                      className="text-left transition hover:text-sky-300"
+                    >
+                      {s.brand} {s.name}
+                      <span className="tabular-nums text-[var(--foreground)]/60">
+                        {" "}
+                        · Sp {s.spin} · Ctl {s.control} ·{" "}
+                        {s.gaugesMm.map((g) => g.toFixed(2)).join("/")} mm
+                      </span>
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        ) : null}
+
         <p className="text-xs text-[var(--muted)]">
           {filtered.length} string{filtered.length === 1 ? "" : "s"}
-          {material !== "all" || deferredQuery || tensionFilter !== "all"
+          {material !== "all" ||
+          deferredQuery ||
+          tensionFilter !== "all" ||
+          shape !== "all" ||
+          gaugeFilter !== "all"
             ? " match"
             : " in catalog"}
         </p>
@@ -169,29 +328,36 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                   type="button"
                   onClick={() => setSelectedId(s.id)}
                   aria-pressed={active}
-                  className={`flex w-full flex-col gap-1 px-2 py-3 text-left transition ${
+                  className={`flex w-full items-center gap-3 px-2 py-3 text-left transition ${
                     active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
                   }`}
                 >
-                  <span className="flex items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
-                    {s.brand} {s.name}
-                    {saved ? (
-                      <span className="rounded bg-sky-400/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-sky-300">
-                        Setup
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="text-xs text-[var(--muted)]">
-                    {materialLabel(s.material)} · {shapeLabel(s.shape)} ·{" "}
-                    {rLo}–{rHi} lbs
-                  </span>
-                  <span className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] tabular-nums text-[var(--foreground)]/70">
-                    <span style={{ color: "#7dd3fc" }}>Sp {s.spin}</span>
-                    <span style={{ color: "#c8f560" }}>Ctl {s.control}</span>
-                    <span style={{ color: "#f4a261" }}>Pwr {s.power}</span>
-                    <span style={{ color: "#e9c46a" }}>Dur {s.durability}</span>
-                    <span>Tm {s.tensionMaintenance}</span>
-                    <span>Stf {stringStiffness(s)}</span>
+                  <EquipmentThumb
+                    src={stringImageUrl(s)}
+                    alt={`${s.brand} ${s.name}`}
+                    size="sm"
+                  />
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="flex items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
+                      {s.brand} {s.name}
+                      {saved ? (
+                        <span className="rounded bg-sky-400/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-sky-300">
+                          Setup
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="text-xs text-[var(--muted)]">
+                      {materialLabel(s.material)} · {shapeLabel(s.shape)} · {rLo}–{rHi} lbs ·{" "}
+                      {s.gaugesMm.map((g) => g.toFixed(2)).join("/")} mm
+                    </span>
+                    <span className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] tabular-nums text-[var(--foreground)]/70">
+                      <span style={{ color: "#7dd3fc" }}>Sp {s.spin}</span>
+                      <span style={{ color: "#c8f560" }}>Ctl {s.control}</span>
+                      <span style={{ color: "#f4a261" }}>Pwr {s.power}</span>
+                      <span style={{ color: "#e9c46a" }}>Dur {s.durability}</span>
+                      <span>Tm {s.tensionMaintenance}</span>
+                      <span>Stf {stringStiffness(s)}</span>
+                    </span>
                   </span>
                 </button>
               </li>
@@ -199,7 +365,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
           })}
           {filtered.length === 0 && (
             <li className="px-2 py-8 text-sm text-[var(--muted)]">
-              No strings match. Try another material, clear tension filter, or widen the query.
+              No strings match. Try co-poly + 1.30 mm, clear tension filter, or widen the query.
             </li>
           )}
         </ul>
@@ -207,60 +373,69 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
 
       {selected && selectedOutcome && (
         <div className="space-y-8" key={selected.id} style={{ animation: "rise 0.45s ease-out both" }}>
-          <header>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-300">
-              {materialLabel(selected.material)} · {shapeLabel(selected.shape)}
-            </p>
-            <h3 className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
-              {selected.brand} {selected.name}
-            </h3>
-            <p className="mt-2 text-sm text-[var(--muted)]">{selected.feel}</p>
-            <p className="mt-2 text-sm text-[var(--foreground)]/85">
-              Best for: {selected.bestFor}
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-              <span
-                className="rounded-md px-2.5 py-1 font-medium tabular-nums"
+          <header className="flex flex-wrap gap-5">
+            <EquipmentThumb
+              src={stringImageUrl(selected)}
+              alt={`${selected.brand} ${selected.name}`}
+              size="lg"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-300">
+                {materialLabel(selected.material)} · {shapeLabel(selected.shape)}
+              </p>
+              <h3 className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
+                {selected.brand} {selected.name}
+              </h3>
+              <p className="mt-2 text-sm text-[var(--muted)]">{selected.feel}</p>
+              <p className="mt-2 text-sm text-[var(--foreground)]/85">
+                Best for: {selected.bestFor}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                <span
+                  className="rounded-md px-2.5 py-1 font-medium tabular-nums"
+                  style={{
+                    color: "#c8f560",
+                    background: "color-mix(in srgb, #c8f560 12%, transparent)",
+                    boxShadow: "inset 0 0 0 1px color-mix(in srgb, #c8f560 40%, transparent)",
+                  }}
+                >
+                  Rec. {selected.recommendedTensionLbs} lbs
+                </span>
+                <span
+                  className="rounded-md px-2.5 py-1 tabular-nums text-[var(--muted)]"
+                  style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
+                >
+                  Range {lo}–{hi} lbs
+                </span>
+                <span
+                  className="rounded-md px-2.5 py-1 tabular-nums text-[var(--muted)]"
+                  style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
+                >
+                  Gauges {selected.gaugesMm.map((g) => `${g} (${gaugeLabel(g)})`).join(" · ")}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setString(selected.id, `${selected.brand} ${selected.name}`, {
+                    tensionLbs: tension,
+                    gaugeMm: gauge,
+                    power: selectedOutcome.power,
+                    spin: selectedOutcome.spin,
+                    control: selectedOutcome.control,
+                    comfort: selectedOutcome.comfort,
+                  })
+                }
+                className="mt-4 rounded-md px-4 py-2 text-sm font-medium transition hover:brightness-110"
                 style={{
-                  color: "#c8f560",
-                  background: "color-mix(in srgb, #c8f560 12%, transparent)",
-                  boxShadow: "inset 0 0 0 1px color-mix(in srgb, #c8f560 40%, transparent)",
+                  background: inSetup ? "rgba(125,211,252,0.12)" : "var(--accent)",
+                  color: inSetup ? "#7dd3fc" : "#0b1a14",
+                  boxShadow: inSetup ? "0 0 0 1px #7dd3fc" : "none",
                 }}
               >
-                Rec. {selected.recommendedTensionLbs} lbs
-              </span>
-              <span
-                className="rounded-md px-2.5 py-1 tabular-nums text-[var(--muted)]"
-                style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
-              >
-                Range {lo}–{hi} lbs
-              </span>
-              <span
-                className="rounded-md px-2.5 py-1 tabular-nums text-[var(--muted)]"
-                style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
-              >
-                Gauges {selected.gaugesMm.map((g) => `${g} (${gaugeLabel(g)})`).join(" · ")}
-              </span>
+                {inSetup ? "Saved in my setup" : "Save to my setup"}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                setString(
-                  selected.id,
-                  `${selected.brand} ${selected.name}`,
-                  tension,
-                  gauge,
-                )
-              }
-              className="mt-4 rounded-md px-4 py-2 text-sm font-medium transition hover:brightness-110"
-              style={{
-                background: inSetup ? "rgba(125,211,252,0.12)" : "var(--accent)",
-                color: inSetup ? "#7dd3fc" : "#0b1a14",
-                boxShadow: inSetup ? "0 0 0 1px #7dd3fc" : "none",
-              }}
-            >
-              {inSetup ? "Saved in my setup" : "Save to my setup"}
-            </button>
           </header>
 
           <SpinPotentialRing value={selectedOutcome.spin} />
@@ -345,46 +520,15 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                 <span className="ml-1 text-sm text-[var(--muted)]">lbs</span>
               </p>
             </div>
-            <div className="mb-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setTensionById((prev) => ({
-                    ...prev,
-                    [selected.id]: selected.recommendedTensionLbs,
-                  }));
-                  if (inSetup) setTensionStore(selected.recommendedTensionLbs);
-                }}
-                className="rounded-md px-2.5 py-1 text-xs transition hover:bg-white/5"
-                style={{ boxShadow: "0 0 0 1px var(--line)" }}
-              >
-                Use recommended ({selected.recommendedTensionLbs})
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTensionById((prev) => ({ ...prev, [selected.id]: lo }));
-                  if (inSetup) setTensionStore(lo);
-                }}
-                className="rounded-md px-2.5 py-1 text-xs transition hover:bg-white/5"
-                style={{ boxShadow: "0 0 0 1px var(--line)" }}
-              >
-                Soft end ({lo})
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTensionById((prev) => ({ ...prev, [selected.id]: hi }));
-                  if (inSetup) setTensionStore(hi);
-                }}
-                className="rounded-md px-2.5 py-1 text-xs transition hover:bg-white/5"
-                style={{ boxShadow: "0 0 0 1px var(--line)" }}
-              >
-                Firm end ({hi})
-              </button>
-            </div>
             <TensionCurve string={selected} tension={tension} gaugeMm={gauge} />
           </div>
+
+          <CompareToSetup
+            title={setup.stringLabel ? `Vs ${setup.stringLabel}` : "Vs my setup"}
+            subtitle="Deltas use your saved string scores at the tension/gauge you tested."
+            rows={vsSetupRows}
+            emptyHint="Save a string (with tension and gauge) to My setup to compare against what you have hit with."
+          />
 
           <section className="border-t border-[var(--line)] pt-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -393,7 +537,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                   Compare at {tension} lbs
                 </h4>
                 <p className="mt-1 text-xs text-[var(--muted)]">
-                  Scores adjust with tension + each string&apos;s selected/reference gauge.
+                  Defaults to your saved string when available. Scores use each bed&apos;s gauge.
                 </p>
               </div>
               <select
@@ -405,6 +549,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                 {strings.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.brand} {s.name}
+                    {s.id === setup.stringId ? " (my setup)" : ""}
                   </option>
                 ))}
               </select>

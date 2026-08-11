@@ -1,4 +1,4 @@
-export type EquipmentTab = "rackets" | "strings" | "grips";
+export type EquipmentTab = "rackets" | "strings" | "grips" | "lead-tape";
 
 export type RacketStyle =
   | "Heavy-spin baseliner"
@@ -32,6 +32,8 @@ export interface RacketProfile {
   idealLaunchAngleDeg: number;
   idealSwingPathDeg: number;
   style: RacketStyle;
+  /** Optional curated photo; falls back to `/api/equipment/rackets/[slug]/image`. */
+  imageUrl?: string | null;
 }
 
 export type StringMaterial =
@@ -75,6 +77,8 @@ export interface StringProfile {
   feel: string;
   bestFor: string;
   notes: string;
+  /** Optional curated photo; falls back to `/api/equipment/strings/[id]/image`. */
+  imageUrl?: string | null;
 }
 
 export interface TensionOutcome {
@@ -109,6 +113,31 @@ export interface GripProfile {
   uniqueTrait: string;
   bestFor: string;
   notes: string;
+  /** Optional curated photo; falls back to `/api/equipment/grips/[id]/image`. */
+  imageUrl?: string | null;
+}
+
+/** Named zones on a racket diagram for lead-tape placement. */
+export type LeadTapeZone =
+  | "tip"
+  | "twelve"
+  | "three"
+  | "nine"
+  | "throat"
+  | "handle";
+
+export interface LeadTapePiece {
+  id: string;
+  /** Mass in grams (typical strip: 0.5 / 1 / 2). */
+  massG: number;
+  zone: LeadTapeZone;
+  /** Normalized diagram coords 0–1 (origin top-left of racket viewBox). */
+  x: number;
+  y: number;
+}
+
+export interface LeadTapeSetup {
+  pieces: LeadTapePiece[];
 }
 
 export interface RacketCatalogMeta {

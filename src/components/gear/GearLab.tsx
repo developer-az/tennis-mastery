@@ -8,26 +8,36 @@ import { MySetupBar } from "./MySetupBar";
 import { RacketExplorer } from "./RacketExplorer";
 import { StringExplorer } from "./StringExplorer";
 import { GripExplorer } from "./GripExplorer";
+import { LeadTapeLab } from "./LeadTapeLab";
 
 const TABS: { id: EquipmentTab; label: string; blurb: string }[] = [
   {
     id: "rackets",
     label: "Rackets",
-    blurb: "Launch angle, swing path, and playing style for modern frames. Filter by brand, style, weight, and head size — then save your frame to My setup.",
+    blurb:
+      "Launch angle, swing path, and playing style for modern frames. Filter by brand, style, weight, head size, and pattern — compare to your tested setup, then save your frame.",
   },
   {
     id: "strings",
     label: "Strings",
-    blurb: "Spin, control, power, durability, stiffness, and tension maintenance — plus gauge and tension that actually move the scores. Filter by tension band, compare beds, then save to My setup.",
+    blurb:
+      "Find poly 1.30 or any material/gauge/shape bucket, learn the category, then compare beds to what you have already hit with. Tension and gauge move the scores.",
   },
   {
     id: "grips",
     label: "Grips",
-    blurb: "Overgrips and replacement grips — tack, cushion, and sweat feel. Check two or three to compare side by side, then save the one that matches how you hold the handle.",
+    blurb:
+      "Overgrips and replacement grips — tack, cushion, and sweat feel with product portraits. Compare against your saved grip, then save the one that matches your hand.",
+  },
+  {
+    id: "lead-tape",
+    label: "Lead tape",
+    blurb:
+      "Place virtual lead tape on your frame. Drag strips between tip, 3/9, throat, and handle — see swingweight, balance, launch angle, and swing-path changes live.",
   },
 ];
 
-const TAB_IDS = new Set<EquipmentTab>(["rackets", "strings", "grips"]);
+const TAB_IDS = new Set<EquipmentTab>(["rackets", "strings", "grips", "lead-tape"]);
 
 export function GearLab({
   rackets,
@@ -46,7 +56,6 @@ export function GearLab({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Hydrate tab from ?tab=
   useEffect(() => {
     const raw = searchParams.get("tab");
     if (raw && TAB_IDS.has(raw as EquipmentTab) && raw !== tab) {
@@ -109,7 +118,6 @@ export function GearLab({
         {TABS.find((t) => t.id === tab)?.blurb}
       </p>
 
-      {/* Keep panels mounted so selection + tension state survive tab switches */}
       <div className="relative z-10 mt-8">
         <div
           id="gear-panel-rackets"
@@ -134,6 +142,14 @@ export function GearLab({
           hidden={tab !== "grips"}
         >
           <GripExplorer grips={grips} />
+        </div>
+        <div
+          id="gear-panel-lead-tape"
+          role="tabpanel"
+          aria-labelledby="gear-tab-lead-tape"
+          hidden={tab !== "lead-tape"}
+        >
+          <LeadTapeLab rackets={rackets} />
         </div>
       </div>
     </div>

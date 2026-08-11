@@ -9,7 +9,7 @@ import { GRIPS } from "@/data/equipment/grips";
 export const metadata: Metadata = {
   title: "Gear Lab — Strokeform",
   description:
-    "Understand modern tennis rackets, strings, overgrips, and replacement grips — launch angle, swing path, spin potential, tension, and feel visualized.",
+    "Understand modern tennis rackets, strings, overgrips, and lead tape — compare to your setup, filter by gauge and feel, and visualize launch angle and swing path.",
 };
 
 export default async function GearPage() {
@@ -63,9 +63,9 @@ export default async function GearPage() {
             className="mt-4 max-w-lg text-[var(--muted)] leading-relaxed"
             style={{ animation: "rise 0.8s ease-out 0.2s both" }}
           >
-            Search your setup. See launch angle and swing path for modern frames, spin and
-            tension tradeoffs for strings, and what makes each overgrip or replacement grip
-            unique in the hand.
+            Compare new gear to what you have already tested. Filter strings down to poly
+            1.30, browse product portraits, and place virtual lead tape to see launch and
+            swing-path shifts.
           </p>
         </div>
       </section>
