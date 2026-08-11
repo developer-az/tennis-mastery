@@ -18,12 +18,12 @@ const TABS: { id: EquipmentTab; label: string; blurb: string }[] = [
   {
     id: "strings",
     label: "Strings",
-    blurb: "Spin potential, control, gauge, and how tension reshapes the bed. Compare at your chosen tension, then save the bed to My setup.",
+    blurb: "Spin, control, power, durability, stiffness, and tension maintenance — plus gauge and tension that actually move the scores. Filter by tension band, compare beds, then save to My setup.",
   },
   {
     id: "grips",
     label: "Grips",
-    blurb: "Overgrips and replacement grips — tack, cushion, and sweat feel. Save the one that matches how you hold the handle.",
+    blurb: "Overgrips and replacement grips — tack, cushion, and sweat feel. Check two or three to compare side by side, then save the one that matches how you hold the handle.",
   },
 ];
 

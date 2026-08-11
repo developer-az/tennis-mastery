@@ -58,13 +58,18 @@ export interface StringProfile {
   material: StringMaterial;
   shape: StringShape;
   gaugesMm: number[];
-  /** Baseline 0–100 at mid recommended tension */
+  /** Baseline 0–100 at mid recommended tension and reference (usually mid) gauge */
   power: number;
   control: number;
   spin: number;
   comfort: number;
   durability: number;
   tensionMaintenance: number;
+  /**
+   * Dynamic stiffness feel 0–100 (higher = boardier / more connected).
+   * Optional in data — derived from material + comfort when omitted.
+   */
+  stiffness?: number;
   tensionRangeLbs: [number, number];
   recommendedTensionLbs: number;
   feel: string;
@@ -74,12 +79,16 @@ export interface StringProfile {
 
 export interface TensionOutcome {
   tensionLbs: number;
+  gaugeMm: number;
   power: number;
   control: number;
   spin: number;
   comfort: number;
+  durability: number;
+  stiffness: number;
   dwellHint: string;
   launchHint: string;
+  gaugeHint: string;
 }
 
 export type GripKind = "overgrip" | "replacement";

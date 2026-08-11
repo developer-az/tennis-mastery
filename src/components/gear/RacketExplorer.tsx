@@ -2,8 +2,11 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import type { RacketCatalogMeta, RacketProfile } from "@/types/equipment";
+import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search";
+import { derivePlayerFit } from "@/lib/equipment/playerFit";
 import { useGearStore } from "@/store/gearStore";
 import { LaunchAngleVisual, SwingPathVisual } from "./RacketVisuals";
+import { PlayerFitBadges } from "./PlayerFitBadges";
 import { ScoreGrid } from "./ScoreMeter";
 
 const PAGE = 80;
@@ -42,7 +45,7 @@ export function RacketExplorer({
   );
 
   const filtered = useMemo(() => {
-    const q = deferredQuery.trim().toLowerCase();
+    const q = deferredQuery.trim();
     const list = initialRackets.filter((r) => {
       if (brand !== "all" && r.brand !== brand) return false;
       if (style !== "all" && r.style !== style) return false;
@@ -58,12 +61,26 @@ export function RacketExplorer({
         return false;
       if (headBand === "oversize" && !(r.headSizeSqIn != null && r.headSizeSqIn > 100)) return false;
       if (!q) return true;
-      const hay = `${r.brand} ${r.model} ${r.year} ${r.style} ${r.stringPattern}`.toLowerCase();
-      return hay.includes(q);
+      return matchesEquipmentSearch(
+        q,
+        r.brand,
+        r.model,
+        r.slug,
+        r.year,
+        r.style,
+        r.stringPattern,
+        r.summary,
+      );
     });
 
     const sorted = [...list];
     sorted.sort((a, b) => {
+      if (q) {
+        const scoreDelta =
+          searchMatchScore(q, b.brand, b.model, b.slug) -
+          searchMatchScore(q, a.brand, a.model, a.slug);
+        if (scoreDelta !== 0) return scoreDelta;
+      }
       switch (sort) {
         case "spin":
           return b.spin - a.spin;
@@ -102,7 +119,7 @@ export function RacketExplorer({
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search Pure Aero, Blade, Ezone…"
+              placeholder="Search cx200, Pure Aero, Blade…"
               className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2.5 text-sm outline-none transition focus:border-[var(--accent)]"
             />
           </label>
@@ -183,13 +200,14 @@ export function RacketExplorer({
           {shown.map((r) => {
             const active = r.slug === selected?.slug;
             const saved = r.slug === setupSlug;
+            const fit = derivePlayerFit(r);
             return (
               <li key={r.slug}>
                 <button
                   type="button"
                   onClick={() => setSelectedSlug(r.slug)}
                   aria-pressed={active}
-                  className={`flex w-full flex-col gap-0.5 px-2 py-3 text-left transition ${
+                  className={`flex w-full flex-col gap-1 px-2 py-3 text-left transition ${
                     active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
                   }`}
                 >
@@ -204,13 +222,19 @@ export function RacketExplorer({
                   <span className="text-xs text-[var(--muted)]">
                     {r.year} · {r.headSizeSqIn}&quot; · {r.stringPattern} · {r.style}
                   </span>
+                  <span className="flex flex-wrap gap-1.5 pt-0.5">
+                    <MiniTag label={fit.skill} color="#c8f560" />
+                    <MiniTag label={fit.courtRole} color="#7dd3fc" />
+                    <MiniTag label={fit.feelAxis} color="#f4a261" />
+                  </span>
                 </button>
               </li>
             );
           })}
           {filtered.length === 0 && (
             <li className="px-2 py-8 text-sm text-[var(--muted)]">
-              No rackets match those filters. Try clearing weight or head size.
+              No rackets match those filters. Try &quot;cx 200&quot;, &quot;cx200&quot;, or clear weight /
+              head size.
             </li>
           )}
         </ul>
@@ -272,6 +296,8 @@ export function RacketExplorer({
             </button>
           </header>
 
+          <PlayerFitBadges racket={selected} />
+
           <div className="grid gap-8 md:grid-cols-2">
             <LaunchAngleVisual degrees={selected.idealLaunchAngleDeg} />
             <SwingPathVisual degrees={selected.idealSwingPathDeg} />
@@ -290,5 +316,20 @@ export function RacketExplorer({
         </div>
       )}
     </div>
+  );
+}
+
+function MiniTag({ label, color }: { label: string; color: string }) {
+  return (
+    <span
+      className="rounded px-1.5 py-0.5 text-[10px] font-medium"
+      style={{
+        color,
+        background: `color-mix(in srgb, ${color} 12%, transparent)`,
+        boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${color} 35%, transparent)`,
+      }}
+    >
+      {label}
+    </span>
   );
 }
