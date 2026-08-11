@@ -218,9 +218,11 @@ export function RacketExplorer({
       ]
     : [];
 
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-      <div className="space-y-4">
+    <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+      <div className="order-2 space-y-4 lg:order-1">
         <div className="flex flex-col gap-3">
           <label className="relative flex-1">
             <span className="sr-only">Search rackets</span>
@@ -231,7 +233,21 @@ export function RacketExplorer({
               className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2.5 text-sm outline-none transition focus:border-[var(--accent)]"
             />
           </label>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-[var(--muted)] lg:hidden"
+            style={{ boxShadow: "0 0 0 1px var(--line)" }}
+            onClick={() => setFiltersOpen((o) => !o)}
+            aria-expanded={filtersOpen}
+          >
+            <span>Filters & sort</span>
+            <span className="text-xs">{filtersOpen ? "Hide" : "Show"}</span>
+          </button>
+          <div
+            className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${
+              filtersOpen ? "" : "hidden lg:grid"
+            }`}
+          >
             <select
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
@@ -315,7 +331,7 @@ export function RacketExplorer({
           {meta.live ? " · live" : " · offline snapshot"}
         </p>
 
-        <ul className="max-h-[28rem] divide-y divide-[var(--line)] overflow-y-auto border-y border-[var(--line)]">
+        <ul className="max-h-[22rem] divide-y divide-[var(--line)] overflow-y-auto border-y border-[var(--line)] md:max-h-[28rem]">
           {shown.map((r) => {
             const active = r.slug === selected?.slug;
             const saved = r.slug === setupSlug;
@@ -393,7 +409,7 @@ export function RacketExplorer({
 
       {selected && (
         <div
-          className="space-y-8"
+          className="order-1 space-y-6 lg:order-2 lg:space-y-8"
           key={selected.slug}
           style={{ animation: "rise 0.45s ease-out both" }}
         >

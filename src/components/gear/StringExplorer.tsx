@@ -5,8 +5,10 @@ import type { StringProfile } from "@/types/equipment";
 import {
   GAUGE_FILTER_OPTIONS,
   gaugeLabel,
+  matchesMaterialFilter,
   materialLabel,
   parseGaugeFromQuery,
+  parsePolyIntent,
   shapeLabel,
   stringCategoryBlurb,
   stringHasGauge,
@@ -59,11 +61,19 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
   const filtered = useMemo(() => {
     const q = deferredQuery.trim();
     const gaugeFromQuery = parseGaugeFromQuery(q);
+    const polyFromQuery = parsePolyIntent(q);
     const gaugeTarget =
       gaugeFilter !== "all" ? parseFloat(gaugeFilter) : gaugeFromQuery;
+    // Strip gauge/poly tokens from text search so "poly 1.30" does not over-constrain name match
+    const textQuery = q
+      .replace(/\b(1\.\d{1,2}|16g|17g|17l|15g|15l|18g)\b/gi, " ")
+      .replace(/\b(poly|polyester|co-?poly|copoly)\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
     return strings.filter((s) => {
-      if (material !== "all" && s.material !== material) return false;
+      const materialFilter = material !== "all" ? material : polyFromQuery ? "poly" : "all";
+      if (!matchesMaterialFilter(s, materialFilter)) return false;
       if (shape !== "all" && s.shape !== shape) return false;
       if (gaugeTarget != null && !stringHasGauge(s, gaugeTarget)) return false;
       if (tensionFilter === "soft" && s.recommendedTensionLbs > 50) return false;
@@ -71,9 +81,9 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
         return false;
       if (tensionFilter === "firm" && s.recommendedTensionLbs < 55) return false;
       if (tensionFilter === "target" && !tensionRangeOverlaps(s, targetTension, 2)) return false;
-      if (!q) return true;
+      if (!textQuery) return true;
       return matchesEquipmentSearch(
-        q,
+        textQuery,
         s.brand,
         s.name,
         s.material,
@@ -86,10 +96,17 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
   }, [strings, deferredQuery, material, shape, gaugeFilter, tensionFilter, targetTension]);
 
   const categoryActive =
-    (material !== "all" || shape !== "all" || gaugeFilter !== "all") && filtered.length > 0;
+    (material !== "all" ||
+      shape !== "all" ||
+      gaugeFilter !== "all" ||
+      parsePolyIntent(deferredQuery) ||
+      parseGaugeFromQuery(deferredQuery) != null) &&
+    filtered.length > 0;
 
   const categoryGauge =
     gaugeFilter !== "all" ? parseFloat(gaugeFilter) : parseGaugeFromQuery(deferredQuery);
+  const categoryMaterial =
+    material !== "all" ? material : parsePolyIntent(deferredQuery) ? "poly" : "all";
 
   const selected = filtered.find((s) => s.id === selectedId) ?? filtered[0] ?? null;
   const compare = strings.find((s) => s.id === compareId) ?? strings[0];
@@ -179,8 +196,9 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
             >
               <option value="all">All materials</option>
-              <option value="polyester">Polyester</option>
-              <option value="co-poly">Co-poly</option>
+              <option value="poly">Poly family (poly + co-poly)</option>
+              <option value="polyester">Polyester only</option>
+              <option value="co-poly">Co-poly only</option>
               <option value="multifilament">Multifilament</option>
               <option value="synthetic-gut">Synthetic gut</option>
               <option value="natural-gut">Natural gut</option>
@@ -262,16 +280,12 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               {filtered.length === 1 ? "" : "es"}
             </p>
             <p className="mt-2 text-[var(--foreground)]/90">
-              {stringCategoryBlurb(
-                material === "all" ? "all" : material,
-                categoryGauge,
-                shape,
-              )}
+              {stringCategoryBlurb(categoryMaterial, categoryGauge, shape)}
             </p>
-            <ul className="mt-3 space-y-1.5 text-xs text-[var(--muted)]">
+            <ul className="mt-3 max-h-48 space-y-1.5 overflow-y-auto text-xs text-[var(--muted)]">
               {[...filtered]
                 .sort((a, b) => b.spin - a.spin)
-                .slice(0, 5)
+                .slice(0, 12)
                 .map((s) => (
                   <li key={s.id}>
                     <button

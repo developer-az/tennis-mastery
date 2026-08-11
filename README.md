@@ -43,12 +43,12 @@ GitHub Pages is a poor fit without a static-export rewrite: there is no `output:
 
 ## Gear lab
 
-- **Rackets** — modern frames (2019+) via the [Racqix Tennis Racquet Dataset](https://www.racqix.com/en/tennis-racquet-dataset) API, with offline snapshot fallback. Stylized product portraits, filters (including string pattern), and compare-to-my-setup deltas for launch angle and swing path.
-- **Strings** — curated catalog with material / gauge / shape filters (e.g. poly 1.30), category learning blurbs, spin potential, and tension-response modeling.
-- **Grips** — overgrips and replacement grips with portraits plus tack / cushion / absorbency comparisons vs your saved grip.
-- **Lead tape** — place and drag virtual strips on tip, 3/9, throat, or handle; see swingweight, balance, launch, and swing-path changes. Saved with My setup.
+- **Rackets** — modern frames (2019+) via the [Racqix Tennis Racquet Dataset](https://www.racqix.com/en/tennis-racquet-dataset) API, with offline snapshot fallback. Product photos resolve from Tennis Warehouse matches (SVG portrait fallback), filters (including string pattern), and compare-to-my-setup deltas for launch angle and swing path.
+- **Strings** — curated catalog with a **poly family** filter (polyester + co-poly), gauge bands (e.g. 1.30 / 16g), shape filters, category learning blurbs, and tension-response modeling.
+- **Grips** — overgrips and replacement grips with product photos plus tack / cushion / absorbency comparisons vs your saved grip.
+- **Lead tape** — tap zones to place strips; stock-vs-taped table for weight, swingweight, balance, launch, and swing path. Saved with My setup.
 
-Equipment JSON APIs at `/api/equipment/{rackets,strings,grips}` include `imageUrl` fields. SVG portraits: `/api/equipment/{rackets,strings,grips}/[id]/image`. Zone docs: `/api/equipment/lead-tape/zones`.
+Equipment JSON APIs at `/api/equipment/{rackets,strings,grips}` include `imageUrl` fields. Media routes `/api/equipment/.../image` redirect to Tennis Warehouse product photos when matched (`?format=svg` forces the portrait fallback). Zone docs: `/api/equipment/lead-tape/zones`.
 
 ## Data notes
 

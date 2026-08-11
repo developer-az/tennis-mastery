@@ -1,19 +1,20 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { LeadTapePiece, LeadTapeZone, RacketProfile } from "@/types/equipment";
 import {
   LEAD_TAPE_MASS_PRESETS,
   LEAD_TAPE_ZONES,
   computeLeadTapeEffect,
   createLeadTapePiece,
-  snapToNearestZone,
 } from "@/lib/equipment/leadTape";
 import { useGearStore } from "@/store/gearStore";
 import { LaunchAngleVisual, SwingPathVisual } from "./RacketVisuals";
 
 const VB_W = 200;
 const VB_H = 280;
+
+const ZONE_ORDER: LeadTapeZone[] = ["tip", "twelve", "three", "nine", "throat", "handle"];
 
 export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
   const setup = useGearStore((s) => s.setup);
@@ -29,83 +30,46 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
   }, [rackets, setup.racketSlug]);
 
   const [massPreset, setMassPreset] = useState<(typeof LEAD_TAPE_MASS_PRESETS)[number]>(1);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const [selectedZone, setSelectedZone] = useState<LeadTapeZone>("twelve");
 
   const effect = useMemo(
-    () =>
-      baseRacket
-        ? computeLeadTapeEffect(baseRacket, pieces)
-        : null,
+    () => (baseRacket ? computeLeadTapeEffect(baseRacket, pieces) : null),
     [baseRacket, pieces],
+  );
+  const baseline = useMemo(
+    () => (baseRacket ? computeLeadTapeEffect(baseRacket, []) : null),
+    [baseRacket],
   );
 
   const updatePieces = useCallback(
-    (next: LeadTapePiece[]) => {
-      setLeadTapePieces(next);
-    },
+    (next: LeadTapePiece[]) => setLeadTapePieces(next),
     [setLeadTapePieces],
   );
 
   const addAtZone = (zone: LeadTapeZone) => {
     updatePieces([...pieces, createLeadTapePiece(massPreset, zone)]);
+    setSelectedZone(zone);
   };
 
-  const removePiece = (id: string) => {
-    updatePieces(pieces.filter((p) => p.id !== id));
-  };
-
+  const removePiece = (id: string) => updatePieces(pieces.filter((p) => p.id !== id));
   const clearAll = () => updatePieces([]);
 
-  const clientToNorm = (clientX: number, clientY: number) => {
-    const svg = svgRef.current;
-    if (!svg) return { x: 0.5, y: 0.3 };
-    const rect = svg.getBoundingClientRect();
-    const x = Math.max(0.05, Math.min(0.95, (clientX - rect.left) / rect.width));
-    const y = Math.max(0.05, Math.min(0.95, (clientY - rect.top) / rect.height));
-    return { x, y };
-  };
-
-  const onPointerDownPiece = (e: ReactPointerEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    (e.target as Element).setPointerCapture?.(e.pointerId);
-    setDragId(id);
-  };
-
-  const onPointerMove = (e: ReactPointerEvent) => {
-    if (!dragId) return;
-    const { x, y } = clientToNorm(e.clientX, e.clientY);
-    const zone = snapToNearestZone(x, y);
+  const movePieceToZone = (id: string, zone: LeadTapeZone) => {
     const z = LEAD_TAPE_ZONES[zone];
-    // Soft snap: blend toward zone center when close
-    const dx = z.x - x;
-    const dy = z.y - y;
-    const dist = Math.hypot(dx, dy);
-    const snap = dist < 0.08;
     updatePieces(
-      pieces.map((p) =>
-        p.id === dragId
-          ? {
-              ...p,
-              x: snap ? z.x : x,
-              y: snap ? z.y : y,
-              zone,
-            }
-          : p,
-      ),
+      pieces.map((p) => (p.id === id ? { ...p, zone, x: z.x, y: z.y } : p)),
     );
   };
 
-  const onPointerUp = () => setDragId(null);
-
-  if (!baseRacket || !effect) {
+  if (!baseRacket || !effect || !baseline) {
     return (
       <p className="text-sm text-[var(--muted)]">
         Load a racket catalog to customize lead tape.
       </p>
     );
   }
+
+  const hasTape = pieces.length > 0;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
@@ -119,8 +83,8 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
           </h3>
           <p className="mt-2 max-w-lg text-sm text-[var(--muted)]">
             {setup.racketSlug
-              ? "Using your saved frame. Add strips, drag them on the diagram, and watch launch angle and swing path update."
-              : "Save a racket to My setup for your exact frame — showing the first catalog frame as a demo base."}
+              ? "Using your saved frame. Tap a zone to add tape, then compare launch and swing path with vs without."
+              : "Save a racket to My setup for your exact frame — demo base shown below."}
           </p>
         </header>
 
@@ -145,38 +109,49 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
           <button
             type="button"
             onClick={clearAll}
-            className="ml-auto rounded-md px-3 py-1.5 text-xs text-[var(--muted)] transition hover:text-[var(--foreground)]"
+            disabled={!hasTape}
+            className="ml-auto rounded-md px-3 py-1.5 text-xs text-[var(--muted)] transition hover:text-[var(--foreground)] disabled:opacity-40"
             style={{ boxShadow: "0 0 0 1px var(--line)" }}
           >
             Clear all
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {(Object.keys(LEAD_TAPE_ZONES) as LeadTapeZone[]).map((zone) => (
-            <button
-              key={zone}
-              type="button"
-              onClick={() => addAtZone(zone)}
-              className="rounded-md px-2.5 py-1.5 text-xs transition hover:bg-white/5"
-              style={{ boxShadow: "0 0 0 1px var(--line)" }}
-              title={LEAD_TAPE_ZONES[zone].hint}
-            >
-              + {LEAD_TAPE_ZONES[zone].label}
-            </button>
-          ))}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {ZONE_ORDER.map((zone) => {
+            const massHere = pieces
+              .filter((p) => p.zone === zone)
+              .reduce((n, p) => n + p.massG, 0);
+            const active = selectedZone === zone;
+            return (
+              <button
+                key={zone}
+                type="button"
+                onClick={() => addAtZone(zone)}
+                className="rounded-md px-3 py-2.5 text-left transition hover:bg-white/[0.04]"
+                style={{
+                  boxShadow: active
+                    ? "inset 0 0 0 1px var(--accent)"
+                    : "inset 0 0 0 1px var(--line)",
+                  background: active ? "var(--accent-dim)" : "transparent",
+                }}
+                title={LEAD_TAPE_ZONES[zone].hint}
+              >
+                <span className="block text-xs font-medium text-[var(--foreground)]">
+                  + {LEAD_TAPE_ZONES[zone].label}
+                </span>
+                <span className="mt-0.5 block text-[10px] tabular-nums text-[var(--muted)]">
+                  {massHere > 0 ? `${massHere} g here` : `adds ${massPreset} g`}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        <div
-          className="relative mx-auto max-w-sm select-none"
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerLeave={onPointerUp}
-        >
+        <div className="relative mx-auto max-w-sm">
           <svg
-            ref={svgRef}
             viewBox={`0 0 ${VB_W} ${VB_H}`}
-            className="h-auto w-full touch-none"
+            className="h-auto w-full"
             role="img"
             aria-label="Racket lead tape diagram"
           >
@@ -187,7 +162,6 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
               </linearGradient>
             </defs>
             <rect width={VB_W} height={VB_H} fill="#0a1410" rx="4" />
-            {/* Hoop */}
             <ellipse
               cx="100"
               cy="88"
@@ -197,93 +171,78 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
               stroke="url(#ltFrame)"
               strokeWidth="8"
             />
-            {/* Throat + handle */}
             <path
               d="M 90 150 L 92 210 L 108 210 L 110 150 Z"
               fill="#1b4332"
               stroke="#2d6a4f"
               strokeWidth="2"
             />
-            <rect x="93" y="208" width="14" height="52" rx="3" fill="#152820" stroke="#c8f560" strokeWidth="1" />
+            <rect
+              x="93"
+              y="208"
+              width="14"
+              height="52"
+              rx="3"
+              fill="#152820"
+              stroke="#c8f560"
+              strokeWidth="1"
+            />
 
-            {/* Zone markers */}
-            {(Object.entries(LEAD_TAPE_ZONES) as [LeadTapeZone, (typeof LEAD_TAPE_ZONES)[LeadTapeZone]][]).map(
-              ([id, z]) => (
-                <g key={id} opacity="0.45">
+            {ZONE_ORDER.map((id) => {
+              const z = LEAD_TAPE_ZONES[id];
+              const massHere = pieces
+                .filter((p) => p.zone === id)
+                .reduce((n, p) => n + p.massG, 0);
+              return (
+                <g
+                  key={id}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => addAtZone(id)}
+                >
                   <circle
                     cx={z.x * VB_W}
                     cy={z.y * VB_H}
-                    r="10"
-                    fill="none"
-                    stroke="rgba(200,245,96,0.5)"
-                    strokeDasharray="3 2"
+                    r={massHere > 0 ? 14 : 11}
+                    fill={massHere > 0 ? "rgba(200,245,96,0.35)" : "rgba(200,245,96,0.08)"}
+                    stroke={selectedZone === id ? "#c8f560" : "rgba(200,245,96,0.45)"}
+                    strokeWidth={selectedZone === id ? 2 : 1}
                   />
                   <text
                     x={z.x * VB_W}
-                    y={z.y * VB_H + 22}
+                    y={z.y * VB_H + 3}
                     textAnchor="middle"
-                    fill="rgba(232,239,233,0.4)"
+                    fill="#e8efe9"
                     fontSize="7"
+                    fontWeight="600"
                   >
-                    {id}
-                  </text>
-                </g>
-              ),
-            )}
-
-            {/* Tape pieces */}
-            {pieces.map((p) => {
-              const w = 14 + p.massG * 4;
-              const h = 6 + p.massG * 1.5;
-              return (
-                <g
-                  key={p.id}
-                  transform={`translate(${p.x * VB_W}, ${p.y * VB_H})`}
-                  style={{ cursor: dragId === p.id ? "grabbing" : "grab" }}
-                  onPointerDown={(e) => onPointerDownPiece(e, p.id)}
-                >
-                  <rect
-                    x={-w / 2}
-                    y={-h / 2}
-                    width={w}
-                    height={h}
-                    rx="2"
-                    fill="#c8f560"
-                    stroke="#0b1a14"
-                    strokeWidth="1"
-                    opacity={dragId === p.id ? 1 : 0.92}
-                  >
-                    <title>
-                      {p.massG}g @ {LEAD_TAPE_ZONES[p.zone].label} — drag to move, or remove below
-                    </title>
-                  </rect>
-                  <text
-                    y="1"
-                    textAnchor="middle"
-                    fill="#0b1a14"
-                    fontSize="6"
-                    fontWeight="700"
-                    pointerEvents="none"
-                  >
-                    {p.massG}g
+                    {massHere > 0 ? `${massHere}g` : id.slice(0, 3)}
                   </text>
                 </g>
               );
             })}
           </svg>
           <p className="mt-2 text-center text-xs text-[var(--muted)]">
-            Drag strips on the racket. They snap to tip, 12, 3/9, throat, or handle.
+            Tap a highlighted zone on the diagram or use the buttons above to place tape.
           </p>
         </div>
 
-        {pieces.length > 0 && (
+        {hasTape ? (
           <ul className="divide-y divide-[var(--line)] border-y border-[var(--line)] text-sm">
             {pieces.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-3 py-2">
-                <span>
-                  <span className="tabular-nums text-[var(--accent)]">{p.massG} g</span>
-                  <span className="text-[var(--muted)]"> · {LEAD_TAPE_ZONES[p.zone].label}</span>
-                </span>
+              <li key={p.id} className="flex flex-wrap items-center gap-2 py-2.5">
+                <span className="tabular-nums text-[var(--accent)]">{p.massG} g</span>
+                <select
+                  value={p.zone}
+                  aria-label={`Move ${p.massG}g strip`}
+                  onChange={(e) => movePieceToZone(p.id, e.target.value as LeadTapeZone)}
+                  className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]"
+                >
+                  {ZONE_ORDER.map((z) => (
+                    <option key={z} value={z}>
+                      {LEAD_TAPE_ZONES[z].label}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   onClick={() => removePiece(p.id)}
@@ -294,69 +253,138 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
               </li>
             ))}
           </ul>
+        ) : (
+          <p className="text-sm text-[var(--muted)]">
+            No tape yet — stock frame specs shown on the right. Add strips to see the deltas.
+          </p>
         )}
       </div>
 
-      <div className="space-y-8">
-        <div
-          className="grid gap-3 sm:grid-cols-2"
-          style={{ animation: "rise 0.4s ease-out both" }}
+      <div className="space-y-6">
+        <section
+          className="rounded-md px-4 py-4"
+          style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
         >
-          <Stat
-            label="Added mass"
-            value={`${effect.addedMassG} g`}
-            hint="Total lead tape on the frame"
-          />
-          <Stat
-            label="Δ Swingweight"
-            value={`${effect.deltaSwingweight >= 0 ? "+" : ""}${effect.deltaSwingweight}`}
-            hint={`Effective SW ~ ${effect.swingweight}`}
-          />
-          <Stat
-            label="Δ Balance"
-            value={`${effect.deltaBalanceMm >= 0 ? "+" : ""}${effect.deltaBalanceMm} mm`}
-            hint={`Balance ~ ${effect.balanceMm} mm`}
-          />
-          <Stat
-            label="Total weight"
-            value={`${effect.weightG} g`}
-            hint={`From ${baseRacket.weightG ?? "—"} g unstrung base`}
-          />
-        </div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+            With tape vs stock frame
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Stock = no lead tape. Values update as you add or move strips.
+          </p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[18rem] text-left text-sm">
+              <thead>
+                <tr className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">
+                  <th className="py-2 pr-3 font-medium">Metric</th>
+                  <th className="px-2 py-2 font-medium">Stock</th>
+                  <th className="px-2 py-2 font-medium">With tape</th>
+                  <th className="px-2 py-2 font-medium">Delta</th>
+                </tr>
+              </thead>
+              <tbody>
+                <CompareRow
+                  label="Weight"
+                  stock={`${baseRacket.weightG ?? "—"} g`}
+                  withTape={`${effect.weightG} g`}
+                  delta={
+                    hasTape ? `+${effect.addedMassG} g` : "—"
+                  }
+                  highlight={hasTape}
+                />
+                <CompareRow
+                  label="Swingweight"
+                  stock={`${baseRacket.swingweight ?? "—"}`}
+                  withTape={`${effect.swingweight}`}
+                  delta={
+                    hasTape
+                      ? `${effect.deltaSwingweight >= 0 ? "+" : ""}${effect.deltaSwingweight}`
+                      : "—"
+                  }
+                  highlight={hasTape}
+                />
+                <CompareRow
+                  label="Balance"
+                  stock={`${baseRacket.balanceMm ?? "—"} mm`}
+                  withTape={`${effect.balanceMm} mm`}
+                  delta={
+                    hasTape
+                      ? `${effect.deltaBalanceMm >= 0 ? "+" : ""}${effect.deltaBalanceMm} mm`
+                      : "—"
+                  }
+                  highlight={hasTape}
+                />
+                <CompareRow
+                  label="Launch angle"
+                  stock={`${baseline.launchAngleDeg}°`}
+                  withTape={`${effect.launchAngleDeg}°`}
+                  delta={
+                    hasTape
+                      ? `${effect.deltaLaunchDeg >= 0 ? "+" : ""}${effect.deltaLaunchDeg}°`
+                      : "—"
+                  }
+                  highlight={hasTape}
+                />
+                <CompareRow
+                  label="Swing path"
+                  stock={`${baseline.swingPathDeg}°`}
+                  withTape={`${effect.swingPathDeg}°`}
+                  delta={
+                    hasTape
+                      ? `${effect.deltaSwingPathDeg >= 0 ? "+" : ""}${effect.deltaSwingPathDeg}°`
+                      : "—"
+                  }
+                  highlight={hasTape}
+                />
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2">
           <div>
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+              Launch — stock vs taped
+            </p>
             <LaunchAngleVisual degrees={effect.launchAngleDeg} />
             <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
-              Base {baseRacket.idealLaunchAngleDeg}°
-              {effect.deltaLaunchDeg !== 0
-                ? ` · ${effect.deltaLaunchDeg > 0 ? "+" : ""}${effect.deltaLaunchDeg}° with tape`
-                : " · unchanged"}
+              Stock {baseline.launchAngleDeg}°
+              {hasTape
+                ? ` → taped ${effect.launchAngleDeg}° (${effect.deltaLaunchDeg >= 0 ? "+" : ""}${effect.deltaLaunchDeg}°)`
+                : " · add tape to change"}
             </p>
           </div>
           <div>
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+              Swing path — stock vs taped
+            </p>
             <SwingPathVisual degrees={effect.swingPathDeg} />
             <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
-              Base {baseRacket.idealSwingPathDeg}°
-              {effect.deltaSwingPathDeg !== 0
-                ? ` · ${effect.deltaSwingPathDeg > 0 ? "+" : ""}${effect.deltaSwingPathDeg}° with tape`
-                : " · unchanged"}
+              Stock {baseline.swingPathDeg}°
+              {hasTape
+                ? ` → taped ${effect.swingPathDeg}° (${effect.deltaSwingPathDeg >= 0 ? "+" : ""}${effect.deltaSwingPathDeg}°)`
+                : " · add tape to change"}
             </p>
           </div>
         </div>
 
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
-            What this does
+            What this tape does
           </p>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--muted)]">
             {effect.hints.map((h) => (
               <li key={h}>{h}</li>
             ))}
           </ul>
+          {hasTape && selectedZone ? (
+            <p className="mt-3 text-sm text-[var(--foreground)]/85">
+              <span className="text-[var(--accent)]">Last zone focus — </span>
+              {LEAD_TAPE_ZONES[selectedZone].hint}
+            </p>
+          ) : null}
           <p className="mt-4 text-xs text-[var(--muted)]">
-            Coaching-grade model for learning — not a TWU lab measurement. Tape layout is saved
-            with My setup in this browser.
+            Coaching-grade model for learning — not a TWU lab measurement. Layout saves with My
+            setup in this browser.
           </p>
         </div>
       </div>
@@ -364,27 +392,30 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
   );
 }
 
-function Stat({
+function CompareRow({
   label,
-  value,
-  hint,
+  stock,
+  withTape,
+  delta,
+  highlight,
 }: {
   label: string;
-  value: string;
-  hint: string;
+  stock: string;
+  withTape: string;
+  delta: string;
+  highlight: boolean;
 }) {
   return (
-    <div
-      className="rounded-md px-3 py-3"
-      style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
-    >
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
-        {label}
-      </p>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight tabular-nums">
-        {value}
-      </p>
-      <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p>
-    </div>
+    <tr className="border-t border-[var(--line)]">
+      <td className="py-2.5 pr-3 text-[var(--muted)]">{label}</td>
+      <td className="px-2 py-2.5 tabular-nums text-[var(--foreground)]/70">{stock}</td>
+      <td className="px-2 py-2.5 tabular-nums text-[var(--foreground)]">{withTape}</td>
+      <td
+        className="px-2 py-2.5 tabular-nums font-medium"
+        style={{ color: highlight ? "var(--accent)" : "var(--muted)" }}
+      >
+        {delta}
+      </td>
+    </tr>
   );
 }

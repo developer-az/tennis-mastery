@@ -1,11 +1,19 @@
 import { GRIPS } from "@/data/equipment/grips";
 import { gripPortraitSvg } from "@/lib/equipment/media/portraits";
+import { externalGripImage } from "@/lib/equipment/media/externalImages";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
+  const format = new URL(request.url).searchParams.get("format");
+
+  const external = externalGripImage(id);
+  if (external && format !== "svg") {
+    return Response.redirect(external, 302);
+  }
+
   const grip = GRIPS.find((g) => g.id === id);
   if (!grip) {
     return new Response("Not found", { status: 404 });

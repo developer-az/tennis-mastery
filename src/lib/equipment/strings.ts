@@ -196,13 +196,31 @@ export function gaugeLabel(mm: number): string {
 /** Common filter buckets for poly 1.30-style browsing. */
 export const GAUGE_FILTER_OPTIONS = [1.2, 1.25, 1.3, 1.35] as const;
 
-/** True when any of the string's gauges is within tolerance of target mm. */
+/**
+ * True when any of the string's gauges is within tolerance of target mm.
+ * 1.30 band is intentionally wider (±0.03) so 1.28–1.32 polys surface together.
+ */
 export function stringHasGauge(
   string: StringProfile,
   targetMm: number,
-  tolerance = 0.02,
+  tolerance?: number,
 ): boolean {
-  return string.gaugesMm.some((g) => Math.abs(g - targetMm) <= tolerance);
+  const tol = tolerance ?? (Math.abs(targetMm - 1.3) < 0.001 ? 0.03 : 0.02);
+  return string.gaugesMm.some((g) => Math.abs(g - targetMm) <= tol);
+}
+
+/** Polyester family: tour polys + co-polys (what players mean by "poly"). */
+export function isPolyFamily(material: StringProfile["material"]): boolean {
+  return material === "polyester" || material === "co-poly";
+}
+
+export function matchesMaterialFilter(
+  string: StringProfile,
+  material: string,
+): boolean {
+  if (material === "all") return true;
+  if (material === "poly") return isPolyFamily(string.material);
+  return string.material === material;
 }
 
 /**
@@ -223,15 +241,20 @@ export function parseGaugeFromQuery(query: string): number | null {
   return null;
 }
 
+/** Detect poly-family intent in free text ("poly", "polyester", "co-poly"). */
+export function parsePolyIntent(query: string): boolean {
+  return /\b(poly|polyester|co-?poly|copoly)\b/i.test(query);
+}
+
 export function stringCategoryBlurb(
   material: string,
   gaugeMm: number | null,
   shape: string,
 ): string {
   const parts: string[] = [];
-  if (material === "polyester" || material === "co-poly") {
+  if (material === "poly" || material === "polyester" || material === "co-poly") {
     parts.push(
-      "Polyester / co-poly beds emphasize control, spin, and durability with a firmer pocket.",
+      "Polyester / co-poly beds emphasize control, spin, and durability with a firmer pocket. Club and tour players usually mean this whole family when they say “poly.”",
     );
   } else if (material === "multifilament") {
     parts.push("Multifilaments play softer with higher launch and comfort than full poly.");
@@ -245,12 +268,15 @@ export function stringCategoryBlurb(
     parts.push("Matching strings across materials — open one to learn construction and feel.");
   }
   if (gaugeMm != null) {
+    const around130 = Math.abs(gaugeMm - 1.3) < 0.001;
     parts.push(
-      `At ~${gaugeMm.toFixed(2)} mm (${gaugeLabel(gaugeMm)}), expect ${
-        gaugeMm <= 1.25
-          ? "more snap-back spin and pocket, less durability"
-          : "more durability and a firmer, control-leaning response"
-      }.`,
+      around130
+        ? `Around 1.30 mm (${gaugeLabel(1.3)} / 16g): the most common poly gauge — balanced durability, control, and spin. Includes nearby 1.28–1.32 options.`
+        : `At ~${gaugeMm.toFixed(2)} mm (${gaugeLabel(gaugeMm)}), expect ${
+            gaugeMm <= 1.25
+              ? "more snap-back spin and pocket, less durability"
+              : "more durability and a firmer, control-leaning response"
+          }.`,
     );
   }
   if (shape !== "all" && shape !== "round") {
