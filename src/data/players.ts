@@ -4,6 +4,7 @@ import {
   cloneStroke,
   djokovicBackhand,
   federerForehand,
+  federerOneHandedBackhand,
   federerSlice,
   nadalForehand,
   serenaServe,
@@ -22,38 +23,7 @@ function fillStrokes(partial: Partial<StrokeLibrary>, defaults: StrokeLibrary): 
 
 const federerDefaults: StrokeLibrary = {
   forehand: federerForehand,
-  backhand: cloneStroke(djokovicBackhand, {
-    type: "backhand",
-    label: "One-Handed Backhand",
-    oneHanded: true,
-    metrics: {
-      peakRacketSpeedMs: 24.5,
-      avgSpinRpm: 2100,
-      grip: "eastern",
-      consistency: {
-        contactHeightCv: 4.8,
-        timingSdMs: 13,
-        pathReproducibility: 93,
-        signatureQuirk: "Long lever 1HBH with delayed forearm pronation for shape",
-      },
-      kineticChain: {
-        sequence: ["legs", "hips", "trunk", "shoulder", "elbow", "racket"],
-        proximalDistalLagMs: 42,
-        xFactorDeg: 40,
-        peakGrfN: 1250,
-      },
-      researchNotes: [
-        "Classic eastern 1HBH — contact slightly further in front than 2HBH.",
-        "Higher variability under pace than Djokovic 2HBH; elite depth when set.",
-      ],
-      sources: federerForehand.metrics.sources,
-      contactHeightM: 1.08,
-      contactDepthM: 0.55,
-      launchAngleDeg: 6.5,
-      swingPathDeg: 18,
-      impactDurationMs: 4.1,
-    },
-  }),
+  backhand: federerOneHandedBackhand,
   serve: cloneStroke(serenaServe, {
     label: "First Serve (Sliced/Flat)",
     metrics: {
