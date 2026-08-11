@@ -1,18 +1,19 @@
 "use client";
 
-import { Suspense, useEffect, useReducer, useRef } from "react";
+import { Suspense, useEffect, useRef, type ComponentRef, type RefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, OrbitControls, PerspectiveCamera } from "@react-three/drei";
+import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 import { useCoachStore } from "@/store/coachStore";
 import { getPlayer } from "@/data/players";
 import { sampleStroke } from "@/lib/kinematics";
-import { BiomechanicalSkeleton } from "./BiomechanicalSkeleton";
+import { BiomechanicalSkeleton, type SkeletonDriver } from "./BiomechanicalSkeleton";
 import { AngleOverlays } from "./AngleOverlays";
 import { RacketPathTrail } from "./RacketPathTrail";
 import { TennisCourt } from "./TennisCourt";
+import type { JointAngles } from "@/types/biomechanics";
 
-const PLAYER_Z = -11.5; // −Z baseline; local +Z (face-forward) points at the net
+const PLAYER_Z = 11.5;
 const LOOK_AT: [number, number, number] = [0, 1.1, PLAYER_Z];
 
 /** High-resolution playback clock shared with the 3D scene (avoids 60fps React). */
@@ -22,6 +23,9 @@ function PlaybackDriver() {
   const uiAccum = useRef(0);
 
   useFrame((_, delta) => {
+    // Pause simulation work when the tab is hidden
+    if (typeof document !== "undefined" && document.hidden) return;
+
     const state = useCoachStore.getState();
     if (state.playing) {
       playbackT = (playbackT + delta * state.speed) % 1;
@@ -29,10 +33,11 @@ function PlaybackDriver() {
       playbackT = state.t;
     }
 
+    // Throttle Zustand UI sync to ~12fps — metrics/scrubber only
     uiAccum.current += delta;
-    if (uiAccum.current >= 1 / 20) {
+    if (uiAccum.current >= 1 / 12) {
       uiAccum.current = 0;
-      if (Math.abs(state.t - playbackT) > 0.0005) {
+      if (Math.abs(state.t - playbackT) > 0.001) {
         state.setT(playbackT);
       }
     }
@@ -43,34 +48,20 @@ function PlaybackDriver() {
 
 function CameraRig() {
   const mode = useCoachStore((s) => s.cameraMode);
-  const { camera, gl } = useThree();
-  const controls = useRef<React.ComponentRef<typeof OrbitControls>>(null);
+  const { camera } = useThree();
+  const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
 
   useEffect(() => {
     const positions: Record<typeof mode, [number, number, number]> = {
-      // Player faces +Z (toward net). Behind = further from net; front = toward net.
-      orbit: [3.2, 2.1, PLAYER_Z - 4.2],
+      orbit: [3.2, 2.1, PLAYER_Z + 4.2],
       side: [5.5, 1.6, PLAYER_Z + 0.2],
-      behind: [0.3, 1.8, PLAYER_Z - 5.5],
-      front: [0.2, 1.7, PLAYER_Z + 4.8],
+      behind: [0.3, 1.8, PLAYER_Z + 5.5],
+      front: [0.2, 1.7, PLAYER_Z - 4.8],
     };
     camera.position.set(...positions[mode]);
     controls.current?.target.set(...LOOK_AT);
     controls.current?.update();
   }, [mode, camera]);
-
-  useEffect(() => {
-    const resize = () => {
-      const parent = gl.domElement.parentElement;
-      if (parent) gl.setSize(parent.clientWidth, parent.clientHeight, false);
-    };
-    const id = requestAnimationFrame(resize);
-    window.addEventListener("resize", resize);
-    return () => {
-      cancelAnimationFrame(id);
-      window.removeEventListener("resize", resize);
-    };
-  }, [gl]);
 
   return (
     <OrbitControls
@@ -80,36 +71,43 @@ function CameraRig() {
       minDistance={1.5}
       maxDistance={14}
       enablePan
+      // Cheaper orbit interaction
+      enableDamping
+      dampingFactor={0.12}
+      rotateSpeed={0.7}
     />
   );
 }
 
-function GroundForce({ visible, peakN, kneeFlex }: { visible: boolean; peakN: number; kneeFlex: number }) {
-  if (!visible) return null;
-  const intensity = Math.min(1, (peakN / 2200) * (kneeFlex / 80));
-  const r = 0.35 + intensity * 0.55;
+function GroundForce({
+  visibleRef,
+  peakN,
+  kneeRef,
+}: {
+  visibleRef: RefObject<boolean>;
+  peakN: number;
+  kneeRef: RefObject<number>;
+}) {
+  const mesh = useRef<THREE.Mesh>(null);
+  const mat = useRef<THREE.MeshBasicMaterial>(null);
+
+  useFrame(() => {
+    if (!mesh.current || !mat.current) return;
+    const on = visibleRef.current;
+    mesh.current.visible = !!on;
+    if (!on) return;
+    const kneeFlex = kneeRef.current;
+    const intensity = Math.min(1, (peakN / 2200) * (kneeFlex / 80));
+    const r = 0.35 + intensity * 0.55;
+    mesh.current.scale.setScalar(r);
+    mat.current.opacity = 0.25 + intensity * 0.45;
+  });
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0.15]}>
-      <ringGeometry args={[r * 0.4, r, 48]} />
-      <meshBasicMaterial color="#f4a261" transparent opacity={0.25 + intensity * 0.45} side={THREE.DoubleSide} />
+    <mesh ref={mesh} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0.15]} visible={false}>
+      <ringGeometry args={[0.4, 1, 24]} />
+      <meshBasicMaterial ref={mat} color="#f4a261" transparent opacity={0.3} side={THREE.DoubleSide} depthWrite={false} />
     </mesh>
-  );
-}
-
-/** Clear visual: arrow from the stance toward the net (+Z). */
-function NetDirectionCue() {
-  return (
-    <group position={[0, 0.04, 0.6]}>
-      <mesh position={[0, 0, 0.55]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.025, 0.025, 1.1, 8]} />
-        <meshBasicMaterial color="#c8f560" transparent opacity={0.55} />
-      </mesh>
-      <mesh position={[0, 0, 1.2]} rotation={[-Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.09, 0.22, 10]} />
-        <meshBasicMaterial color="#c8f560" transparent opacity={0.75} />
-      </mesh>
-    </group>
   );
 }
 
@@ -119,95 +117,123 @@ function AnimatedAthlete() {
   const showAngles = useCoachStore((s) => s.showAngles);
   const showRacketPath = useCoachStore((s) => s.showRacketPath);
   const showGroundForce = useCoachStore((s) => s.showGroundForce);
-  // Subscribe so scrubbing while paused re-renders the skeleton immediately.
-  const scrubT = useCoachStore((s) => s.t);
-  const playing = useCoachStore((s) => s.playing);
 
   const player = getPlayer(playerId)!;
   const stroke = player.strokes[strokeType];
 
-  const [, bump] = useReducer((n: number) => n + 1, 0);
-  const frame = useRef(0);
+  const driverRef = useRef<SkeletonDriver>({
+    joints: sampleStroke(stroke, 0).joints,
+    racketSpeedMs: 0,
+    handedness: stroke.handedness,
+    oneHanded: stroke.oneHanded,
+  });
+  const jointsRef = useRef<JointAngles>(driverRef.current.joints);
+  const kneeRef = useRef(25);
+  const tRef = useRef(0);
+  const gfVisible = useRef(showGroundForce);
+  gfVisible.current = showGroundForce;
+
+  // Keep stroke identity on the driver without re-rendering the mesh tree
+  driverRef.current.handedness = stroke.handedness;
+  driverRef.current.oneHanded = stroke.oneHanded;
 
   useFrame(() => {
-    frame.current += 1;
-    // Throttle React commits while playing; pose is sampled from the shared clock.
-    if (playing && frame.current % 2 === 0) bump();
+    if (typeof document !== "undefined" && document.hidden) return;
+    const pose = sampleStroke(stroke, playbackT);
+    driverRef.current.joints = pose.joints;
+    driverRef.current.racketSpeedMs = pose.racketSpeedMs;
+    jointsRef.current = pose.joints;
+    kneeRef.current = pose.joints.leadKneeFlexion;
+    tRef.current = playbackT;
   });
 
-  const p = sampleStroke(stroke, playing ? playbackT : scrubT);
-
   return (
-    // Local +Z is face-forward. Standing on the −Z baseline aims the athlete at the net.
     <group position={[0, 0, PLAYER_Z]}>
       <BiomechanicalSkeleton
         key={playerId}
-        joints={p.joints}
-        handedness={stroke.handedness}
-        oneHanded={stroke.oneHanded}
+        driverRef={driverRef}
         anthropometrics={player.anthropometrics}
         color={player.color}
         accent={player.accent}
-        racketSpeedMs={p.racketSpeedMs}
       />
       <AngleOverlays
-        joints={p.joints}
-        anthropometrics={player.anthropometrics}
+        jointsRef={jointsRef}
         visible={showAngles}
         accent={player.accent}
         handedness={stroke.handedness}
-        oneHanded={stroke.oneHanded}
       />
       <RacketPathTrail
         stroke={stroke}
-        anthropometrics={player.anthropometrics}
         visible={showRacketPath}
         accent={player.accent}
-        currentT={playing ? playbackT : scrubT}
+        tRef={tRef}
       />
       <GroundForce
-        visible={showGroundForce}
+        visibleRef={gfVisible}
         peakN={stroke.metrics.kineticChain.peakGrfN}
-        kneeFlex={p.joints.leadKneeFlexion}
+        kneeRef={kneeRef}
       />
-      <NetDirectionCue />
     </group>
   );
+}
+
+function AdaptiveDpr() {
+  const { gl } = useThree();
+  const frames = useRef({ n: 0, sum: 0, cool: 0 });
+
+  useFrame((_, delta) => {
+    const f = frames.current;
+    f.n += 1;
+    f.sum += delta;
+    if (f.n < 45) return;
+    const avg = f.sum / f.n;
+    f.n = 0;
+    f.sum = 0;
+    if (f.cool > 0) {
+      f.cool -= 1;
+      return;
+    }
+    const fps = 1 / Math.max(1e-4, avg);
+    const current = gl.getPixelRatio();
+    if (fps < 40 && current > 1) {
+      gl.setPixelRatio(Math.max(1, current - 0.25));
+      f.cool = 3;
+    } else if (fps > 55 && current < 1.5) {
+      gl.setPixelRatio(Math.min(1.5, current + 0.15));
+      f.cool = 3;
+    }
+  });
+
+  return null;
 }
 
 function SceneContent() {
   return (
     <>
       <PlaybackDriver />
+      <AdaptiveDpr />
       <CameraRig />
       <color attach="background" args={["#0b1a14"]} />
-      <fog attach="fog" args={["#0b1a14", 12, 38]} />
+      <fog attach="fog" args={["#0b1a14", 14, 36]} />
 
-      <ambientLight intensity={0.45} />
-      <directionalLight
-        castShadow
-        position={[6, 10, 4]}
-        intensity={1.5}
-        shadow-mapSize={[1024, 1024]}
-        shadow-camera-far={30}
-        shadow-camera-left={-8}
-        shadow-camera-right={8}
-        shadow-camera-top={8}
-        shadow-camera-bottom={-8}
-      />
-      <directionalLight position={[-4, 6, -2]} intensity={0.35} color="#a8dadc" />
-      <hemisphereLight args={["#c8e6d0", "#1a3328", 0.55]} />
+      {/* Lean lighting: no shadow maps */}
+      <ambientLight intensity={0.55} />
+      <directionalLight position={[6, 10, 4]} intensity={1.15} />
+      <hemisphereLight args={["#c8e6d0", "#1a3328", 0.45]} />
 
       <TennisCourt />
       <AnimatedAthlete />
 
-      <ContactShadows position={[0, 0.01, PLAYER_Z]} opacity={0.45} scale={8} blur={2.5} far={4} />
+      {/* Soft blob shadow — far cheaper than ContactShadows / shadow maps */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, PLAYER_Z + 0.1]}>
+        <circleGeometry args={[0.55, 20]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.28} depthWrite={false} />
+      </mesh>
     </>
   );
 }
 
 export function FormCanvas() {
-  // Keep module clock in sync when user scrubs the store
   useEffect(() => {
     return useCoachStore.subscribe((state, prev) => {
       if (!state.playing && state.t !== prev.t) {
@@ -223,14 +249,21 @@ export function FormCanvas() {
     <div className="relative h-full min-h-[420px] w-full">
       <Canvas
         className="!absolute inset-0"
-        shadows
-        dpr={[1, 1.75]}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        dpr={[1, 1.5]}
+        frameloop="always"
+        gl={{
+          antialias: false,
+          alpha: false,
+          powerPreference: "high-performance",
+          stencil: false,
+          depth: true,
+        }}
         onCreated={({ gl }) => {
           gl.setClearColor(new THREE.Color("#0b1a14"));
+          gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         }}
       >
-        <PerspectiveCamera makeDefault position={[3.2, 2.1, PLAYER_Z - 4.2]} fov={42} />
+        <PerspectiveCamera makeDefault position={[3.2, 2.1, PLAYER_Z + 4.2]} fov={42} />
         <Suspense fallback={null}>
           <SceneContent />
         </Suspense>

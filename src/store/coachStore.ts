@@ -31,7 +31,7 @@ export const useCoachStore = create<CoachState>((set) => ({
   t: 0,
   playing: true,
   speed: 0.35,
-  showAngles: true,
+  showAngles: false,
   showRacketPath: true,
   showGroundForce: false,
   cameraMode: "orbit",
