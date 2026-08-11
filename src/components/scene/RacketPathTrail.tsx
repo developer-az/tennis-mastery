@@ -4,48 +4,42 @@ import { useMemo, useRef, useState, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Line } from "@react-three/drei";
 import * as THREE from "three";
-import type { StrokeProfile } from "@/types/biomechanics";
+import type { Anthropometrics, StrokeProfile } from "@/types/biomechanics";
 import { sampleStroke } from "@/lib/kinematics";
+import { createSkeletonPose, solveSkeletonFk } from "@/lib/skeletonFk";
 
 /** Sample racket tip positions across the stroke for path visualization */
 export function RacketPathTrail({
   stroke,
+  anthropometrics,
   visible,
   accent,
   tRef,
 }: {
   stroke: StrokeProfile;
+  anthropometrics: Anthropometrics;
   visible: boolean;
   accent: string;
   tRef: RefObject<number>;
 }) {
   const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
-    const steps = 32;
+    const scratch = createSkeletonPose();
+    const steps = 36;
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
       const pose = sampleStroke(stroke, t);
-      const j = pose.joints;
-      const mirror = stroke.handedness === "left" ? -1 : 1;
-      const x =
-        0.35 * mirror +
-        Math.sin((j.hipYaw + j.spineTwist) * mirror * 0.017) * 0.4 +
-        j.shoulderAbduction * 0.004 * mirror +
-        j.wristExtension * 0.001 * mirror;
-      const y =
-        1.1 +
-        j.shoulderFlexion * 0.008 +
-        j.racketPathElevation * 0.01 -
-        j.elbowFlexion * 0.003 -
-        j.wristExtension * 0.002;
-      const z =
-        0.2 +
-        Math.cos((j.hipYaw + j.spineTwist) * 0.017) * 0.35 +
-        j.shoulderFlexion * 0.005;
-      pts.push(new THREE.Vector3(x, Math.max(0.2, y), z));
+      solveSkeletonFk(
+        scratch,
+        pose.joints,
+        anthropometrics,
+        stroke.handedness,
+        stroke.oneHanded,
+      );
+      pts.push(scratch.racketTip.clone());
     }
     return pts;
-  }, [stroke]);
+  }, [stroke, anthropometrics]);
 
   const lastCount = useRef(-1);
   const [fadeCount, setFadeCount] = useState(2);

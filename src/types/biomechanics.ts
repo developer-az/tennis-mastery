@@ -24,7 +24,22 @@ export type GripType =
   | "continental"
   | "twoHanded";
 
-/** Degrees of freedom for a joint — Euler XYZ in local bone space (degrees) */
+/**
+ * Stick-figure joint DOF (degrees). Mapped in `src/lib/skeletonFk.ts`.
+ *
+ * Frame (hipYaw = 0): +X right, +Y up, −Z toward net.
+ * Lefty mirrors yaw / twist / abduction side / IR.
+ *
+ * hipYaw: − FH unit turn (hitting shoulder back), + BH turn
+ * spineTwist: shoulder–hip separation, same sign as coil
+ * spineLean: + toward net, − arch (serve trophy)
+ * shoulderFlexion: 0 hang, 90 forward, 180 up
+ * shoulderAbduction: + FH side, − across body (BH wing)
+ * shoulderInternalRotation: + IR/pronation, − ER (racket drop)
+ * wristExtension: + lag, − snap through contact
+ * racketFaceAngle: + open (slice), − closed
+ * racketPathElevation: tip pitch from horizontal (+ up, − down/scratch-back)
+ */
 export interface JointAngles {
   hipYaw: number;
   hipPitch: number;
