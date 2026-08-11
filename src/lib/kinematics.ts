@@ -36,11 +36,42 @@ export function smoothstep(t: number): number {
   return x * x * (3 - 2 * x);
 }
 
+/**
+ * Shortest-path angular lerp in degrees (handles ±180 wraps).
+ * Uses the direct delta when keyframes already agree within ±180°.
+ */
+export function lerpAngleDeg(a: number, b: number, t: number): number {
+  const direct = b - a;
+  let delta = direct;
+  if (Math.abs(direct) > 180) {
+    delta = ((b - a + 540) % 360) - 180;
+  }
+  return a + delta * t;
+}
+
+const ANGLE_WRAP_KEYS = new Set<keyof JointAngles>([
+  "hipYaw",
+  "spineTwist",
+  "shoulderInternalRotation",
+  "racketFaceAngle",
+  "racketPathElevation",
+  "wristUlnarDeviation",
+]);
+
+/**
+ * Joint interpolation: light ease (smoother than raw step, less hesitation than
+ * full smoothstep endpoints) + shortest-path for wrap-prone angles.
+ * Avoid Catmull–Rom here — overshoot drove arms through elbow singularities.
+ */
 export function lerpJoints(a: JointAngles, b: JointAngles, t: number): JointAngles {
-  const s = smoothstep(t);
+  // Ease in/out without zeroing derivatives as hard as smoothstep (keeps kinetic chain moving)
+  const x = clamp01(t);
+  const s = x * x * (2 - x); // softer than smoothstep; non-zero end slope
   const out = { ...a };
   for (const key of JOINT_KEYS) {
-    out[key] = lerp(a[key], b[key], s);
+    out[key] = ANGLE_WRAP_KEYS.has(key)
+      ? lerpAngleDeg(a[key], b[key], s)
+      : lerp(a[key], b[key], s);
   }
   return out;
 }
