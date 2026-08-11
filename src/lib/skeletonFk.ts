@@ -36,6 +36,13 @@ export interface SkeletonPose {
   hitElbow: THREE.Vector3;
   hitWrist: THREE.Vector3;
   racketTip: THREE.Vector3;
+  /** Unit vector: string-bed outward normal (open/closed + pronation roll). */
+  racketFaceNormal: THREE.Vector3;
+  /**
+   * Continuous face roll (radians) about the shaft.
+   * Combines racketFaceAngle + IR pronation + ulnar wipe — use for mesh twist.
+   */
+  racketFaceRoll: number;
   nonHitShoulder: THREE.Vector3;
   nonHitElbow: THREE.Vector3;
   nonHitWrist: THREE.Vector3;
@@ -56,6 +63,8 @@ export function createSkeletonPose(): SkeletonPose {
     hitElbow: new THREE.Vector3(),
     hitWrist: new THREE.Vector3(),
     racketTip: new THREE.Vector3(),
+    racketFaceNormal: new THREE.Vector3(0, 0, -1),
+    racketFaceRoll: 0,
     nonHitShoulder: new THREE.Vector3(),
     nonHitElbow: new THREE.Vector3(),
     nonHitWrist: new THREE.Vector3(),
@@ -71,6 +80,8 @@ const _rdir = new THREE.Vector3();
 const _axis = new THREE.Vector3();
 const _back = new THREE.Vector3();
 const _tmp2 = new THREE.Vector3();
+const _preferred = new THREE.Vector3();
+const _face = new THREE.Vector3();
 
 function yawBasis(yaw: number, forward: THREE.Vector3, right: THREE.Vector3) {
   const c = Math.cos(yaw);
@@ -84,6 +95,46 @@ function yawBasis(yaw: number, forward: THREE.Vector3, right: THREE.Vector3) {
 function rotateAround(v: THREE.Vector3, axis: THREE.Vector3, angle: number) {
   _tmp2.copy(v).applyAxisAngle(axis, angle);
   v.copy(_tmp2);
+}
+
+/** Smooth 0→1 clamp (Hermite). */
+function smooth01(t: number): number {
+  const x = Math.max(0, Math.min(1, t));
+  return x * x * (3 - 2 * x);
+}
+
+/**
+ * Elbow hinge axis continuous through overhead.
+ * axis = normalize(cross(upperDir, ref)) where ref soft-blends world-up → −forward·mirror.
+ * That keeps groundstroke folding stable and approaches the serve side-axis at trophy
+ * without a hard branch or hemisphere lock (those caused mid-swing 180° flips).
+ */
+function elbowHingeAxis(
+  upperDir: THREE.Vector3,
+  _right: THREE.Vector3,
+  forward: THREE.Vector3,
+  mirror: number,
+  out: THREE.Vector3,
+): THREE.Vector3 {
+  // ref: up when arm is horizontal; −forward·mirror only near true overhead (trophy / high contact)
+  // Keep threshold high so ready / FH / BH groundstrokes stay on classic cross(dir, up).
+  const overheadW = smooth01((Math.abs(upperDir.dot(_up)) - 0.82) / 0.14);
+  _preferred.copy(_up).multiplyScalar(1 - overheadW);
+  _preferred.addScaledVector(forward, -mirror * overheadW);
+  if (_preferred.lengthSq() < 1e-8) {
+    _preferred.copy(forward).multiplyScalar(-mirror);
+  }
+  out.crossVectors(upperDir, _preferred);
+  if (out.lengthSq() < 1e-6) {
+    // upperDir ‖ ref (rare): fall back to body side axis projected ⊥ upper
+    out.copy(_right).multiplyScalar(mirror);
+    out.addScaledVector(upperDir, -upperDir.dot(out));
+  }
+  if (out.lengthSq() < 1e-8) {
+    out.crossVectors(upperDir, forward);
+  }
+  out.normalize();
+  return out;
 }
 
 export function solveSkeletonFk(
@@ -206,28 +257,23 @@ export function solveSkeletonFk(
 
   out.hitElbow.copy(out.hitShoulder).addScaledVector(_dir, upperArm);
 
-  // Forearm: elbow flexion; overhead uses a stable axis so trophy/drop don't collapse
+  // Forearm: continuous elbow hinge (no hard overhead axis switch — that flipped ~180°)
   _fdir.copy(_dir);
   const elbow = deg(j.elbowFlexion);
-  const overhead = Math.abs(_dir.dot(_up)) > 0.65;
+  const overheadW = smooth01((Math.abs(_dir.dot(_up)) - 0.82) / 0.14);
 
-  if (overhead) {
-    // Fold forearm behind the head / down the back (serve trophy → racket drop)
-    _axis.copy(_right).multiplyScalar(mirror).normalize();
-    rotateAround(_fdir, _axis, -elbow * 0.9);
-    _back.set(_fwd.x, 0, _fwd.z);
-    if (_back.lengthSq() > 0.04) {
-      _back.normalize().multiplyScalar(-1);
-      _fdir.addScaledVector(_back, 0.2 * Math.sin(elbow));
-    }
-  } else {
-    _axis.crossVectors(_dir, _up);
-    if (_axis.lengthSq() < 0.05) _axis.copy(_right).multiplyScalar(mirror);
-    else _axis.normalize();
-    rotateAround(_fdir, _axis, -elbow * 0.95);
-    _fdir.addScaledVector(_fwd, 0.12 * Math.sin(elbow));
-    _fdir.addScaledVector(_up, 0.08 * Math.sin(elbow));
+  elbowHingeAxis(_dir, _right, _fwd, mirror, _axis);
+  rotateAround(_fdir, _axis, -elbow * (0.9 + 0.05 * (1 - overheadW)));
+
+  // Soft coaching biases: behind-back for overhead; mild forward/up for groundstrokes
+  _back.set(_fwd.x, 0, _fwd.z);
+  if (_back.lengthSq() > 0.04) {
+    _back.normalize().multiplyScalar(-1);
+    _fdir.addScaledVector(_back, 0.2 * Math.sin(elbow) * overheadW);
   }
+  _fdir.addScaledVector(_fwd, 0.12 * Math.sin(elbow) * (1 - overheadW));
+  _fdir.addScaledVector(_up, 0.08 * Math.sin(elbow) * (1 - overheadW));
+
   // IR / ER around upper-arm axis (ER loads drop; IR = pronation at contact)
   rotateAround(_fdir, _dir, ir * 0.9);
   _fdir.normalize();
@@ -237,16 +283,20 @@ export function solveSkeletonFk(
   // --- Racket: elevation is absolute tip pitch from horizontal (stable coaching poses) ---
   // 0° = tip level with hand, +90° = tip straight up, −90° = tip straight down (scratch-back)
   const elevRad = deg(Math.max(-95, Math.min(95, j.racketPathElevation)));
-  const face = (j.racketFaceAngle * mirror) / 45;
-  const ulnar = (j.wristUlnarDeviation * mirror) / 40;
+  const faceDeg = j.racketFaceAngle * mirror;
+  const ulnarDeg = j.wristUlnarDeviation * mirror;
+  const face = faceDeg / 45;
+  const ulnar = ulnarDeg / 40;
   const lag = j.wristExtension / 70;
 
-  // Horizontal aim: forearm's ground projection, fallback along shoulder forward
+  // Horizontal aim: soft-blend forearm ground projection → shoulder forward only when
+  // the forearm is nearly vertical (old hard switch at lengthSq < 0.04 caused tip pops).
   _rdir.set(_fdir.x, 0, _fdir.z);
-  if (_rdir.lengthSq() < 0.04) {
-    _rdir.copy(_fwd);
-  }
-  _rdir.normalize();
+  const horizLen = Math.sqrt(_rdir.lengthSq());
+  const aimBlend = smooth01((0.1 - horizLen) / 0.08);
+  if (horizLen > 1e-6) _rdir.multiplyScalar(1 / horizLen);
+  else _rdir.copy(_fwd);
+  _rdir.multiplyScalar(1 - aimBlend).addScaledVector(_fwd, aimBlend).normalize();
   _rdir.multiplyScalar(Math.cos(elevRad));
   _rdir.y = Math.sin(elevRad);
 
@@ -264,13 +314,31 @@ export function solveSkeletonFk(
     _rdir.addScaledVector(_fwd, -lag * 0.5);
   }
 
-  // Face open/closed + ulnar wipe (lateral tip bias)
-  _rdir.addScaledVector(_right, face * 0.28 - ulnar * 0.35);
-  _rdir.addScaledVector(_up, Math.max(0, j.racketFaceAngle) * 0.003 + ulnar * 0.1);
+  // Mild tip bias for path shape; face open/closed is primarily the face-normal roll below
+  _rdir.addScaledVector(_right, face * 0.12 - ulnar * 0.28);
+  _rdir.addScaledVector(_up, ulnar * 0.08);
   _rdir.normalize();
 
   const tipLen = 0.62;
   out.racketTip.copy(out.hitWrist).addScaledVector(_rdir, tipLen);
+
+  // Face roll is a continuous scalar (degrees→rad). Mesh applies it with min-twist shaft align.
+  const irDeg = j.shoulderInternalRotation * mirror;
+  out.racketFaceRoll = deg(faceDeg + irDeg * 0.28 + ulnarDeg * 0.45);
+
+  // Stateless face normal for trails/debug: project "toward net" onto ⊥shaft, then roll.
+  // Sign can flip near singularities; BiomechanicalSkeleton temporally stabilizes for display.
+  _face.copy(_fwd).addScaledVector(_rdir, -_rdir.dot(_fwd));
+  const faceAimW = smooth01((0.18 - Math.sqrt(Math.max(0, _face.lengthSq()))) / 0.14);
+  _preferred.copy(_up).addScaledVector(_rdir, -_rdir.dot(_up));
+  if (_face.lengthSq() > 1e-8) _face.normalize();
+  else _face.set(0, 0, 0);
+  if (_preferred.lengthSq() > 1e-8) _preferred.normalize();
+  else _preferred.copy(_right).multiplyScalar(mirror);
+  if (_face.lengthSq() < 0.5) _face.copy(_preferred);
+  else _face.multiplyScalar(1 - faceAimW).addScaledVector(_preferred, faceAimW).normalize();
+  rotateAround(_face, _rdir, out.racketFaceRoll);
+  out.racketFaceNormal.copy(_face).normalize();
 
   // --- Non-hitting arm ---
   const nhFlex = deg(j.nonHittingShoulderFlexion);
@@ -284,9 +352,7 @@ export function solveSkeletonFk(
   out.nonHitElbow.copy(out.nonHitShoulder).addScaledVector(_dir, upperArm * 0.95);
 
   _fdir.copy(_dir);
-  _axis.crossVectors(_dir, _up);
-  if (_axis.lengthSq() < 0.05) _axis.copy(_right).multiplyScalar(-mirror);
-  else _axis.normalize();
+  elbowHingeAxis(_dir, _right, _fwd, -mirror, _axis);
   rotateAround(_fdir, _axis, -deg(j.nonHittingElbowFlexion) * 0.9);
   _fdir.normalize();
   out.nonHitWrist.copy(out.nonHitElbow).addScaledVector(_fdir, forearm * 0.95);
