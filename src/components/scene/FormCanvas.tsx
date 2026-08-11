@@ -164,6 +164,7 @@ function AnimatedAthlete() {
       />
       <RacketPathTrail
         stroke={stroke}
+        anthropometrics={player.anthropometrics}
         visible={showRacketPath}
         accent={player.accent}
         tRef={tRef}
