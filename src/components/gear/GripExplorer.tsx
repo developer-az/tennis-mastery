@@ -4,6 +4,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import type { GripProfile } from "@/types/equipment";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { gripImageUrl } from "@/lib/equipment/media/urls";
+import { GRIP_SIZES } from "@/lib/equipment/gripSize";
 import { useGearStore } from "@/store/gearStore";
 import { GripFeelVisual } from "./GripVisuals";
 import { ScoreMeter } from "./ScoreMeter";
@@ -16,6 +17,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
   const setup = useGearStore((s) => s.setup);
   const setupGripId = setup.gripId;
   const setGrip = useGearStore((s) => s.setGrip);
+  const setGripSize = useGearStore((s) => s.setGripSize);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | "overgrip" | "replacement">("all");
   const [texture, setTexture] = useState("all");
@@ -286,6 +288,41 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
               >
                 {inSetup ? "Saved in my setup" : "Save to my setup"}
               </button>
+
+              <div className="mt-4">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                  Your grip size (frame handle)
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {GRIP_SIZES.map((g) => {
+                    const active = setup.gripSize === g.code;
+                    return (
+                      <button
+                        key={g.code}
+                        type="button"
+                        title={g.hint}
+                        aria-pressed={active}
+                        onClick={() => setGripSize(active ? null : g.code)}
+                        className="min-h-10 rounded-md px-2.5 py-1.5 text-sm transition"
+                        style={{
+                          background: active ? "rgba(244,162,97,0.18)" : "transparent",
+                          color: active ? "var(--amber)" : "var(--foreground)",
+                          boxShadow: active
+                            ? "0 0 0 1px var(--amber)"
+                            : "0 0 0 1px var(--line)",
+                        }}
+                      >
+                        {g.code}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-[11px] text-[var(--muted)]">
+                  {setup.gripSize
+                    ? GRIP_SIZES.find((x) => x.code === setup.gripSize)?.label
+                    : "L0–L5 stamped on the butt cap — independent of which overgrip you wrap."}
+                </p>
+              </div>
             </div>
           </header>
 

@@ -42,6 +42,7 @@ export function RacketExplorer({
   const setup = useGearStore((s) => s.setup);
   const setupSlug = setup.racketSlug;
   const setRacket = useGearStore((s) => s.setRacket);
+  const setTab = useGearStore((s) => s.setTab);
   const [selectedSlug, setSelectedSlug] = useState(
     setupSlug && initialRackets.some((r) => r.slug === setupSlug)
       ? setupSlug
@@ -230,6 +231,7 @@ export function RacketExplorer({
       comfort: r.comfort,
       weightG: r.weightG,
       swingweight: r.swingweight,
+      balanceMm: r.balanceMm,
     });
   };
 
@@ -488,6 +490,24 @@ export function RacketExplorer({
                 }}
               >
                 {inSetup ? "Saved in my setup" : "Save to my setup"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTab("lead-tape");
+                  const url = new URL(window.location.href);
+                  url.searchParams.set("tab", "lead-tape");
+                  url.searchParams.set("mold", selected.slug);
+                  window.history.replaceState(
+                    null,
+                    "",
+                    `${url.pathname}?${url.searchParams.toString()}`,
+                  );
+                }}
+                className="mt-2 w-full rounded-md px-4 py-2 text-xs text-[var(--muted)] transition hover:bg-white/5 hover:text-[var(--foreground)] sm:w-auto"
+                style={{ boxShadow: "0 0 0 1px var(--line)" }}
+              >
+                Mold my frame toward this →
               </button>
             </div>
           </header>

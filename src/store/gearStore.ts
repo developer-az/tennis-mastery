@@ -3,6 +3,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { EquipmentTab, LeadTapePiece, LeadTapeSetup } from "@/types/equipment";
+import type { GripSizeCode } from "@/lib/equipment/gripSize";
+import { gripSizeLabel } from "@/lib/equipment/gripSize";
 
 export interface MySetup {
   racketSlug: string | null;
@@ -16,6 +18,7 @@ export interface MySetup {
   racketComfort: number | null;
   racketWeightG: number | null;
   racketSwingweight: number | null;
+  racketBalanceMm: number | null;
   stringId: string | null;
   stringLabel: string | null;
   tensionLbs: number | null;
@@ -30,6 +33,8 @@ export interface MySetup {
   gripCushion: number | null;
   gripAbsorbency: number | null;
   gripDurability: number | null;
+  /** US grip size L0–L5 on the frame / build. */
+  gripSize: GripSizeCode | null;
   leadTape: LeadTapeSetup;
 }
 
@@ -49,6 +54,7 @@ interface GearState {
       comfort?: number;
       weightG?: number | null;
       swingweight?: number | null;
+      balanceMm?: number | null;
     },
   ) => void;
   setString: (
@@ -75,6 +81,7 @@ interface GearState {
       durability?: number;
     },
   ) => void;
+  setGripSize: (gripSize: GripSizeCode | null) => void;
   setLeadTapePieces: (pieces: LeadTapePiece[]) => void;
   clearSetup: () => void;
 }
@@ -90,6 +97,7 @@ const emptySetup: MySetup = {
   racketComfort: null,
   racketWeightG: null,
   racketSwingweight: null,
+  racketBalanceMm: null,
   stringId: null,
   stringLabel: null,
   tensionLbs: null,
@@ -104,6 +112,7 @@ const emptySetup: MySetup = {
   gripCushion: null,
   gripAbsorbency: null,
   gripDurability: null,
+  gripSize: null,
   leadTape: { pieces: [] },
 };
 
@@ -128,6 +137,8 @@ export const useGearStore = create<GearState>()(
             racketWeightG: meta?.weightG !== undefined ? meta.weightG : s.setup.racketWeightG,
             racketSwingweight:
               meta?.swingweight !== undefined ? meta.swingweight : s.setup.racketSwingweight,
+            racketBalanceMm:
+              meta?.balanceMm !== undefined ? meta.balanceMm : s.setup.racketBalanceMm,
           },
         })),
       setString: (id, label, meta) =>
@@ -159,6 +170,7 @@ export const useGearStore = create<GearState>()(
             gripDurability: meta?.durability ?? s.setup.gripDurability,
           },
         })),
+      setGripSize: (gripSize) => set((s) => ({ setup: { ...s.setup, gripSize } })),
       setLeadTapePieces: (pieces) =>
         set((s) => ({
           setup: { ...s.setup, leadTape: { pieces } },
@@ -192,7 +204,10 @@ export function setupSummary(setup: MySetup): string {
     const gauge = setup.gaugeMm != null ? ` · ${setup.gaugeMm} mm` : "";
     parts.push(`${setup.stringLabel}${tension}${gauge}`);
   }
-  if (setup.gripLabel) parts.push(setup.gripLabel);
+  if (setup.gripLabel) {
+    const size = setup.gripSize ? ` · ${gripSizeLabel(setup.gripSize)}` : "";
+    parts.push(`${setup.gripLabel}${size}`);
+  }
   const tapeG = setup.leadTape?.pieces?.reduce((n, p) => n + p.massG, 0) ?? 0;
   if (tapeG > 0) parts.push(`+${tapeG}g lead tape`);
   return parts.length

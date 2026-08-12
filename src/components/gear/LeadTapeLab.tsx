@@ -8,8 +8,10 @@ import {
   computeLeadTapeEffect,
   createLeadTapePiece,
 } from "@/lib/equipment/leadTape";
+import type { TapeTowardPlan } from "@/lib/equipment/leadTapePlan";
 import { useGearStore } from "@/store/gearStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
+import { MoldTowardPanel } from "./MoldTowardPanel";
 
 const VB_W = 200;
 const VB_H = 280;
@@ -83,10 +85,18 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
           </h3>
           <p className="mt-2 max-w-lg text-sm text-[var(--muted)]">
             {setup.racketSlug
-              ? "Using your saved frame. Tap a zone to add tape, then compare launch and swing path with vs without."
-              : "Save a racket to My setup for your exact frame — demo base shown below."}
+              ? "Using your saved frame. Place tape by hand, or mold toward a pro/target frame with a calculated plan."
+              : "Save a racket to My setup for your exact frame — demo base shown below. Mold-toward works best on your saved frame."}
           </p>
         </header>
+
+        <MoldTowardPanel
+          rackets={rackets}
+          stock={baseRacket}
+          onApplyPlan={(plan: TapeTowardPlan) => {
+            updatePieces(plan.pieces);
+          }}
+        />
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-[var(--muted)]">Strip mass</span>

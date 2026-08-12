@@ -147,6 +147,86 @@ export function compareStrings(a: StringProfile, b: StringProfile) {
   };
 }
 
+export type StringAlternative = {
+  string: StringProfile;
+  score: number;
+  /** Why this is a shoppable stand-in */
+  why: string;
+  /** Suggested search phrase for retail / marketplace */
+  shopQuery: string;
+};
+
+/**
+ * Rank catalog strings by feel similarity so players can hunt cheaper / local stock.
+ * Distance is weighted score space + material/shape bonuses.
+ */
+export function findSimilarStrings(
+  reference: StringProfile,
+  catalog: StringProfile[],
+  opts?: { limit?: number; excludeId?: string },
+): StringAlternative[] {
+  const limit = opts?.limit ?? 5;
+  const exclude = opts?.excludeId ?? reference.id;
+  const refStiff = stringStiffness(reference);
+  const out: StringAlternative[] = [];
+
+  for (const s of catalog) {
+    if (s.id === exclude) continue;
+    const stiff = stringStiffness(s);
+    const dPower = Math.abs(s.power - reference.power);
+    const dSpin = Math.abs(s.spin - reference.spin);
+    const dCtl = Math.abs(s.control - reference.control);
+    const dComf = Math.abs(s.comfort - reference.comfort);
+    const dDur = Math.abs(s.durability - reference.durability);
+    const dStiff = Math.abs(stiff - refStiff);
+    const dTm = Math.abs(s.tensionMaintenance - reference.tensionMaintenance);
+
+    let dist =
+      dSpin * 1.2 +
+      dCtl * 1.1 +
+      dPower * 0.9 +
+      dComf * 1.0 +
+      dStiff * 0.85 +
+      dDur * 0.55 +
+      dTm * 0.4;
+
+    if (s.material === reference.material) dist -= 14;
+    else if (isPolyFamily(s.material) && isPolyFamily(reference.material)) dist -= 8;
+    if (s.shape === reference.shape) dist -= 10;
+    else if (s.shape !== "round" && reference.shape !== "round") dist -= 4;
+
+    const sharedGauge = s.gaugesMm.some((g) =>
+      reference.gaugesMm.some((rg) => Math.abs(g - rg) <= 0.03),
+    );
+    if (sharedGauge) dist -= 5;
+
+    const score = Math.min(99, Math.max(0, Math.round(100 - dist)));
+    if (score < 55) continue;
+
+    const bits: string[] = [];
+    if (s.material === reference.material) bits.push(`same ${materialLabel(s.material)}`);
+    else if (isPolyFamily(s.material) && isPolyFamily(reference.material)) {
+      bits.push("poly family");
+    }
+    if (s.shape === reference.shape) bits.push(`${shapeLabel(s.shape).toLowerCase()} profile`);
+    if (dSpin <= 6) bits.push("near spin");
+    if (dCtl <= 6) bits.push("near control");
+    if (dComf <= 8) bits.push("near comfort");
+    if (dStiff <= 8) bits.push("similar stiffness feel");
+    if (bits.length === 0) bits.push("closest overall score match");
+
+    out.push({
+      string: s,
+      score,
+      why: bits.join(" · "),
+      shopQuery: `${s.brand} ${s.name} tennis string`,
+    });
+  }
+
+  out.sort((a, b) => b.score - a.score || a.string.name.localeCompare(b.string.name));
+  return out.slice(0, limit);
+}
+
 export function materialLabel(m: StringProfile["material"]): string {
   switch (m) {
     case "polyester":

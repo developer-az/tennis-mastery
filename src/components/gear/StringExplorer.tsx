@@ -15,6 +15,7 @@ import {
   stringStiffness,
   tensionOutcome,
   tensionRangeOverlaps,
+  findSimilarStrings,
 } from "@/lib/equipment/strings";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { stringImageUrl } from "@/lib/equipment/media/urls";
@@ -506,6 +507,54 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               { label: "Stiffness feel", value: selectedOutcome.stiffness, accent: "#e8efe9" },
             ]}
           />
+
+          {(() => {
+            const alts = findSimilarStrings(selected, strings, { limit: 4 });
+            if (alts.length === 0) return null;
+            return (
+              <section className="border-t border-[var(--line)] pt-5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
+                  Similar feel — shop substitutes
+                </p>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  If this reel is hard to find or over budget, these play close. Copy the search
+                  and check a local shop or marketplace.
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {alts.map((a) => (
+                    <li
+                      key={a.string.id}
+                      className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(a.string.id)}
+                        className="min-w-0 text-left transition hover:text-sky-300"
+                      >
+                        <span className="font-[family-name:var(--font-display)] tracking-tight">
+                          {a.string.brand} {a.string.name}
+                        </span>
+                        <span className="ml-2 text-[11px] tabular-nums text-sky-300/80">
+                          {a.score}%
+                        </span>
+                        <span className="mt-0.5 block text-[11px] text-[var(--muted)]">
+                          {a.why}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void navigator.clipboard?.writeText(a.shopQuery)}
+                        className="shrink-0 rounded-md px-2 py-1.5 text-[11px] text-[var(--muted)]"
+                        style={{ boxShadow: "0 0 0 1px var(--line)" }}
+                      >
+                        Copy search
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })()}
 
           {selected.gaugesMm.length > 0 && (
             <div>

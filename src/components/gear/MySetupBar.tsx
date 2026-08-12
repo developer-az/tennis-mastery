@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { EquipmentTab } from "@/types/equipment";
+import { gripSizeLabel } from "@/lib/equipment/gripSize";
 import { setupSummary, useGearStore } from "@/store/gearStore";
 
 export function MySetupBar({
@@ -116,6 +117,7 @@ export function MySetupBar({
                 className="rounded bg-[var(--amber)]/15 px-2 py-1 text-[var(--amber)] transition hover:brightness-110"
               >
                 Grip · {setup.gripLabel}
+                {setup.gripSize ? ` · ${gripSizeLabel(setup.gripSize)}` : ""}
               </button>
             </li>
           ) : null}

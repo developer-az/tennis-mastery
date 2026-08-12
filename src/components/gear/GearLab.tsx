@@ -6,6 +6,7 @@ import type { EquipmentTab, GripProfile, RacketCatalogMeta, RacketProfile, Strin
 import { useGearStore } from "@/store/gearStore";
 import { MySetupBar } from "./MySetupBar";
 import { CombinedSetupPanel } from "./CombinedSetupPanel";
+import { SetupDials } from "./SetupDials";
 import { RacketExplorer } from "./RacketExplorer";
 import { StringExplorer } from "./StringExplorer";
 import { GripExplorer } from "./GripExplorer";
@@ -16,7 +17,7 @@ const TABS: { id: EquipmentTab; label: string; blurb: string }[] = [
     id: "overview",
     label: "My setup",
     blurb:
-      "See how racket, string, grip, and lead tape mold together — composite launch, playstyle, and honest pros/cons.",
+      "Dial tension, gauge, and grip size here. See molded launch, string substitutes you can shop, and honest pros/cons — then jump to lead tape to mold toward a pro frame on a budget.",
   },
   {
     id: "rackets",
@@ -34,13 +35,13 @@ const TABS: { id: EquipmentTab; label: string; blurb: string }[] = [
     id: "grips",
     label: "Grips",
     blurb:
-      "Overgrips and replacement grips — tack, cushion, and sweat feel with product portraits. Compare against your saved grip, then save the one that matches your hand.",
+      "Overgrips and replacement grips — tack, cushion, sweat feel, plus your frame’s L0–L5 grip size. Dial size anytime under My setup.",
   },
   {
     id: "lead-tape",
     label: "Lead tape",
     blurb:
-      "Place virtual lead tape on your frame. Tap tip, 3/9, throat, or handle — see swingweight, balance, launch angle, and swing-path changes live.",
+      "Mold your frame toward a pro or target retail setup — calculated tip/handle plans — or place tape by hand and watch SW, balance, launch, and path shift live.",
   },
 ];
 
@@ -87,6 +88,9 @@ export function GearLab({
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:px-10 md:py-14">
       <MySetupBar onSelectTab={selectTab} />
+      <div className="mb-5">
+        <SetupDials strings={strings} compact />
+      </div>
 
       <div
         className="sticky top-[3.25rem] z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none md:top-auto"

@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { EquipmentTab, GripProfile, RacketProfile, StringProfile } from "@/types/equipment";
 import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
 import { LEAD_TAPE_ZONES } from "@/lib/equipment/leadTape";
+import { findSimilarStrings } from "@/lib/equipment/strings";
+import { gripSizeLabel } from "@/lib/equipment/gripSize";
 import { useGearStore } from "@/store/gearStore";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
@@ -37,6 +39,11 @@ export function CombinedSetupPanel({
   const insight = useMemo(
     () => synthesizeCombinedSetup(setup, racket, string, grip),
     [setup, racket, string, grip],
+  );
+
+  const stringAlts = useMemo(
+    () => (string ? findSimilarStrings(string, strings, { limit: 4 }) : []),
+    [string, strings],
   );
 
   const go = (tab: EquipmentTab) => {
@@ -177,7 +184,11 @@ export function CombinedSetupPanel({
               ) : null
             }
             title={setup.gripLabel ?? "Add a grip"}
-            meta="Handle feel & sweat"
+            meta={
+              setup.gripSize
+                ? `${gripSizeLabel(setup.gripSize)} · handle feel`
+                : "Set size L0–L5 in dials"
+            }
           />
           <PieceCard
             label="Lead tape"
@@ -380,6 +391,55 @@ export function CombinedSetupPanel({
         </div>
       ) : null}
 
+      {stringAlts.length > 0 ? (
+        <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
+            Similar string feel — shop around
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Close substitutes if your exact bed is pricey or out of stock. Search the shop query
+            online at a local stringer or retailer.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {stringAlts.map((a) => (
+              <li
+                key={a.string.id}
+                className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] pb-2 text-sm last:border-0"
+              >
+                <div className="min-w-0">
+                  <p className="font-[family-name:var(--font-display)] tracking-tight">
+                    {a.string.brand} {a.string.name}
+                    <span className="ml-2 text-[11px] tabular-nums text-sky-300/90">
+                      {a.score}% match
+                    </span>
+                  </p>
+                  <p className="text-[11px] text-[var(--muted)]">{a.why}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(a.shopQuery);
+                    go("strings");
+                  }}
+                  className="shrink-0 rounded-md px-2.5 py-1.5 text-[11px] text-sky-300"
+                  style={{ boxShadow: "0 0 0 1px rgba(125,211,252,0.35)" }}
+                  title="Copy shop search and open Strings"
+                >
+                  Copy “{a.shopQuery}”
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => go("strings")}
+            className="mt-3 text-xs font-medium text-[var(--accent)]"
+          >
+            Browse strings →
+          </button>
+        </div>
+      ) : null}
+
       <div className="grid gap-6 border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:grid-cols-2 md:p-6">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
@@ -417,7 +477,9 @@ export function CombinedSetupPanel({
             : "Add string"}
         </Chip>
         <Chip active={insight.hasGrip} onClick={() => go("grips")}>
-          {insight.hasGrip ? `Grip · ${setup.gripLabel}` : "Add grip"}
+          {insight.hasGrip
+            ? `Grip · ${setup.gripLabel}${setup.gripSize ? ` · ${setup.gripSize}` : ""}`
+            : "Add grip"}
         </Chip>
         <Chip active={insight.hasTape} onClick={() => go("lead-tape")}>
           {insight.hasTape
