@@ -6,7 +6,9 @@ import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
-import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
+import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
+import { deriveForehandMold } from "@/lib/equipment/forehandMold";
+import { computeFlightMetrics } from "@/lib/equipment/setupSynthesis";
 import { PlayerFitBadges } from "./PlayerFitBadges";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
@@ -129,6 +131,25 @@ export function RacketExplorer({
   const setupRacket = setupSlug
     ? initialRackets.find((r) => r.slug === setupSlug) ?? null
     : null;
+
+  const forehandAdvice = useMemo(
+    () => (selected ? deriveForehandMold({ racket: selected }) : null),
+    [selected],
+  );
+  const stockFlight = useMemo(
+    () =>
+      selected
+        ? computeFlightMetrics({
+            launchDeg: selected.idealLaunchAngleDeg,
+            pathDeg: selected.idealSwingPathDeg,
+            power: selected.power,
+            spin: selected.spin,
+            control: selected.control,
+            swingweight: selected.swingweight,
+          })
+        : null,
+    [selected],
+  );
 
   const compareRackets = compareIds
     .map((id) => initialRackets.find((r) => r.slug === id))
@@ -518,7 +539,12 @@ export function RacketExplorer({
             <LaunchAngleVisual
               degrees={selected.idealLaunchAngleDeg}
               pathDeg={selected.idealSwingPathDeg}
-              label="Strike launch vs net"
+              spin={selected.spin}
+              power={selected.power}
+              control={selected.control}
+              flight={stockFlight}
+              zone={strikeZoneForFrame(selected)}
+              label="Flight vs net — stock frame"
             />
             <SwingPathVisual
               degrees={selected.idealSwingPathDeg}
@@ -535,6 +561,24 @@ export function RacketExplorer({
             headSizeSqIn={selected.headSizeSqIn}
             zone={strikeZoneForFrame(selected)}
           />
+
+          {forehandAdvice ? (
+            <section className="border-t border-[var(--line)] pt-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+                Forehand grip & face at contact
+              </p>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Optimal grip bevel and how closed the face should be for this frame’s path and leave.
+              </p>
+              <div className="mt-5 grid gap-6 md:grid-cols-2">
+                <ForehandGripBevelVisual advice={forehandAdvice} />
+                <FaceAngleAtContactVisual advice={forehandAdvice} />
+              </div>
+              <div className="mt-5">
+                <ContactGeometryVisual advice={forehandAdvice} />
+              </div>
+            </section>
+          ) : null}
 
           <ScoreGrid
             scores={[

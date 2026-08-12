@@ -2,16 +2,20 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { EquipmentTab, LeadTapePiece, LeadTapeSetup } from "@/types/equipment";
+import type { EquipmentTab, GripKind, LeadTapePiece, LeadTapeSetup } from "@/types/equipment";
 import type { GripSizeCode } from "@/lib/equipment/gripSize";
 import { gripSizeLabel } from "@/lib/equipment/gripSize";
+import {
+  type GripLayer,
+  canAddGripLayer,
+  summarizeGripLayers,
+} from "@/lib/equipment/gripStack";
 
 export interface MySetup {
   racketSlug: string | null;
   racketLabel: string | null;
   racketLaunchDeg: number | null;
   racketSwingPathDeg: number | null;
-  /** Cached racket scores for vs-setup compare without catalog lookup. */
   racketPower: number | null;
   racketSpin: number | null;
   racketControl: number | null;
@@ -27,13 +31,15 @@ export interface MySetup {
   stringSpin: number | null;
   stringControl: number | null;
   stringComfort: number | null;
+  /** @deprecated prefer gripLayers — kept for older saved setups */
   gripId: string | null;
   gripLabel: string | null;
   gripTackiness: number | null;
   gripCushion: number | null;
   gripAbsorbency: number | null;
   gripDurability: number | null;
-  /** US grip size L0–L5 on the frame / build. */
+  /** Ordered butt → outer. At most one replacement (first) + up to 3 overgrips. */
+  gripLayers: GripLayer[];
   gripSize: GripSizeCode | null;
   leadTape: LeadTapeSetup;
 }
@@ -71,6 +77,7 @@ interface GearState {
   ) => void;
   setTension: (tensionLbs: number) => void;
   setGauge: (gaugeMm: number) => void;
+  /** Replace the whole grip stack with a single product (compat + quick save). */
   setGrip: (
     id: string,
     label: string,
@@ -79,8 +86,17 @@ interface GearState {
       cushion?: number;
       absorbency?: number;
       durability?: number;
+      kind?: GripKind;
     },
   ) => void;
+  addGripLayer: (layer: GripLayer, meta?: {
+    tackiness?: number;
+    cushion?: number;
+    absorbency?: number;
+    durability?: number;
+  }) => void;
+  removeGripLayerAt: (index: number) => void;
+  clearGripLayers: () => void;
   setGripSize: (gripSize: GripSizeCode | null) => void;
   setLeadTapePieces: (pieces: LeadTapePiece[]) => void;
   clearSetup: () => void;
@@ -112,9 +128,33 @@ const emptySetup: MySetup = {
   gripCushion: null,
   gripAbsorbency: null,
   gripDurability: null,
+  gripLayers: [],
   gripSize: null,
   leadTape: { pieces: [] },
 };
+
+function syncLegacyGripFields(
+  layers: GripLayer[],
+  meta?: {
+    tackiness?: number;
+    cushion?: number;
+    absorbency?: number;
+    durability?: number;
+  },
+): Pick<
+  MySetup,
+  "gripId" | "gripLabel" | "gripTackiness" | "gripCushion" | "gripAbsorbency" | "gripDurability"
+> {
+  const outer = layers[layers.length - 1] ?? null;
+  return {
+    gripId: outer?.id ?? null,
+    gripLabel: summarizeGripLayers(layers, null) || null,
+    gripTackiness: meta?.tackiness ?? null,
+    gripCushion: meta?.cushion ?? null,
+    gripAbsorbency: meta?.absorbency ?? null,
+    gripDurability: meta?.durability ?? null,
+  };
+}
 
 export const useGearStore = create<GearState>()(
   persist(
@@ -158,16 +198,53 @@ export const useGearStore = create<GearState>()(
       setTension: (tensionLbs) =>
         set((s) => ({ setup: { ...s.setup, tensionLbs } })),
       setGauge: (gaugeMm) => set((s) => ({ setup: { ...s.setup, gaugeMm } })),
-      setGrip: (id, label, meta) =>
+      setGrip: (id, label, meta) => {
+        const kind = meta?.kind ?? "overgrip";
+        const layers: GripLayer[] = [{ id, label, kind }];
+        return set((s) => ({
+          setup: {
+            ...s.setup,
+            gripLayers: layers,
+            ...syncLegacyGripFields(layers, meta),
+            gripLabel: label,
+          },
+        }));
+      },
+      addGripLayer: (layer, meta) =>
+        set((s) => {
+          const cur = s.setup.gripLayers ?? [];
+          if (!canAddGripLayer(cur, layer.kind)) return s;
+          let next = [...cur];
+          if (layer.kind === "replacement") {
+            next = [layer, ...cur.filter((l) => l.kind !== "replacement")];
+          } else {
+            next = [...cur, layer];
+          }
+          return {
+            setup: {
+              ...s.setup,
+              gripLayers: next,
+              ...syncLegacyGripFields(next, meta),
+            },
+          };
+        }),
+      removeGripLayerAt: (index) =>
+        set((s) => {
+          const next = (s.setup.gripLayers ?? []).filter((_, i) => i !== index);
+          return {
+            setup: {
+              ...s.setup,
+              gripLayers: next,
+              ...syncLegacyGripFields(next),
+            },
+          };
+        }),
+      clearGripLayers: () =>
         set((s) => ({
           setup: {
             ...s.setup,
-            gripId: id,
-            gripLabel: label,
-            gripTackiness: meta?.tackiness ?? s.setup.gripTackiness,
-            gripCushion: meta?.cushion ?? s.setup.gripCushion,
-            gripAbsorbency: meta?.absorbency ?? s.setup.gripAbsorbency,
-            gripDurability: meta?.durability ?? s.setup.gripDurability,
+            gripLayers: [],
+            ...syncLegacyGripFields([]),
           },
         })),
       setGripSize: (gripSize) => set((s) => ({ setup: { ...s.setup, gripSize } })),
@@ -182,12 +259,22 @@ export const useGearStore = create<GearState>()(
       partialize: (s) => ({ setup: s.setup }),
       merge: (persisted, current) => {
         const p = persisted as { setup?: Partial<MySetup> } | undefined;
+        const raw = { ...emptySetup, ...current.setup, ...p?.setup };
+        let gripLayers = raw.gripLayers ?? [];
+        if (gripLayers.length === 0 && raw.gripId) {
+          gripLayers = [
+            {
+              id: raw.gripId,
+              label: raw.gripLabel ?? raw.gripId,
+              kind: "overgrip",
+            },
+          ];
+        }
         return {
           ...current,
           setup: {
-            ...emptySetup,
-            ...current.setup,
-            ...p?.setup,
+            ...raw,
+            gripLayers,
             leadTape: p?.setup?.leadTape ?? current.setup.leadTape ?? { pieces: [] },
           },
         };
@@ -204,10 +291,12 @@ export function setupSummary(setup: MySetup): string {
     const gauge = setup.gaugeMm != null ? ` · ${setup.gaugeMm} mm` : "";
     parts.push(`${setup.stringLabel}${tension}${gauge}`);
   }
-  if (setup.gripLabel) {
-    const size = setup.gripSize ? ` · ${gripSizeLabel(setup.gripSize)}` : "";
-    parts.push(`${setup.gripLabel}${size}`);
-  }
+  const gripBit =
+    summarizeGripLayers(setup.gripLayers ?? [], setup.gripSize) ||
+    (setup.gripLabel
+      ? `${setup.gripLabel}${setup.gripSize ? ` · ${gripSizeLabel(setup.gripSize)}` : ""}`
+      : "");
+  if (gripBit) parts.push(gripBit);
   const tapeG = setup.leadTape?.pieces?.reduce((n, p) => n + p.massG, 0) ?? 0;
   if (tapeG > 0) parts.push(`+${tapeG}g lead tape`);
   return parts.length

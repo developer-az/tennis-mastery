@@ -9,6 +9,10 @@ import {
   createLeadTapePiece,
 } from "@/lib/equipment/leadTape";
 import type { TapeTowardPlan } from "@/lib/equipment/leadTapePlan";
+import {
+  computeFlightMetrics,
+  scoreDeltasFromTape,
+} from "@/lib/equipment/setupSynthesis";
 import { useGearStore } from "@/store/gearStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
 import { MoldTowardPanel } from "./MoldTowardPanel";
@@ -42,6 +46,33 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
     () => (baseRacket ? computeLeadTapeEffect(baseRacket, []) : null),
     [baseRacket],
   );
+
+  const tapedFlight = useMemo(() => {
+    if (!baseRacket || !effect) return null;
+    const zs = effect.zoneSummary;
+    const tipG = (zs.tip ?? 0) + (zs.twelve ?? 0);
+    const handleG = zs.handle ?? 0;
+    const sideG = (zs.three ?? 0) + (zs.nine ?? 0);
+    const throatG = zs.throat ?? 0;
+    const sd = scoreDeltasFromTape({
+      tipG,
+      handleG,
+      sideG,
+      throatG,
+      deltaSw: effect.deltaSwingweight,
+      deltaPath: effect.deltaSwingPathDeg,
+    });
+    return computeFlightMetrics({
+      launchDeg: effect.launchAngleDeg,
+      pathDeg: effect.swingPathDeg,
+      power: Math.round(baseRacket.power + sd.power),
+      spin: Math.round(baseRacket.spin + sd.spin),
+      control: Math.round(baseRacket.control + sd.control),
+      swingweight: effect.swingweight,
+      tipG,
+      handleG,
+    });
+  }, [baseRacket, effect]);
 
   const updatePieces = useCallback(
     (next: LeadTapePiece[]) => setLeadTapePieces(next),
@@ -358,7 +389,16 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
             <LaunchAngleVisual
               degrees={effect.launchAngleDeg}
               pathDeg={effect.swingPathDeg}
-              label="Strike launch vs net (taped)"
+              spin={baseRacket.spin}
+              power={baseRacket.power}
+              control={baseRacket.control}
+              flight={tapedFlight}
+              zone={strikeZoneForFrame({
+                ...baseRacket,
+                idealLaunchAngleDeg: effect.launchAngleDeg,
+                idealSwingPathDeg: effect.swingPathDeg,
+              })}
+              label="Flight vs net — with tape"
             />
             <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
               Stock {baseline.launchAngleDeg}° off the bed
