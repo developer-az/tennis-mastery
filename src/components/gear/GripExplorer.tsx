@@ -5,6 +5,12 @@ import type { GripProfile } from "@/types/equipment";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { gripImageUrl } from "@/lib/equipment/media/urls";
 import { GRIP_SIZES } from "@/lib/equipment/gripSize";
+import {
+  MAX_OVERGRIPS,
+  canAddGripLayer,
+  gripStackEffect,
+  summarizeGripLayers,
+} from "@/lib/equipment/gripStack";
 import { useGearStore } from "@/store/gearStore";
 import { GripFeelVisual } from "./GripVisuals";
 import { ScoreMeter } from "./ScoreMeter";
@@ -15,8 +21,12 @@ const MAX_COMPARE = 3;
 
 export function GripExplorer({ grips }: { grips: GripProfile[] }) {
   const setup = useGearStore((s) => s.setup);
+  const layers = setup.gripLayers ?? [];
   const setupGripId = setup.gripId;
   const setGrip = useGearStore((s) => s.setGrip);
+  const addGripLayer = useGearStore((s) => s.addGripLayer);
+  const removeGripLayerAt = useGearStore((s) => s.removeGripLayerAt);
+  const clearGripLayers = useGearStore((s) => s.clearGripLayers);
   const setGripSize = useGearStore((s) => s.setGripSize);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | "overgrip" | "replacement">("all");
@@ -40,6 +50,11 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
     [grips],
   );
 
+  const stackFx = useMemo(
+    () => gripStackEffect(layers, grips, setup.gripSize),
+    [layers, grips, setup.gripSize],
+  );
+
   const filtered = useMemo(() => {
     const q = deferredQuery.trim();
     return grips.filter((g) => {
@@ -59,16 +74,37 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
   }, [grips, deferredQuery, kind, texture]);
 
   const selected = filtered.find((g) => g.id === selectedId) ?? filtered[0] ?? null;
-  const inSetup = selected != null && selected.id === setupGripId;
+  const inStack =
+    selected != null && layers.some((l) => l.id === selected.id);
+  const canAddSelected =
+    selected != null && canAddGripLayer(layers, selected.kind);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const saveGrip = (g: GripProfile) => {
+  const replaceStack = (g: GripProfile) => {
     setGrip(g.id, `${g.brand} ${g.name}`, {
       tackiness: g.tackiness,
       cushion: g.cushion,
       absorbency: g.absorbency,
       durability: g.durability,
+      kind: g.kind,
     });
+  };
+
+  const addLayer = (g: GripProfile) => {
+    if (!canAddGripLayer(layers, g.kind) && layers.length > 0) return;
+    if (layers.length === 0) {
+      replaceStack(g);
+      return;
+    }
+    addGripLayer(
+      { id: g.id, label: `${g.brand} ${g.name}`, kind: g.kind },
+      {
+        tackiness: g.tackiness,
+        cushion: g.cushion,
+        absorbency: g.absorbency,
+        durability: g.durability,
+      },
+    );
   };
 
   const compareGrips = compareIds
@@ -89,32 +125,46 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
           key: "tack",
           label: "Tackiness",
           value: selected.tackiness,
-          baseline: setup.gripTackiness,
-          delta: numericDelta(selected.tackiness, setup.gripTackiness),
+          baseline: setup.gripTackiness ?? stackFx.tackiness,
+          delta: numericDelta(
+            selected.tackiness,
+            setup.gripTackiness ?? stackFx.tackiness,
+          ),
         },
         {
           key: "cushion",
           label: "Cushion",
           value: selected.cushion,
-          baseline: setup.gripCushion,
-          delta: numericDelta(selected.cushion, setup.gripCushion),
+          baseline: setup.gripCushion ?? stackFx.cushion,
+          delta: numericDelta(
+            selected.cushion,
+            setup.gripCushion ?? stackFx.cushion,
+          ),
         },
         {
           key: "absorb",
           label: "Absorbency",
           value: selected.absorbency,
-          baseline: setup.gripAbsorbency,
-          delta: numericDelta(selected.absorbency, setup.gripAbsorbency),
+          baseline: setup.gripAbsorbency ?? stackFx.absorbency,
+          delta: numericDelta(
+            selected.absorbency,
+            setup.gripAbsorbency ?? stackFx.absorbency,
+          ),
         },
         {
           key: "dur",
           label: "Durability",
           value: selected.durability,
-          baseline: setup.gripDurability,
-          delta: numericDelta(selected.durability, setup.gripDurability),
+          baseline: setup.gripDurability ?? stackFx.durability,
+          delta: numericDelta(
+            selected.durability,
+            setup.gripDurability ?? stackFx.durability,
+          ),
         },
       ]
     : [];
+
+  const stackSummary = summarizeGripLayers(layers, setup.gripSize);
 
   return (
     <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
@@ -168,6 +218,63 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
           </div>
         </div>
 
+        {layers.length > 0 ? (
+          <div
+            className="rounded-md px-3 py-2.5"
+            style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--amber)]">
+                Handle stack
+              </p>
+              <button
+                type="button"
+                onClick={clearGripLayers}
+                className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)]"
+              >
+                Clear stack
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-[var(--foreground)]/90">{stackSummary}</p>
+            <p className="mt-0.5 text-[11px] text-[var(--muted)]">
+              {stackFx.thicknessMm} mm build · {stackFx.buildNote}
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {layers.map((layer, i) => (
+                <li
+                  key={`${layer.id}-${i}`}
+                  className="flex items-center justify-between gap-2 text-xs"
+                >
+                  <span>
+                    <span className="text-[var(--muted)]">
+                      {i === 0 ? "Inner" : i === layers.length - 1 ? "Outer" : `Layer ${i + 1}`}
+                      {" · "}
+                    </span>
+                    {layer.label}
+                    <span className="text-[var(--muted)]">
+                      {" "}
+                      ({layer.kind === "overgrip" ? "overgrip" : "replacement"})
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeGripLayerAt(i)}
+                    className="shrink-0 text-[var(--amber)] hover:underline"
+                    aria-label={`Remove ${layer.label}`}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[11px] text-[var(--muted)]">
+              Up to {MAX_OVERGRIPS} overgrips
+              {stackFx.hasReplacement ? " over a replacement grip" : ""}. Size L0–L5 is set below
+              or in Dial your setup.
+            </p>
+          </div>
+        ) : null}
+
         <p className="text-xs text-[var(--muted)]">
           {filtered.length} grip{filtered.length === 1 ? "" : "s"}
           {kind !== "all" || texture !== "all" || deferredQuery ? " match" : " in catalog"}
@@ -178,8 +285,9 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
         <ul className="max-h-[min(70vh,28rem)] divide-y divide-[var(--line)] overflow-y-auto overscroll-contain border-y border-[var(--line)] md:max-h-[32rem]">
           {filtered.map((g) => {
             const active = g.id === selected?.id;
-            const saved = g.id === setupGripId;
+            const saved = layers.some((l) => l.id === g.id);
             const inCompare = compareIds.includes(g.id);
+            const canAdd = canAddGripLayer(layers, g.kind);
             return (
               <li key={g.id} className="flex items-stretch gap-0.5">
                 <label
@@ -214,7 +322,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                       {g.brand} {g.name}
                       {saved ? (
                         <span className="rounded bg-[var(--amber)]/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-[var(--amber)]">
-                          Setup
+                          In stack
                         </span>
                       ) : null}
                     </span>
@@ -224,26 +332,42 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                     </span>
                   </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    saveGrip(g);
-                  }}
-                  className="m-1.5 shrink-0 self-center rounded-md px-2.5 py-2 text-[11px] font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:px-3"
-                  style={{
-                    background: saved ? "rgba(244,162,97,0.15)" : "var(--accent)",
-                    color: saved ? "var(--amber)" : "#0b1a14",
-                    boxShadow: saved ? "0 0 0 1px var(--amber)" : "none",
-                  }}
-                  aria-label={
-                    saved
-                      ? `${g.brand} ${g.name} already in setup`
-                      : `Save ${g.brand} ${g.name} to my setup`
-                  }
-                >
-                  {saved ? "Saved" : "Save"}
-                </button>
+                <div className="m-1.5 flex shrink-0 flex-col justify-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addLayer(g);
+                    }}
+                    disabled={!canAdd && layers.length > 0}
+                    className="rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition active:scale-[0.98] disabled:opacity-40 sm:px-3"
+                    style={{
+                      background: "var(--accent)",
+                      color: "#0b1a14",
+                    }}
+                    aria-label={
+                      layers.length === 0
+                        ? `Save ${g.brand} ${g.name} to my setup`
+                        : `Add ${g.brand} ${g.name} to grip stack`
+                    }
+                  >
+                    {layers.length === 0 ? "Save" : "Add"}
+                  </button>
+                  {layers.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        replaceStack(g);
+                      }}
+                      className="rounded-md px-2 py-1 text-[10px] text-[var(--muted)]"
+                      style={{ boxShadow: "0 0 0 1px var(--line)" }}
+                      aria-label={`Replace stack with ${g.brand} ${g.name}`}
+                    >
+                      Replace
+                    </button>
+                  ) : null}
+                </div>
               </li>
             );
           })}
@@ -276,18 +400,39 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
               </h3>
               <p className="mt-2 text-sm text-[var(--muted)]">Best for: {selected.bestFor}</p>
               <p className="mt-1 text-sm text-[var(--foreground)]/85">{selected.uniqueTrait}</p>
-              <button
-                type="button"
-                onClick={() => saveGrip(selected)}
-                className="mt-4 min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
-                style={{
-                  background: inSetup ? "rgba(244,162,97,0.15)" : "var(--accent)",
-                  color: inSetup ? "var(--amber)" : "#0b1a14",
-                  boxShadow: inSetup ? "0 0 0 1px var(--amber)" : "none",
-                }}
-              >
-                {inSetup ? "Saved in my setup" : "Save to my setup"}
-              </button>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => addLayer(selected)}
+                  disabled={!canAddSelected && layers.length > 0}
+                  className="min-h-11 rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 disabled:opacity-40"
+                  style={{
+                    background: inStack ? "rgba(244,162,97,0.15)" : "var(--accent)",
+                    color: inStack ? "var(--amber)" : "#0b1a14",
+                    boxShadow: inStack ? "0 0 0 1px var(--amber)" : "none",
+                  }}
+                >
+                  {layers.length === 0
+                    ? "Save to my setup"
+                    : canAddSelected
+                      ? selected.kind === "overgrip"
+                        ? "Add overgrip to stack"
+                        : "Set as replacement (inner)"
+                      : inStack
+                        ? "Already in stack"
+                        : "Stack full (max 3 overgrips)"}
+                </button>
+                {layers.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => replaceStack(selected)}
+                    className="min-h-11 rounded-md px-4 py-2.5 text-sm transition hover:bg-white/5"
+                    style={{ boxShadow: "0 0 0 1px var(--line)" }}
+                  >
+                    Replace whole stack
+                  </button>
+                ) : null}
+              </div>
 
               <div className="mt-4">
                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
@@ -319,8 +464,8 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                 </div>
                 <p className="mt-1.5 text-[11px] text-[var(--muted)]">
                   {setup.gripSize
-                    ? GRIP_SIZES.find((x) => x.code === setup.gripSize)?.label
-                    : "L0–L5 stamped on the butt cap — independent of which overgrip you wrap."}
+                    ? `${GRIP_SIZES.find((x) => x.code === setup.gripSize)?.label} · effective build ~${stackFx.effectiveSizeIndex.toFixed(1)} with stack`
+                    : "L0–L5 stamped on the butt cap — size + overgrip count both enter the mold math."}
                 </p>
               </div>
             </div>
@@ -332,8 +477,8 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
           <p className="text-sm leading-relaxed text-[var(--foreground)]/85">{selected.feel}</p>
 
           <CompareToSetup
-            title={setup.gripLabel ? `Vs ${setup.gripLabel}` : "Vs my setup"}
-            subtitle="Compare tack, cushion, and absorbency to the grip you already use."
+            title={stackSummary ? `Vs ${stackSummary}` : "Vs my setup"}
+            subtitle="Compare tack, cushion, and absorbency to the outer layer you already use."
             rows={vsSetupRows}
             emptyHint="Save a grip to My setup to compare against what you have tested on court."
           />

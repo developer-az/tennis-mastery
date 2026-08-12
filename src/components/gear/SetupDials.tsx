@@ -29,7 +29,11 @@ export function SetupDials({
   );
 
   const hasString = Boolean(setup.stringId);
-  const hasGrip = Boolean(setup.gripId);
+  const hasGrip =
+    (setup.gripLayers?.length ?? 0) > 0 || Boolean(setup.gripId);
+  const overgripCount =
+    setup.gripLayers?.filter((l) => l.kind === "overgrip").length ??
+    (setup.gripId ? 1 : 0);
   if (!hasString && !hasGrip) return null;
 
   const tension =
@@ -174,10 +178,13 @@ export function SetupDials({
                 {GRIP_SIZES.find((x) => x.code === setup.gripSize)?.label}
                 {" — "}
                 {GRIP_SIZES.find((x) => x.code === setup.gripSize)?.hint}
+                {overgripCount > 0
+                  ? ` · ${overgripCount} overgrip${overgripCount === 1 ? "" : "s"} in stack`
+                  : ""}
               </p>
             ) : (
               <p className="mt-1.5 text-[11px] text-[var(--muted)]">
-                Pick the handle size stamped on your frame (or what you buy).
+                Pick the handle size stamped on your frame — stack overgrips on the Grips tab.
               </p>
             )}
           </div>

@@ -358,7 +358,15 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
             <LaunchAngleVisual
               degrees={effect.launchAngleDeg}
               pathDeg={effect.swingPathDeg}
-              label="Strike launch vs net (taped)"
+              spin={baseRacket.spin}
+              power={baseRacket.power}
+              control={baseRacket.control}
+              zone={strikeZoneForFrame({
+                ...baseRacket,
+                idealLaunchAngleDeg: effect.launchAngleDeg,
+                idealSwingPathDeg: effect.swingPathDeg,
+              })}
+              label="Strike mold → flight (taped)"
             />
             <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
               Stock {baseline.launchAngleDeg}° off the bed

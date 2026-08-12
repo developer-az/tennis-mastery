@@ -3,17 +3,26 @@ import type { MySetup } from "@/store/gearStore";
 import { computeLeadTapeEffect } from "@/lib/equipment/leadTape";
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
 import { tensionOutcome } from "@/lib/equipment/strings";
+import { gripStackEffect } from "@/lib/equipment/gripStack";
 
 export interface ScoreTuneTip {
   score: "power" | "spin" | "control" | "comfort";
   current: number | null;
   verdict: "low" | "ok" | "high";
-  /** What to do to move this score toward a more "perfect" mold for the user's role */
+  /** String / tension / gauge levers */
   raise: string[];
   lower: string[];
-  /** Physics / lab-style tradeoff */
+  /** Lead-tape specific levers */
+  tapeRaise: string[];
+  tapeLower: string[];
   tradeoff: string;
   science: string;
+}
+
+export interface FramePracticeTip {
+  title: string;
+  holdingBack: string;
+  practice: string[];
 }
 
 export interface CombinedSetupInsight {
@@ -22,7 +31,6 @@ export interface CombinedSetupInsight {
   hasString: boolean;
   hasGrip: boolean;
   hasTape: boolean;
-  /** Composite launch after racket + string tension/gauge + grip + tape. */
   launchAngleDeg: number | null;
   swingPathDeg: number | null;
   baseLaunchDeg: number | null;
@@ -38,9 +46,11 @@ export interface CombinedSetupInsight {
   playstyleDetail: string;
   pros: string[];
   cons: string[];
-  /** Actionable levers to perfect each molded score + science tradeoffs */
   tuneTips: ScoreTuneTip[];
   scienceNotes: string[];
+  /** What the frame itself is holding back + what to practice */
+  weakPoints: FramePracticeTip[];
+  gripBuildNote: string | null;
   scores: {
     power: number | null;
     spin: number | null;
@@ -112,11 +122,29 @@ export function synthesizeCombinedSetup(
   racket: RacketProfile | null | undefined,
   string: StringProfile | null | undefined,
   grip: GripProfile | null | undefined,
+  gripsCatalog: GripProfile[] = [],
 ): CombinedSetupInsight {
   const pieces = setup.leadTape?.pieces ?? [];
   const hasRacket = Boolean(setup.racketSlug || racket);
   const hasString = Boolean(setup.stringId || string);
-  const hasGrip = Boolean(setup.gripId || grip);
+  const layers = setup.gripLayers?.length
+    ? setup.gripLayers
+    : setup.gripId
+      ? [
+          {
+            id: setup.gripId,
+            label: setup.gripLabel ?? setup.gripId,
+            kind: (grip?.kind ?? "overgrip") as "overgrip" | "replacement",
+          },
+        ]
+      : [];
+  const catalog = gripsCatalog.length
+    ? gripsCatalog
+    : grip
+      ? [grip]
+      : [];
+  const stack = gripStackEffect(layers, catalog, setup.gripSize);
+  const hasGrip = layers.length > 0 || Boolean(setup.gripId || grip);
   const hasTape = pieces.length > 0;
   const hasAny = hasRacket || hasString || hasGrip || hasTape;
 
@@ -134,13 +162,14 @@ export function synthesizeCombinedSetup(
     stringPath = off.path;
     stringHint = off.hint;
   } else if (hasString && setup.stringPower != null) {
-    // Fallback when catalog row missing: soft power bias → loft
     stringLaunch = round1(((setup.stringPower ?? 50) - 50) * 0.02);
     stringPath = round1(((setup.stringSpin ?? 50) - 50) * 0.025);
   }
 
   let gripLaunch = 0;
-  if (grip) {
+  if (hasGrip && layers.length > 0) {
+    gripLaunch = stack.launchOffset;
+  } else if (grip) {
     gripLaunch = gripLaunchOffset(grip);
   } else if (setup.gripCushion != null) {
     gripLaunch = round1(((setup.gripCushion ?? 50) - 50) * 0.008);
@@ -179,9 +208,9 @@ export function synthesizeCombinedSetup(
   const power = avg([
     { v: racket?.power ?? setup.racketPower ?? NaN, w: 0.5 },
     { v: string ? tensionOutcome(string, setup.tensionLbs ?? string.recommendedTensionLbs, setup.gaugeMm ?? undefined).power : (setup.stringPower ?? NaN), w: 0.4 },
-    { v: setup.gripCushion ?? grip?.cushion ?? NaN, w: 0.1 },
+    { v: setup.gripCushion ?? grip?.cushion ?? stack.cushion ?? NaN, w: 0.1 },
   ]);
-  const spin = avg([
+  const spinRaw = avg([
     { v: racket?.spin ?? setup.racketSpin ?? NaN, w: 0.45 },
     {
       v: string
@@ -191,7 +220,7 @@ export function synthesizeCombinedSetup(
     },
     { v: 50, w: 0.05 },
   ]);
-  const control = avg([
+  const controlRaw = avg([
     { v: racket?.control ?? setup.racketControl ?? NaN, w: 0.5 },
     {
       v: string
@@ -199,9 +228,9 @@ export function synthesizeCombinedSetup(
         : (setup.stringControl ?? NaN),
       w: 0.4,
     },
-    { v: grip?.tackiness ?? setup.gripTackiness ?? NaN, w: 0.1 },
+    { v: stack.tackiness || grip?.tackiness || setup.gripTackiness || NaN, w: 0.1 },
   ]);
-  const comfort = avg([
+  const comfortRaw = avg([
     { v: racket?.comfort ?? setup.racketComfort ?? NaN, w: 0.35 },
     {
       v: string
@@ -209,8 +238,14 @@ export function synthesizeCombinedSetup(
         : (setup.stringComfort ?? NaN),
       w: 0.4,
     },
-    { v: grip?.cushion ?? setup.gripCushion ?? NaN, w: 0.25 },
+    { v: stack.cushion || grip?.cushion || setup.gripCushion || NaN, w: 0.25 },
   ]);
+  const spin =
+    spinRaw != null ? clamp(spinRaw + (hasGrip ? stack.spinBias : 0), 5, 98) : null;
+  const control =
+    controlRaw != null ? clamp(controlRaw + (hasGrip ? stack.controlBias : 0), 5, 98) : null;
+  const comfort =
+    comfortRaw != null ? clamp(comfortRaw + (hasGrip ? stack.comfortBias : 0), 5, 98) : null;
 
   const fit = racket ? derivePlayerFit(racket) : null;
   const playstyle = buildPlaystyle({
@@ -261,6 +296,7 @@ export function synthesizeCombinedSetup(
     gaugeMm: setup.gaugeMm,
     hasTape,
     tipHeavy: tapeLaunch < -0.15,
+    overgripCount: stack.overgripCount,
   });
 
   const scienceNotes = buildScienceNotes({
@@ -271,6 +307,16 @@ export function synthesizeCombinedSetup(
     launchAngleDeg,
     swingPathDeg,
     deltas: { stringLaunch, gripLaunch, tapeLaunch, stringPath, tapePath },
+    gripBuildNote: hasGrip ? stack.buildNote : null,
+  });
+
+  const weakPoints = buildWeakPoints(racket, {
+    power,
+    spin,
+    control,
+    comfort,
+    launchAngleDeg,
+    swingPathDeg,
   });
 
   const pros: string[] = [];
@@ -384,25 +430,28 @@ export function synthesizeCombinedSetup(
     cons.push("No string saved — launch and pocket feel are incomplete without a bed (biggest fine-tune lever).");
   }
 
-  if (grip) {
+  if (hasGrip) {
     pros.push(
-      `${grip.brand} ${grip.name}: tack ${grip.tackiness} · cushion ${grip.cushion} · absorb ${grip.absorbency} · durability ${grip.durability}.`,
+      `Grip stack: ${stack.overgripCount} overgrip${stack.overgripCount === 1 ? "" : "s"}` +
+        (stack.hasReplacement ? " + replacement" : "") +
+        ` · ${stack.thicknessMm} mm · tack ${stack.tackiness} · cushion ${stack.cushion}.`,
     );
+    pros.push(stack.buildNote);
     if (gripLaunch !== 0) {
       pros.push(
-        `Grip feel bias ~${gripLaunch >= 0 ? "+" : ""}${gripLaunch}° launch (cushion/tack path into the hand).`,
+        `Handle build bias ~${gripLaunch >= 0 ? "+" : ""}${gripLaunch}° launch (size + stack thickness/cushion).`,
       );
     }
-    if (grip.tackiness >= 70) pros.push("High tack — secure on sweat; replace when glaze appears.");
-    if (grip.cushion >= 70) pros.push("High cushion — softer shock; may mute feedback slightly.");
-    if (grip.absorbency >= 70) pros.push("High absorbency — lasts longer in heat before slip.");
-    if (grip.durability <= 45) cons.push("Low grip durability — budget frequent replacements or a tougher overgrip.");
-    if (grip.tackiness <= 40) cons.push("Low tack — dry/tour hold; add a tackier overgrip if the handle spins.");
-    if (grip.thicknessMm != null && grip.thicknessMm >= 0.7) {
-      cons.push(`Thick overgrip (${grip.thicknessMm} mm) — builds handle size; strip if the bevels feel round.`);
+    if (stack.overgripCount >= 2) {
+      cons.push(
+        `${stack.overgripCount} overgrips add cushion but round the bevels — spin/whip can drop; strip one if the handle feels fat.`,
+      );
+    }
+    if (setup.gripSize == null) {
+      cons.push("No grip size set — L0–L5 changes effective build as much as an extra overgrip.");
     }
   } else if (!hasGrip) {
-    cons.push("No grip saved — handle size and sweat management are unknown levers.");
+    cons.push("No grip saved — handle size and overgrip stack are unknown levers.");
   }
 
   if (hasTape) {
@@ -485,6 +534,8 @@ export function synthesizeCombinedSetup(
     cons,
     tuneTips,
     scienceNotes,
+    weakPoints,
+    gripBuildNote: hasGrip ? stack.buildNote : null,
     scores: { power, spin, control, comfort },
     summary: summaryParts.join(" · ") || "No gear saved yet.",
     completeness,
@@ -622,6 +673,7 @@ function buildTuneTips(input: {
   gaugeMm: number | null | undefined;
   hasTape: boolean;
   tipHeavy: boolean;
+  overgripCount: number;
 }): ScoreTuneTip[] {
   const role = input.role.toLowerCase();
   const wantsSpin = /spin|shape|rpms|baseliner/.test(role);
@@ -644,18 +696,25 @@ function buildTuneTips(input: {
         "−1–2 lbs tension (more snap-back dwell)",
         "Thinner gauge (−0.05 mm) if durability allows",
         "Shaped / textured poly mains",
-        "+2–4 g at 12 o’clock for plow into the brush",
+        input.overgripCount >= 2 ? "Strip to one overgrip — freer wrist" : "Keep a thin tacky overgrip",
       ],
       lower: [
         "+1–2 lbs tension",
         "Thicker gauge or denser pattern feel",
         "Rounder poly / multi hybrid",
-        "Strip tip mass if the face feels tip-heavy and grabby",
+      ],
+      tapeRaise: [
+        "+2–4 g at 12 o’clock (plow into the brush)",
+        "Pair 1 g at 3 & 9 if the hoop twists on off-center spin",
+      ],
+      tapeLower: [
+        "Strip tip / 12 mass if the face feels grabby and long",
+        "+1–2 g handle to quiet tip-heavy whip",
       ],
       tradeoff:
         "More spin usually costs some control on flat redirects and can loft launch if the face stays open.",
       science:
-        "Spin rises when mains can stretch & snap back (lower tension, thinner gauge, shaped profile) while the hoop still digs into the ball — SW at 12 supports that without changing string friction.",
+        "Spin = string snap-back × dig into the ball × stable hoop. Tension/gauge change friction; tip mass changes how hard the hoop drives through without changing the string.",
     },
     {
       score: "control",
@@ -663,19 +722,27 @@ function buildTuneTips(input: {
       verdict: verdictFor(input.control, ctlLow, ctlHigh),
       raise: [
         "+1–3 lbs toward the top of the string’s range",
-        "Thicker gauge or 18×20-style denser response",
+        "Thicker gauge or denser pattern feel",
         "Lower-powered poly (ALU / 4G family)",
-        "Less tip mass / a touch of handle tape",
+        "Right-size handle (don’t overstack overgrips)",
       ],
       lower: [
         "−2 lbs if the bed feels boardy and depth dies",
         "Thinner gauge or more open pattern feel",
         "Softer multi/gut in crosses",
       ],
+      tapeRaise: [
+        "+1–2 g handle / butt (head-light, quicker prep)",
+        "Strip tip mass first if you’re spraying long",
+      ],
+      tapeLower: [
+        "+2–3 g tip / 12 only if you need plow and can accept more SW",
+        "Avoid heavy tip stacks on already power-biased frames",
+      ],
       tradeoff:
         "Chasing control flattens the pocket — depth and comfort drop unless your timing is already early and clean.",
       science:
-        "Higher tension + thicker mains shorten dwell time (less trampoline), so launch angle falls and directional errors shrink — until the bed is so firm you mistime and dump short.",
+        "Control rises when dwell shortens (firmer bed) and the tip doesn’t lag. Handle mass reduces tip lag; tip mass does the opposite.",
     },
     {
       score: "power",
@@ -684,18 +751,24 @@ function buildTuneTips(input: {
       raise: [
         "−1–2 lbs or a livelier gauge",
         "Softer multi / gut hybrid",
-        "+2–3 g tip / 12 for plow-through",
         "Slightly more open stringbed personality",
       ],
       lower: [
         "+2 lbs tension",
         "Control poly / thicker gauge",
+      ],
+      tapeRaise: [
+        "+2–3 g tip or 12 o’clock for plow-through",
+        "Light 3/9 (1 g each) if you want mass without max tip SW",
+      ],
+      tapeLower: [
         "Handle-side tape to quiet tip-heavy trampoline",
+        "Strip tip mass before raising tension if the frame already flies",
       ],
       tradeoff:
-        "Free power lengthens the ball — if you’re already long, add control levers before adding tip mass.",
+        "Free power lengthens the ball — if you’re already long, add control levers or handle mass before more tip tape.",
       science:
-        "Power ≈ COR of the bed × effective mass at impact. Soft tension and tip mass both raise outbound speed; spin path is what keeps that speed from sailing long.",
+        "Power ≈ bed COR × effective mass at impact. Soft tension raises COR; tip grams raise effective mass. Spin path is what keeps that speed from sailing.",
     },
     {
       score: "comfort",
@@ -704,19 +777,157 @@ function buildTuneTips(input: {
       raise: [
         "−2 lbs or thicker gauge on a stiff poly",
         "Multi/gut hybrid or softer co-poly",
-        "Cushioned overgrip / replacement grip",
-        "Avoid stacking tip mass on an already stiff RA frame",
+        "Cushioned overgrip (or a second thin layer)",
       ],
       lower: [
         "Only if the bed feels muted — +1 lb or a firmer poly",
-        "Thinner, tackier overgrip for more feedback",
+        "Thinner, tackier single overgrip for more feedback",
+      ],
+      tapeRaise: [
+        "Prefer throat/handle mass over tip on stiff RA frames",
+        "Avoid stacking tip grams when the arm is already hot",
+      ],
+      tapeLower: [
+        "Strip tip mass first — tip SW hits the arm harder than handle mass",
       ],
       tradeoff:
-        "Comfort softens feedback — some players lose the ‘connected’ hit cue they use for timing.",
+        "Comfort softens feedback — some players lose the connected hit cue they use for timing.",
       science:
-        "Peak force into the arm tracks dynamic stiffness (RA + string bed). Tension and material change bed stiffness faster than lead tape; tape mainly changes SW and plow.",
+        "Peak force tracks RA + bed stiffness + tip SW. Soften the bed before adding tip tape; handle tape changes balance with less shock spike.",
     },
   ];
+}
+
+function buildWeakPoints(
+  racket: RacketProfile | null | undefined,
+  scores: {
+    power: number | null;
+    spin: number | null;
+    control: number | null;
+    comfort: number | null;
+    launchAngleDeg: number | null;
+    swingPathDeg: number | null;
+  },
+): FramePracticeTip[] {
+  if (!racket) return [];
+  const tips: FramePracticeTip[] = [];
+  const hs = racket.headSizeSqIn ?? 100;
+  const sw = racket.swingweight ?? 315;
+  const wt = racket.weightG ?? 300;
+  const ra = racket.stiffnessRa;
+  const path = scores.swingPathDeg ?? racket.idealSwingPathDeg;
+  const launch = scores.launchAngleDeg ?? racket.idealLaunchAngleDeg;
+
+  if (racket.control >= 74 && racket.power <= 58) {
+    tips.push({
+      title: "Low free power",
+      holdingBack:
+        "This mold won’t manufacture depth — late contact or a short swing dies in the net or lands short.",
+      practice: [
+        "Shadow early unit turn so the racket is already dropping before the bounce",
+        "Hit 20 crosscourts focusing on accelerating through the face center, not arming at contact",
+        "On short balls, step in and take waist–chest contact out front — don’t wait",
+      ],
+    });
+  }
+  if (racket.power >= 74 && racket.control <= 58) {
+    tips.push({
+      title: "Spray / sail tendency",
+      holdingBack:
+        "Easy depth becomes long errors when the face opens or contact is late — the frame amplifies timing mistakes.",
+      practice: [
+        "Feed drills: catch the ball earlier, finish with a more vertical path if launch is sailing",
+        "Aim a meter inside the line for 10 minutes before going for targets",
+        "On defense, shorten the backswing — let the frame’s mass work, don’t swing bigger",
+      ],
+    });
+  }
+  if (racket.spin >= 76 && path >= 24) {
+    tips.push({
+      title: "Needs the brush",
+      holdingBack:
+        "Flat, blocked contact underuses the mold — you’ll lose margin and feel like the frame ‘doesn’t spin’.",
+      practice: [
+        "Low-to-high shadow swings through the chest window until the path feels automatic",
+        "Kick-serve and high FH feeds: brush up the back of the ball, don’t slap",
+        "If balls still dump, check face angle — open face + steep path scoops",
+      ],
+    });
+  }
+  if (hs < 98) {
+    tips.push({
+      title: "Small sweet spot",
+      holdingBack:
+        "Off-center hits lose power and spray. Feet and tracking matter more than on an oversize.",
+      practice: [
+        "Split-step + first step drills so you arrive balanced at waist–chest height",
+        "Catch feeds on the strings’ center — freeze at contact and check the mark",
+        "Avoid reaching up to neck-high balls; step in or take a compact slice",
+      ],
+    });
+  }
+  if (sw >= 328 || wt >= 320) {
+    tips.push({
+      title: "Heavy plow, slow prep",
+      holdingBack:
+        "Late on wide balls and short angles — the tip lags if the turn starts late.",
+      practice: [
+        "Earlier shoulder turn on every ball (racquet tip back before the bounce)",
+        "Defensive feeds: use a shorter takeback; don’t try to whip a tour SW late",
+        "If still late, consider 2–3 g handle tape or a lighter daily frame for footwork days",
+      ],
+    });
+  }
+  if (sw <= 305 && wt < 295) {
+    tips.push({
+      title: "Light / unstable through contact",
+      holdingBack:
+        "The hoop can twist or push back on heavy balls — plow is on you (technique or tip mass).",
+      practice: [
+        "Firm the wrist through contact on pace; don’t ‘give’ with the hand",
+        "Practice absorbing pace with a compact block then reshaping",
+        "Gear fix if needed: +2–4 g at 12 or 3/9 after the technique week",
+      ],
+    });
+  }
+  if (ra != null && ra >= 68 && (scores.comfort ?? 50) <= 55) {
+    tips.push({
+      title: "Stiff shock path",
+      holdingBack:
+        "Arm and timing suffer when you muscle or mistime — the frame reports every miss.",
+      practice: [
+        "Loosen the grip pressure to ~3/10 until after contact",
+        "Prefer catching the ball in front so you don’t wrist the stiff tip",
+        "Soften the bed (−2 lbs / multi hybrid) before adding tip tape",
+      ],
+    });
+  }
+  if (launch != null && launch <= 5.5) {
+    tips.push({
+      title: "Flat leave window",
+      holdingBack:
+        "Little margin over the tape — late or low contact clips; you must strike early in the mold height.",
+      practice: [
+        `Own the ${path >= 22 ? "chest" : "waist–chest"} window — no scooping low balls`,
+        "On stretch, choose a higher aim or a safer shape rather than a flat drive",
+        "If you still dump clean hits, −1–2 lbs or a touch of tip mass opens leave",
+      ],
+    });
+  }
+  if (launch != null && launch >= 10) {
+    tips.push({
+      title: "Lofty leave window",
+      holdingBack:
+        "Clean hits can float long if you open the face or over-brush — depth control is the skill tax.",
+      practice: [
+        "Finish more forward / slightly more closed face on flat targets",
+        "Alternate shape vs drive every other feed to learn the window",
+        "Gear: +1–2 lbs or strip tip grams if you’re long on center strikes",
+      ],
+    });
+  }
+
+  return tips.slice(0, 4);
 }
 
 function buildScienceNotes(input: {
@@ -733,6 +944,7 @@ function buildScienceNotes(input: {
     stringPath: number;
     tapePath: number;
   };
+  gripBuildNote: string | null;
 }): string[] {
   const notes: string[] = [];
   if (input.racket) {
@@ -766,6 +978,7 @@ function buildScienceNotes(input: {
       );
     }
   }
+  if (input.gripBuildNote) notes.push(input.gripBuildNote);
   if (input.launchAngleDeg != null && input.swingPathDeg != null) {
     notes.push(
       `Flight: leave angle clears the tape; path angle (spin) is the restoring force that drops the ball. Tuning one without the other is why “more spin” can still sail or dump.`,
