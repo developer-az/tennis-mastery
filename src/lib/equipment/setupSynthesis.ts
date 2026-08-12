@@ -39,7 +39,7 @@ export interface FlightMetrics {
   topspin: number;
   /** Through-court depth 0–100 */
   depth: number;
-  /** Estimated inches over the tape on a center hit */
+  /** Estimated inches over the net on a center hit */
   netClearIn: number;
   /** Sail / long tendency 0–100 */
   flyRisk: number;
@@ -539,17 +539,6 @@ export function synthesizeCombinedSetup(
     overgripCount: stack.overgripCount,
   });
 
-  const scienceNotes = buildScienceNotes({
-    racket,
-    string,
-    tensionLbs: setup.tensionLbs,
-    gaugeMm: setup.gaugeMm,
-    launchAngleDeg,
-    swingPathDeg,
-    deltas: { stringLaunch, gripLaunch, tapeLaunch, stringPath, tapePath },
-    gripBuildNote: hasGrip ? stack.buildNote : null,
-  });
-
   const weakPoints = buildWeakPoints(racket, {
     power,
     spin,
@@ -566,6 +555,21 @@ export function synthesizeCombinedSetup(
     power,
     spin,
     control,
+  });
+
+  const scienceNotes = buildScienceNotes({
+    racket,
+    string,
+    tensionLbs: setup.tensionLbs,
+    gaugeMm: setup.gaugeMm,
+    launchAngleDeg,
+    swingPathDeg,
+    deltas: { stringLaunch, gripLaunch, tapeLaunch, stringPath, tapePath },
+    gripBuildNote: hasGrip ? stack.buildNote : null,
+    flight,
+    forehand,
+    scores: { power, spin, control, comfort },
+    stockScores,
   });
 
   const pros: string[] = [];
@@ -736,9 +740,17 @@ export function synthesizeCombinedSetup(
       );
     }
     if (launchAngleDeg >= 10) {
-      cons.push("Lofty leave — sailing? +1–2 lbs or less tip mass.");
+      cons.push(
+        `High net clearance (~${launchAngleDeg.toFixed(1)}° leave, ~+${flight?.netClearIn ?? "?"}"). Clean hits can sail long — try +1–2 lbs or less tip mass.`,
+      );
     } else if (launchAngleDeg <= 6) {
-      cons.push("Flat leave — clipping tape? −1–2 lbs or a touch of tip mass.");
+      cons.push(
+        `Low net clearance (~${launchAngleDeg.toFixed(1)}° leave, ~+${flight?.netClearIn ?? "?"}"). Balls leave the strings on a low path and can catch the net on late or low contact — try −1–2 lbs or a little tip mass.`,
+      );
+    } else if (flight) {
+      pros.push(
+        `Net margin: ~+${flight.netClearIn}" on a clean center hit (${launchAngleDeg.toFixed(1)}° leave) — balanced window.`,
+      );
     }
   }
 
@@ -1150,25 +1162,25 @@ function buildWeakPoints(
   }
   if (launch != null && launch <= 5.5) {
     tips.push({
-      title: "Flat leave window",
+      title: "Low net margin",
       holdingBack:
-        "Little margin over the tape — late or low contact clips; you must strike early in the mold height.",
+        `Leave is only ~${launch.toFixed(1)}° — little room over the net. Late or waist-low contact often dumps into the net.`,
       practice: [
-        `Own the ${path >= 22 ? "chest" : "waist–chest"} window — no scooping low balls`,
-        "On stretch, choose a higher aim or a safer shape rather than a flat drive",
-        "If you still dump clean hits, −1–2 lbs or a touch of tip mass opens leave",
+        `Own the ${path >= 22 ? "chest" : "waist–chest"} window — don’t scoop lows`,
+        "On stretch, aim higher or shape more instead of forcing a low drive",
+        "Still dumping clean hits? −1–2 lbs or a little tip mass raises the path over the net",
       ],
     });
   }
   if (launch != null && launch >= 10) {
     tips.push({
-      title: "Lofty leave window",
+      title: "High net margin",
       holdingBack:
-        "Clean hits can float long if you open the face or over-brush — depth control is the skill tax.",
+        `Leave is ~${launch.toFixed(1)}° — lots of room over the net, so open faces or over-brushing float long.`,
       practice: [
         "Finish more forward / slightly more closed face on flat targets",
         "Alternate shape vs drive every other feed to learn the window",
-        "Gear: +1–2 lbs or strip tip grams if you’re long on center strikes",
+        "Long on center hits? +1–2 lbs or strip tip grams",
       ],
     });
   }
@@ -1191,54 +1203,170 @@ function buildScienceNotes(input: {
     tapePath: number;
   };
   gripBuildNote: string | null;
+  flight: FlightMetrics | null;
+  forehand: ForehandMoldAdvice | null;
+  scores: {
+    power: number | null;
+    spin: number | null;
+    control: number | null;
+    comfort: number | null;
+  };
+  stockScores: {
+    power: number | null;
+    spin: number | null;
+    control: number | null;
+    comfort: number | null;
+  };
 }): string[] {
   const notes: string[] = [];
-  if (input.racket) {
-    const ra = input.racket.stiffnessRa;
-    const sw = input.racket.swingweight;
+  const r = input.racket;
+
+  if (r) {
+    const ra = r.stiffnessRa;
     if (ra != null) {
+      const band = ra >= 68 ? "stiff" : ra <= 62 ? "flexible" : "mid-stiff";
       notes.push(
-        `Frame RA ${ra}: higher RA → faster energy return, sharper shock. Soften the bed before adding tip mass if your arm complains.`,
+        `Stiffness RA ${ra} (${band}). ${
+          band === "stiff"
+            ? "Crisp pop, more shock — soften the bed before tip tape if your arm complains."
+            : band === "flexible"
+              ? "More pocket and comfort; raise tension or use firmer poly if you want sharper response."
+              : "Balanced energy return — tension ±2 lbs is your main feel dial."
+        }`,
       );
     }
+
+    const sw = r.swingweight;
     if (sw != null) {
+      const band = sw >= 325 ? "plow-heavy" : sw <= 310 ? "whippy" : "midweight swing";
       notes.push(
-        `Swingweight ${sw}: ~1 g at the tip ≈ +2–3 SW points. Tip mass raises plow and can flatten perceived launch; handle mass does the opposite for whip.`,
+        `Swingweight ${sw} (${band}). ${
+          band === "plow-heavy"
+            ? "Stable through contact; tip tape adds plow fast — add small doses."
+            : band === "whippy"
+              ? "Easy to accelerate; +2–4 g tip builds plow without resizing the frame."
+              : "Room to customize: tip grams → plow; handle grams → quicker whip."
+        }`,
       );
     }
-    if (input.racket.stringPattern) {
+
+    if (r.stringPattern) {
+      const pat = r.stringPattern.replace(/\s/g, "").toLowerCase();
+      const dense = pat.startsWith("18x20") || pat.startsWith("18×20");
+      const open = pat.startsWith("16x19") || pat.startsWith("16×19");
       notes.push(
-        `Pattern ${input.racket.stringPattern}: denser beds reduce string movement (less free spin, more control); open beds do the reverse — tension is your fine dial inside that.`,
+        `Pattern ${r.stringPattern} (${dense ? "dense / control-leaning" : open ? "open / spin-leaning" : "mixed"}). ${
+          dense
+            ? "Less free string snap-back — use −1–2 lbs or thinner gauge if you want more bite."
+            : open
+              ? "More bite and launch — use +1–2 lbs or thicker gauge if balls spray long."
+              : "Treat tension as the fine dial for spin vs control."
+        }`,
       );
     }
   }
+
   if (input.string && input.tensionLbs != null) {
     const mid = input.string.recommendedTensionLbs;
     const d = input.tensionLbs - mid;
+    const band =
+      Math.abs(d) < 1.5 ? "on midpoint" : d > 0 ? "firmer than midpoint" : "softer than midpoint";
     notes.push(
-      `Tension ${input.tensionLbs} lbs vs midpoint ${mid}: ${d === 0 ? "on reference" : d > 0 ? `+${d} lbs firmer` : `${d} lbs softer`} — each ~2 lbs is a noticeable dwell/launch step on poly.`,
+      `Tension ${input.tensionLbs} lbs — ${band} (ref ${mid}${d !== 0 ? `, ${d > 0 ? "+" : ""}${d} lbs` : ""}). ${
+        d >= 2
+          ? "Shorter dwell, flatter launch, more control — good if you were sailing."
+          : d <= -2
+            ? "Longer pocket, higher launch, more comfort — good if you were dumping short."
+            : "Neutral starting point; ±2 lbs is a clean A/B feel step."
+      }`,
     );
     if (input.gaugeMm != null) {
+      const g = input.gaugeMm;
+      const band = g <= 1.2 ? "thin" : g >= 1.3 ? "thick" : "mid";
       notes.push(
-        `Gauge ${input.gaugeMm} mm: thinner → more bite & pocket, less durability; thicker → firmer control and longer life.`,
+        `Gauge ${g} mm (${band}). ${
+          band === "thin"
+            ? "More bite and pocket; expect faster notching."
+            : band === "thick"
+              ? "Firmer control and longer life; slightly less free spin."
+              : "Balanced durability vs bite for poly."
+        }`,
       );
     }
   }
-  if (input.gripBuildNote) notes.push(input.gripBuildNote);
+
+  if (input.gripBuildNote) {
+    // Prefer a shorter “your build is X” line if the stack note is already specific
+    notes.push(`Handle: ${input.gripBuildNote}`);
+  }
+
   if (input.launchAngleDeg != null && input.swingPathDeg != null) {
+    const leave = input.launchAngleDeg;
+    const path = input.swingPathDeg;
+    const clear = input.flight?.netClearIn;
+    const leaveBand =
+      leave <= 6 ? "low net margin" : leave >= 10 ? "high net margin" : "balanced net margin";
+    const pathBand =
+      path >= 28 ? "steep spin path" : path >= 20 ? "modern low→high path" : "flatter drive path";
+
     notes.push(
-      `Flight: leave angle clears the tape; path angle (spin) is the restoring force that drops the ball. Tuning one without the other is why “more spin” can still sail or dump.`,
+      `Flight: ${leave.toFixed(1)}° leave (${leaveBand}${clear != null ? `, ~+${clear}" over the net` : ""}). ${
+        leaveBand === "low net margin"
+          ? "Balls leave the strings on a low path — late or low contact often goes into the net."
+          : leaveBand === "high net margin"
+            ? "Lots of room over the net — open faces or over-brushing often float long."
+            : "Enough room over the net on clean hits; keep face honest through contact."
+      }`,
     );
     notes.push(
-      `FH grip follows path: steeper ~${input.swingPathDeg.toFixed(0)}° → more western bevel and a more closed face at contact; flatter paths stay nearer eastern / near-vertical. Opening the face raises leave without adding path — that’s sail fuel on power molds.`,
+      `Spin path: ~${path.toFixed(0)}° (${pathBand}). ${
+        pathBand.startsWith("steep")
+          ? "Brush loads topspin that pulls the ball down after the net — don’t slap flat."
+          : pathBand.startsWith("modern")
+            ? "Mix of drive and shape; topspin is the drop after the net, leave is the clearance."
+            : "Penetrating flight with less free drop — aim and face angle matter more for depth."
+      }`,
+    );
+
+    if (input.flight) {
+      const f = input.flight;
+      notes.push(
+        `This setup’s clean-hit profile: plow ${f.plow}/100 · topspin ${f.topspin}/100 · depth ${f.depth}/100 · fly risk ${f.flyRisk}/100.`,
+      );
+    }
+  }
+
+  if (input.forehand) {
+    const fh = input.forehand;
+    notes.push(
+      `Forehand for this mold: ${fh.gripLabel.toLowerCase()} (bevel ${fh.bevel}) with a ${fh.face.label.toLowerCase()} (~${fh.face.closedDeg}° past vertical) at ${fh.prefersHeight}-high contact.`,
     );
   }
+
+  if (input.scores.power != null && input.stockScores.power != null) {
+    const dP = input.scores.power - input.stockScores.power;
+    const dS =
+      input.scores.spin != null && input.stockScores.spin != null
+        ? input.scores.spin - input.stockScores.spin
+        : 0;
+    const dC =
+      input.scores.control != null && input.stockScores.control != null
+        ? input.scores.control - input.stockScores.control
+        : 0;
+    if (Math.abs(dP) + Math.abs(dS) + Math.abs(dC) >= 1.5) {
+      notes.push(
+        `Molded vs stock frame: power ${input.stockScores.power}→${input.scores.power} (${fmtSigned(dP)}) · spin ${input.stockScores.spin}→${input.scores.spin} (${fmtSigned(dS)}) · control ${input.stockScores.control}→${input.scores.control} (${fmtSigned(dC)}) from string, grip, and tape.`,
+      );
+    }
+  }
+
   const totalLaunch =
     input.deltas.stringLaunch + input.deltas.gripLaunch + input.deltas.tapeLaunch;
-  if (Math.abs(totalLaunch) >= 0.3) {
+  if (Math.abs(totalLaunch) >= 0.3 && input.launchAngleDeg != null) {
     notes.push(
-      `Your mold shifts stock leave by ${totalLaunch >= 0 ? "+" : ""}${totalLaunch.toFixed(1)}° (string ${input.deltas.stringLaunch >= 0 ? "+" : ""}${input.deltas.stringLaunch}, grip ${input.deltas.gripLaunch >= 0 ? "+" : ""}${input.deltas.gripLaunch}, tape ${input.deltas.tapeLaunch >= 0 ? "+" : ""}${input.deltas.tapeLaunch}).`,
+      `Leave vs stock frame: ${fmtSigned(totalLaunch)}° total (string ${fmtSigned(input.deltas.stringLaunch)}, grip ${fmtSigned(input.deltas.gripLaunch)}, tape ${fmtSigned(input.deltas.tapeLaunch)}).`,
     );
   }
+
   return notes;
 }

@@ -545,7 +545,7 @@ export function StrikeCoachingBullets({
     `Path ~${path.toFixed(0)}° (${pathTypeLabel(path).toLowerCase()}) through the ${z.primary} band.`,
   );
   bullets.push(
-    `~${launch.toFixed(1)}° leave clears the tape; path drops it. Dump = late/low. Long = face open or bed soft (+1–2 lbs).`,
+    `${launch.toFixed(1)}° leave (~how high the ball leaves the strings). Path ~${path.toFixed(0)}° drops it after the net. Into the net = late/low contact. Long = face open or bed soft (+1–2 lbs).`,
   );
 
   if ((spin ?? 0) >= 72 || path >= 28) {

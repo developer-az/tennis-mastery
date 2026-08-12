@@ -351,8 +351,8 @@ export function CombinedSetupPanel({
               </p>
               <p className="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">
                 <span className="text-sky-300/90">Science — </span>
-                Grip sets face lean; path loads spin across it. Opening the face raises leave without
-                adding path — that’s sail fuel.
+                Grip sets face lean; path loads spin. Opening the face sends the ball up without
+                adding drop — that’s how clean hits sail long.
               </p>
             </div>
           </div>
@@ -623,7 +623,10 @@ export function CombinedSetupPanel({
       {insight.scienceNotes.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
-            Setup science
+            What your numbers mean
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Where this setup sits — not a generic either/or.
           </p>
           <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-[var(--foreground)]/85">
             {insight.scienceNotes.map((n) => (
