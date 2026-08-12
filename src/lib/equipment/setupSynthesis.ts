@@ -4,6 +4,10 @@ import { computeLeadTapeEffect } from "@/lib/equipment/leadTape";
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
 import { tensionOutcome } from "@/lib/equipment/strings";
 import { gripStackEffect } from "@/lib/equipment/gripStack";
+import {
+  deriveForehandMold,
+  type ForehandMoldAdvice,
+} from "@/lib/equipment/forehandMold";
 
 export interface ScoreTuneTip {
   score: "power" | "spin" | "control" | "comfort";
@@ -51,6 +55,8 @@ export interface CombinedSetupInsight {
   /** What the frame itself is holding back + what to practice */
   weakPoints: FramePracticeTip[];
   gripBuildNote: string | null;
+  /** Optimal FH grip + face angle for this mold */
+  forehand: ForehandMoldAdvice | null;
   scores: {
     power: number | null;
     spin: number | null;
@@ -319,6 +325,15 @@ export function synthesizeCombinedSetup(
     swingPathDeg,
   });
 
+  const forehand = deriveForehandMold({
+    racket,
+    launchAngleDeg,
+    swingPathDeg,
+    power,
+    spin,
+    control,
+  });
+
   const pros: string[] = [];
   const cons: string[] = [];
 
@@ -492,6 +507,12 @@ export function synthesizeCombinedSetup(
     cons.push("No racket saved — composite launch needs a frame as the base.");
   }
 
+  if (forehand) {
+    pros.push(
+      `Optimal FH for this mold: ${forehand.summary} — ${forehand.face.label.toLowerCase()} at ${forehand.prefersHeight}-high contact.`,
+    );
+  }
+
   if (pros.length === 0 && hasAny) {
     pros.push("Setup pieces saved — add more components for a fuller composite read.");
   }
@@ -536,6 +557,7 @@ export function synthesizeCombinedSetup(
     scienceNotes,
     weakPoints,
     gripBuildNote: hasGrip ? stack.buildNote : null,
+    forehand,
     scores: { power, spin, control, comfort },
     summary: summaryParts.join(" · ") || "No gear saved yet.",
     completeness,
@@ -982,6 +1004,9 @@ function buildScienceNotes(input: {
   if (input.launchAngleDeg != null && input.swingPathDeg != null) {
     notes.push(
       `Flight: leave angle clears the tape; path angle (spin) is the restoring force that drops the ball. Tuning one without the other is why “more spin” can still sail or dump.`,
+    );
+    notes.push(
+      `FH grip follows path: steeper ~${input.swingPathDeg.toFixed(0)}° → more western bevel and a more closed face at contact; flatter paths stay nearer eastern / near-vertical. Opening the face raises leave without adding path — that’s sail fuel on power molds.`,
     );
   }
   const totalLaunch =

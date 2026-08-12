@@ -10,7 +10,7 @@ import { gripSizeLabel } from "@/lib/equipment/gripSize";
 import { summarizeGripLayers } from "@/lib/equipment/gripStack";
 import { useGearStore } from "@/store/gearStore";
 import { EquipmentThumb } from "./EquipmentThumb";
-import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
+import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 
 export function CombinedSetupPanel({
   rackets,
@@ -314,6 +314,53 @@ export function CombinedSetupPanel({
           }
         />
       </div>
+
+      {insight.forehand ? (
+        <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+            Forehand grip & face at contact
+          </p>
+          <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
+            Best grip and how closed the face should be for this mold’s path and leave — not a
+            generic “semi-western for everyone.”
+          </p>
+          <div className="mt-5 grid gap-6 md:grid-cols-2">
+            <ForehandGripBevelVisual advice={insight.forehand} />
+            <FaceAngleAtContactVisual advice={insight.forehand} />
+          </div>
+          <div className="mt-6 border-t border-[var(--line)] pt-5">
+            <ContactGeometryVisual advice={insight.forehand} />
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
+                Practice this grip + face
+              </p>
+              <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-[var(--foreground)]/85">
+                {insight.forehand.practice.map((p) => (
+                  <li key={p} className="border-l-2 border-[var(--accent)]/40 pl-2.5">
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--amber)]">
+                Don’t do this
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/85">
+                {insight.forehand.avoid}
+              </p>
+              <p className="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">
+                <span className="text-sky-300/90">Science — </span>
+                Grip sets the natural face lean; swing path loads spin across that lean. Opening the
+                face at contact raises leave without adding path — that’s how balls sail on power
+                molds or dump when you panic-close too late.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Delta breakdown */}
       <div className="grid gap-4 border border-[var(--line)] bg-[var(--panel)]/90 p-5 sm:grid-cols-2 lg:grid-cols-4 md:p-6">

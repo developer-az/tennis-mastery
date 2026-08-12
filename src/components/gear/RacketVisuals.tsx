@@ -6,6 +6,7 @@
  */
 
 import { useId } from "react";
+import type { ForehandMoldAdvice } from "@/lib/equipment/forehandMold";
 
 export type StrikeBand = "neck" | "chest" | "waist";
 
@@ -576,3 +577,399 @@ export function StrikeCoachingBullets({
     </div>
   );
 }
+
+/**
+ * Octagonal handle bevel map — highlights the index-knuckle bevel for the
+ * recommended forehand grip.
+ */
+export function ForehandGripBevelVisual({
+  advice,
+}: {
+  advice: ForehandMoldAdvice;
+}) {
+  const uid = useId().replace(/:/g, "");
+  const bevel = advice.bevel;
+  // Bevel labels around an octagon (1 at top, clockwise from player's view of butt)
+  const labels = [
+    { n: 1, name: "Cont." },
+    { n: 2, name: "East." },
+    { n: 3, name: "Semi" },
+    { n: 4, name: "West." },
+    { n: 5, name: "X-West" },
+    { n: 6, name: "—" },
+    { n: 7, name: "—" },
+    { n: 8, name: "—" },
+  ];
+  const cx = 110;
+  const cy = 78;
+  const r = 42;
+
+  return (
+    <div className="relative">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
+        Optimal FH grip for this mold
+      </p>
+      <svg viewBox="0 0 220 160" className="h-auto w-full max-w-md" aria-hidden>
+        <defs>
+          <radialGradient id={`bevelCore-${uid}`} cx="50%" cy="45%" r="55%">
+            <stop offset="0%" stopColor="#2d6a4f" />
+            <stop offset="100%" stopColor="#1b4332" />
+          </radialGradient>
+        </defs>
+        {/* Octagon */}
+        <polygon
+          points={Array.from({ length: 8 }, (_, i) => {
+            const a = (-90 + i * 45) * (Math.PI / 180);
+            return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+          }).join(" ")}
+          fill={`url(#bevelCore-${uid})`}
+          stroke="rgba(232,239,233,0.35)"
+          strokeWidth="1.5"
+        />
+        {labels.map((lab, i) => {
+          const mid = (-90 + i * 45 + 22.5) * (Math.PI / 180);
+          // Face center of each bevel
+          const fx = cx + (r - 2) * Math.cos(mid);
+          const fy = cy + (r - 2) * Math.sin(mid);
+          const tx = cx + (r + 18) * Math.cos(mid);
+          const ty = cy + (r + 18) * Math.sin(mid);
+          const active = lab.n === bevel;
+          const a0 = (-90 + i * 45) * (Math.PI / 180);
+          const a1 = (-90 + (i + 1) * 45) * (Math.PI / 180);
+          const p0x = cx + r * Math.cos(a0);
+          const p0y = cy + r * Math.sin(a0);
+          const p1x = cx + r * Math.cos(a1);
+          const p1y = cy + r * Math.sin(a1);
+          return (
+            <g key={lab.n}>
+              {active ? (
+                <path
+                  d={`M ${cx} ${cy} L ${p0x} ${p0y} L ${p1x} ${p1y} Z`}
+                  fill="rgba(200,245,96,0.35)"
+                  stroke="#c8f560"
+                  strokeWidth="1.2"
+                >
+                  <animate
+                    attributeName="opacity"
+                    values="0.7;1;0.7"
+                    dur="2.2s"
+                    repeatCount="indefinite"
+                  />
+                </path>
+              ) : null}
+              <circle
+                cx={fx}
+                cy={fy}
+                r={active ? 3.2 : 1.6}
+                fill={active ? "#c8f560" : "rgba(232,239,233,0.25)"}
+              />
+              {lab.n <= 5 ? (
+                <text
+                  x={tx}
+                  y={ty + 3}
+                  textAnchor="middle"
+                  fill={active ? "#c8f560" : "#8aa396"}
+                  fontSize={active ? 9 : 8}
+                  fontWeight={active ? 600 : 400}
+                >
+                  {lab.n}
+                  {active ? ` · ${lab.name}` : ""}
+                </text>
+              ) : null}
+            </g>
+          );
+        })}
+        <text x={cx} y={cy - 4} textAnchor="middle" fill="#e8efe9" fontSize="10">
+          butt view
+        </text>
+        <text x={cx} y={cy + 10} textAnchor="middle" fill="#8aa396" fontSize="8">
+          knuckle → bevel {bevel}
+        </text>
+        {/* Hand cue */}
+        <path
+          d={`M ${cx + 8} ${cy + r + 8} q 20 18, 36 8`}
+          fill="none"
+          stroke="#f4a261"
+          strokeWidth="1.4"
+          strokeDasharray="3 2"
+        />
+        <text x={cx + 48} y={cy + r + 22} fill="#f4a261" fontSize="8">
+          index knuckle
+        </text>
+      </svg>
+      <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
+        {advice.gripLabel}
+      </p>
+      <p className="mt-1 text-sm text-[var(--foreground)]/85">{advice.bevelHint}</p>
+      <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{advice.why}</p>
+    </div>
+  );
+}
+
+/**
+ * Side view of the racket face at contact — shows how closed past vertical.
+ */
+export function FaceAngleAtContactVisual({
+  advice,
+}: {
+  advice: ForehandMoldAdvice;
+}) {
+  const uid = useId().replace(/:/g, "");
+  const closed = advice.face.closedDeg;
+  // Rotate face: 0° = vertical stringbed; positive closed tips top toward +x (flight)
+  const rad = (closed * Math.PI) / 180;
+  const faceH = 52;
+  const faceW = 34;
+  const cx = 88;
+  const cy = 78;
+  // Face rectangle corners relative to center, then rotated
+  const corners = [
+    [-faceW / 2, -faceH / 2],
+    [faceW / 2, -faceH / 2],
+    [faceW / 2, faceH / 2],
+    [-faceW / 2, faceH / 2],
+  ].map(([x, y]) => {
+    const rx = x * Math.cos(rad) - y * Math.sin(rad);
+    const ry = x * Math.sin(rad) + y * Math.cos(rad);
+    return [cx + rx, cy + ry] as const;
+  });
+  const poly = corners.map(([x, y]) => `${x},${y}`).join(" ");
+  // Normal (outward from strings toward ball / flight)
+  const nx = Math.sin(rad);
+  const ny = -Math.cos(rad);
+  const ballX = cx + nx * 48;
+  const ballY = cy + ny * 48;
+  // Vertical reference
+  const refTop = cy - faceH / 2 - 6;
+  const refBot = cy + faceH / 2 + 6;
+
+  return (
+    <div className="relative">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+        Racket face at contact
+      </p>
+      <svg viewBox="0 0 220 160" className="h-auto w-full max-w-md" aria-hidden>
+        <defs>
+          <linearGradient id={`faceBed-${uid}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="rgba(200,245,96,0.15)" />
+            <stop offset="100%" stopColor="rgba(125,211,252,0.12)" />
+          </linearGradient>
+        </defs>
+        {/* Ground / flight direction */}
+        <line
+          x1="20"
+          y1="148"
+          x2="200"
+          y2="148"
+          stroke="rgba(232,239,233,0.2)"
+          strokeWidth="1.2"
+        />
+        <text x="168" y="144" fill="#8aa396" fontSize="8">
+          flight →
+        </text>
+        {/* Vertical reference */}
+        <line
+          x1={cx}
+          y1={refTop}
+          x2={cx}
+          y2={refBot}
+          stroke="rgba(232,239,233,0.35)"
+          strokeWidth="1.2"
+          strokeDasharray="3 3"
+        />
+        <text x={cx - 28} y={refTop - 4} fill="#8aa396" fontSize="8">
+          vertical
+        </text>
+        {/* Angle arc */}
+        <path
+          d={`M ${cx} ${cy - 36} A 36 36 0 0 1 ${cx + Math.sin(rad) * 36} ${cy - Math.cos(rad) * 36}`}
+          fill="none"
+          stroke="#7dd3fc"
+          strokeWidth="1.6"
+        />
+        <text
+          x={cx + 10 + closed * 0.4}
+          y={cy - 42}
+          fill="#7dd3fc"
+          fontSize="9"
+        >
+          {closed.toFixed(1)}° closed
+        </text>
+        {/* Face */}
+        <polygon
+          points={poly}
+          fill={`url(#faceBed-${uid})`}
+          stroke="#c8f560"
+          strokeWidth="2"
+        />
+        {/* String lines */}
+        {[-12, -4, 4, 12].map((oy) => {
+          const x0 = -faceW / 2 + 4;
+          const x1 = faceW / 2 - 4;
+          const p0x = cx + (x0 * Math.cos(rad) - oy * Math.sin(rad));
+          const p0y = cy + (x0 * Math.sin(rad) + oy * Math.cos(rad));
+          const p1x = cx + (x1 * Math.cos(rad) - oy * Math.sin(rad));
+          const p1y = cy + (x1 * Math.sin(rad) + oy * Math.cos(rad));
+          return (
+            <line
+              key={oy}
+              x1={p0x}
+              y1={p0y}
+              x2={p1x}
+              y2={p1y}
+              stroke="rgba(200,245,96,0.35)"
+              strokeWidth="0.8"
+            />
+          );
+        })}
+        {/* Contact center */}
+        <circle cx={cx} cy={cy} r="3.2" fill="#c8f560">
+          <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" />
+        </circle>
+        {/* Ball leaving */}
+        <circle cx={ballX} cy={ballY} r="7" fill="rgba(244,162,97,0.85)" />
+        <line
+          x1={cx + nx * 8}
+          y1={cy + ny * 8}
+          x2={ballX - nx * 8}
+          y2={ballY - ny * 8}
+          stroke="#f4a261"
+          strokeWidth="1.4"
+          strokeDasharray="3 2"
+        />
+        <text x={Math.min(190, ballX + 8)} y={ballY + 4} fill="#f4a261" fontSize="8">
+          leave
+        </text>
+        {/* Open vs closed cues */}
+        <text x="14" y="24" fill="#8aa396" fontSize="8">
+          less closed ←
+        </text>
+        <text x="150" y="24" fill="#8aa396" fontSize="8">
+          → more closed
+        </text>
+      </svg>
+      <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
+        {advice.face.label}
+        <span className="ml-2 text-base text-[var(--muted)]">
+          · {advice.face.closedDeg.toFixed(1)}° past vertical
+        </span>
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{advice.face.detail}</p>
+      <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">
+        Pair with {advice.prefersHeight}-high contact on the{" "}
+        <span className="text-[var(--accent)]">{advice.gripLabel.toLowerCase()}</span>.{" "}
+        {advice.avoid}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Contact height × face lean — shows why the grip and face belong together.
+ */
+export function ContactGeometryVisual({
+  advice,
+}: {
+  advice: ForehandMoldAdvice;
+}) {
+  const bands: { id: "neck" | "chest" | "waist"; y: number; h: number; title: string }[] = [
+    { id: "neck", y: 18, h: 22, title: "Neck" },
+    { id: "chest", y: 42, h: 28, title: "Chest" },
+    { id: "waist", y: 72, h: 26, title: "Waist" },
+  ];
+  const primary = bands.find((b) => b.id === advice.prefersHeight) ?? bands[1];
+  const closed = advice.face.closedDeg;
+  const rad = (closed * Math.PI) / 180;
+  const hx = 118;
+  const hy = primary.y + primary.h * 0.55;
+  const faceH = 22;
+  const faceW = 14;
+  const corners = [
+    [-faceW / 2, -faceH / 2],
+    [faceW / 2, -faceH / 2],
+    [faceW / 2, faceH / 2],
+    [-faceW / 2, faceH / 2],
+  ].map(([x, y]) => {
+    const rx = x * Math.cos(rad) - y * Math.sin(rad);
+    const ry = x * Math.sin(rad) + y * Math.cos(rad);
+    return `${hx + rx},${hy + ry}`;
+  });
+
+  return (
+    <div className="relative">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-300">
+        Contact geometry
+      </p>
+      <svg viewBox="0 0 220 130" className="h-auto w-full max-w-md" aria-hidden>
+        <rect
+          x="24"
+          y="14"
+          width="32"
+          height="88"
+          rx="12"
+          fill="rgba(232,239,233,0.05)"
+          stroke="rgba(232,239,233,0.22)"
+        />
+        <circle
+          cx="40"
+          cy="10"
+          r="7"
+          fill="rgba(232,239,233,0.1)"
+          stroke="rgba(232,239,233,0.3)"
+        />
+        {bands.map((b) => {
+          const active = b.id === advice.prefersHeight;
+          return (
+            <g key={b.id}>
+              <rect
+                x="26"
+                y={b.y}
+                width="28"
+                height={b.h}
+                rx="3"
+                fill={active ? "rgba(200,245,96,0.28)" : "transparent"}
+                stroke={active ? "#c8f560" : "rgba(232,239,233,0.12)"}
+              />
+              <text
+                x="62"
+                y={b.y + b.h / 2 + 3}
+                fill={active ? "#c8f560" : "#8aa396"}
+                fontSize="8"
+              >
+                {b.title}
+                {active ? " · strike" : ""}
+              </text>
+            </g>
+          );
+        })}
+        <line
+          x1="78"
+          y1={hy}
+          x2={hx - 10}
+          y2={hy}
+          stroke="rgba(125,211,252,0.5)"
+          strokeWidth="1.2"
+          strokeDasharray="3 2"
+        />
+        <polygon
+          points={corners.join(" ")}
+          fill="rgba(200,245,96,0.15)"
+          stroke="#c8f560"
+          strokeWidth="1.6"
+        />
+        <circle cx={hx} cy={hy} r="2.6" fill="#c8f560" />
+        <text x={hx + 16} y={hy - 8} fill="#7dd3fc" fontSize="8">
+          face {closed.toFixed(0)}° closed
+        </text>
+        <text x={hx + 16} y={hy + 6} fill="#8aa396" fontSize="8">
+          {advice.gripLabel}
+        </text>
+      </svg>
+      <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+        Best geometry: {advice.prefersHeight}-high ball, bevel {advice.bevel}, face ~
+        {advice.face.closedDeg.toFixed(1)}° closed through the hit — not an open slap.
+      </p>
+    </div>
+  );
+}
+

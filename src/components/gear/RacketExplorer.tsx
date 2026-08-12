@@ -6,7 +6,8 @@ import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
-import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
+import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
+import { deriveForehandMold } from "@/lib/equipment/forehandMold";
 import { PlayerFitBadges } from "./PlayerFitBadges";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
@@ -129,6 +130,11 @@ export function RacketExplorer({
   const setupRacket = setupSlug
     ? initialRackets.find((r) => r.slug === setupSlug) ?? null
     : null;
+
+  const forehandAdvice = useMemo(
+    () => (selected ? deriveForehandMold({ racket: selected }) : null),
+    [selected],
+  );
 
   const compareRackets = compareIds
     .map((id) => initialRackets.find((r) => r.slug === id))
@@ -539,6 +545,24 @@ export function RacketExplorer({
             headSizeSqIn={selected.headSizeSqIn}
             zone={strikeZoneForFrame(selected)}
           />
+
+          {forehandAdvice ? (
+            <section className="border-t border-[var(--line)] pt-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+                Forehand grip & face at contact
+              </p>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Optimal grip bevel and how closed the face should be for this frame’s path and leave.
+              </p>
+              <div className="mt-5 grid gap-6 md:grid-cols-2">
+                <ForehandGripBevelVisual advice={forehandAdvice} />
+                <FaceAngleAtContactVisual advice={forehandAdvice} />
+              </div>
+              <div className="mt-5">
+                <ContactGeometryVisual advice={forehandAdvice} />
+              </div>
+            </section>
+          ) : null}
 
           <ScoreGrid
             scores={[
