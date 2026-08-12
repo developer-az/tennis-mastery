@@ -1,9 +1,11 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { PLAYERS } from "@/data/players";
 import { useCoachStore } from "@/store/coachStore";
 import { setupSummary, useGearStore } from "@/store/gearStore";
+import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
 import { sampleStroke } from "@/lib/kinematics";
 
 function Metric({
@@ -144,52 +146,76 @@ function SetupBridge({
   athleteLabel: string;
 }) {
   const setup = useGearStore((s) => s.setup);
-  const hasGear = Boolean(setup.racketLabel || setup.stringLabel || setup.gripLabel);
+  const insight = useMemo(
+    () => synthesizeCombinedSetup(setup, null, null, null),
+    [setup],
+  );
+  const hasGear = insight.hasAny;
+
+  const launch = insight.launchAngleDeg ?? setup.racketLaunchDeg;
+  const path = insight.swingPathDeg ?? setup.racketSwingPathDeg;
 
   return (
     <div className="mt-5 border-t border-[var(--line)] pt-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-        Your gear setup
+        Your combined setup
       </p>
       {hasGear ? (
         <>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/90">
+          <p className="mt-2 text-sm font-medium text-[var(--accent)]">{insight.playstyle}</p>
+          <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/90">
             {setupSummary(setup)}
           </p>
-          {setup.racketLabel &&
-          setup.racketLaunchDeg != null &&
-          setup.racketSwingPathDeg != null ? (
+          {launch != null && path != null ? (
             <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
               {athleteLabel}&apos;s stroke targets ~{athleteLaunch.toFixed(1)}° launch / ~
-              {athleteSwingPath.toFixed(0)}° path. Your {setup.racketLabel} models ~
-              {setup.racketLaunchDeg.toFixed(1)}° launch / ~{setup.racketSwingPathDeg.toFixed(0)}°
-              path
-              {setup.racketLaunchDeg - athleteLaunch > 2
-                ? " — a bit loftier than this pattern; expect easier net clearance."
-                : athleteLaunch - setup.racketLaunchDeg > 2
+              {athleteSwingPath.toFixed(0)}° path. Your molded bag models ~{launch.toFixed(1)}°
+              launch / ~{path.toFixed(0)}° path
+              {launch - athleteLaunch > 2
+                ? " — loftier than this pattern; expect easier net clearance."
+                : athleteLaunch - launch > 2
                   ? " — flatter than this pattern; reward clean, penetrating contact."
                   : " — close to this stroke's launch window."}
+              {insight.baseLaunchDeg != null &&
+              insight.launchAngleDeg != null &&
+              Math.abs(insight.launchAngleDeg - insight.baseLaunchDeg) >= 0.3
+                ? ` (frame base ${insight.baseLaunchDeg.toFixed(1)}° + string/grip/tape).`
+                : ""}
             </p>
           ) : (
             <p className="mt-2 text-xs text-[var(--muted)]">
-              Add a racket in Gear lab to compare its ideal launch/swing path with this stroke.
+              Add a racket in Gear lab so combined launch can be calculated against this stroke.
             </p>
           )}
-          <Link
-            href="/gear"
-            className="mt-3 inline-block text-xs font-medium text-[var(--accent)] transition hover:brightness-110"
-          >
-            Edit setup in Gear lab →
-          </Link>
+          {insight.pros[0] ? (
+            <p className="mt-2 text-xs text-[var(--foreground)]/75">Pro: {insight.pros[0]}</p>
+          ) : null}
+          {insight.cons[0] ? (
+            <p className="mt-1 text-xs text-[var(--muted)]">Watch: {insight.cons[0]}</p>
+          ) : null}
+          <div className="mt-3 flex flex-wrap gap-3">
+            <Link
+              href="/gear?tab=overview"
+              className="text-xs font-medium text-[var(--accent)] transition hover:brightness-110"
+            >
+              Full combined readout →
+            </Link>
+            <Link
+              href="/gear?tab=rackets"
+              className="text-xs text-[var(--muted)] transition hover:text-[var(--foreground)]"
+            >
+              Edit gear
+            </Link>
+          </div>
         </>
       ) : (
         <>
           <p className="mt-2 text-sm text-[var(--muted)]">
-            Save a racket, string, and grip in Gear lab — it stays in this browser and shows up here
+            Save a racket, string, and grip in Gear lab — molded launch and playstyle show up here
             while you study form.
           </p>
           <Link
-            href="/gear"
+            href="/gear?tab=overview"
             className="mt-3 inline-block rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
           >
             Build my setup

@@ -1,14 +1,32 @@
 "use client";
 
 import Link from "next/link";
+import type { EquipmentTab } from "@/types/equipment";
 import { setupSummary, useGearStore } from "@/store/gearStore";
 
-export function MySetupBar() {
+export function MySetupBar({
+  onSelectTab,
+}: {
+  onSelectTab?: (tab: EquipmentTab) => void;
+}) {
   const setup = useGearStore((s) => s.setup);
   const clearSetup = useGearStore((s) => s.clearSetup);
+  const setTab = useGearStore((s) => s.setTab);
   const tapeG = setup.leadTape?.pieces?.reduce((n, p) => n + p.massG, 0) ?? 0;
   const hasAny =
     setup.racketSlug || setup.stringId || setup.gripId || tapeG > 0;
+
+  const go = (tab: EquipmentTab) => {
+    if (onSelectTab) onSelectTab(tab);
+    else {
+      setTab(tab);
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", tab);
+        window.history.replaceState(null, "", url.toString());
+      }
+    }
+  };
 
   return (
     <div
@@ -24,17 +42,33 @@ export function MySetupBar() {
             {setupSummary(setup)}
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Saved in this browser. Use “Save to my setup” on gear, or customize lead tape on its tab.
+            Saved in this browser. Open{" "}
+            <button
+              type="button"
+              onClick={() => go("overview")}
+              className="text-[var(--accent)] underline-offset-2 hover:underline"
+            >
+              My setup
+            </button>{" "}
+            for molded launch, playstyle, and pros/cons.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           {hasAny ? (
             <>
-              <Link
-                href="/lab"
+              <button
+                type="button"
+                onClick={() => go("overview")}
                 className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
               >
-                Open form lab
+                View combined
+              </button>
+              <Link
+                href="/lab"
+                className="rounded-md px-3 py-1.5 text-xs text-[var(--foreground)] transition hover:bg-white/5"
+                style={{ boxShadow: "0 0 0 1px var(--line)" }}
+              >
+                Form lab
               </Link>
               <button
                 type="button"
@@ -51,25 +85,49 @@ export function MySetupBar() {
       {hasAny ? (
         <ul className="mt-3 flex flex-wrap gap-2 text-xs">
           {setup.racketLabel ? (
-            <li className="rounded bg-[var(--accent-dim)] px-2 py-1 text-[var(--accent)]">
-              Frame · {setup.racketLabel}
+            <li>
+              <button
+                type="button"
+                onClick={() => go("rackets")}
+                className="rounded bg-[var(--accent-dim)] px-2 py-1 text-[var(--accent)] transition hover:brightness-110"
+              >
+                Frame · {setup.racketLabel}
+              </button>
             </li>
           ) : null}
           {setup.stringLabel ? (
-            <li className="rounded bg-sky-400/10 px-2 py-1 text-sky-300">
-              String · {setup.stringLabel}
-              {setup.tensionLbs != null ? ` · ${setup.tensionLbs} lbs` : ""}
-              {setup.gaugeMm != null ? ` · ${setup.gaugeMm} mm` : ""}
+            <li>
+              <button
+                type="button"
+                onClick={() => go("strings")}
+                className="rounded bg-sky-400/10 px-2 py-1 text-sky-300 transition hover:brightness-110"
+              >
+                String · {setup.stringLabel}
+                {setup.tensionLbs != null ? ` · ${setup.tensionLbs} lbs` : ""}
+                {setup.gaugeMm != null ? ` · ${setup.gaugeMm} mm` : ""}
+              </button>
             </li>
           ) : null}
           {setup.gripLabel ? (
-            <li className="rounded bg-[var(--amber)]/15 px-2 py-1 text-[var(--amber)]">
-              Grip · {setup.gripLabel}
+            <li>
+              <button
+                type="button"
+                onClick={() => go("grips")}
+                className="rounded bg-[var(--amber)]/15 px-2 py-1 text-[var(--amber)] transition hover:brightness-110"
+              >
+                Grip · {setup.gripLabel}
+              </button>
             </li>
           ) : null}
           {tapeG > 0 ? (
-            <li className="rounded bg-[var(--accent)]/15 px-2 py-1 text-[var(--accent)]">
-              Lead tape · +{tapeG}g
+            <li>
+              <button
+                type="button"
+                onClick={() => go("lead-tape")}
+                className="rounded bg-[var(--accent)]/15 px-2 py-1 text-[var(--accent)] transition hover:brightness-110"
+              >
+                Lead tape · +{tapeG}g
+              </button>
             </li>
           ) : null}
         </ul>

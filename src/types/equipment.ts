@@ -1,4 +1,4 @@
-export type EquipmentTab = "rackets" | "strings" | "grips" | "lead-tape";
+export type EquipmentTab = "overview" | "rackets" | "strings" | "grips" | "lead-tape";
 
 export type RacketStyle =
   | "Heavy-spin baseliner"

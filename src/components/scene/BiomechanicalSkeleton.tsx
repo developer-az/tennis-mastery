@@ -28,42 +28,49 @@ const _zAxis = new THREE.Vector3();
 const _basis = new THREE.Matrix4();
 const _faceStable = new THREE.Vector3(0, 0, -1);
 
-function placeLimb(
-  mesh: THREE.Mesh | null,
-  start: THREE.Vector3,
-  end: THREE.Vector3,
-  scaleLength: boolean,
-) {
-  if (!mesh) return;
-  _dir.subVectors(end, start);
-  const length = _dir.length();
-  _mid.addVectors(start, end).multiplyScalar(0.5);
-  mesh.position.copy(_mid);
-  if (length > 1e-6) {
-    _quat.setFromUnitVectors(_yAxis, _dir.normalize());
-    mesh.quaternion.copy(_quat);
-  }
-  if (scaleLength) {
-    mesh.scale.set(1, Math.max(0.05, length), 1);
-  }
-}
-
 function placeAt(mesh: THREE.Mesh | null, p: THREE.Vector3) {
   if (!mesh) return;
   mesh.position.copy(p);
 }
 
-/** Shared low-poly geometries — created once */
+/** Shared low-poly geometries — created once (capsules read more human than cylinders) */
 const geo = {
-  limb: new THREE.CylinderGeometry(1, 1, 1, 6),
-  joint: new THREE.SphereGeometry(1, 10, 10),
-  head: new THREE.SphereGeometry(1, 12, 12),
+  limb: new THREE.CapsuleGeometry(1, 1, 4, 8),
+  joint: new THREE.SphereGeometry(1, 12, 12),
+  head: new THREE.SphereGeometry(1, 14, 14),
   foot: new THREE.BoxGeometry(0.1, 0.05, 0.22),
   handle: new THREE.CylinderGeometry(0.018, 0.022, 1, 8),
   throat: new THREE.CylinderGeometry(0.012, 0.016, 1, 6),
   hoop: new THREE.TorusGeometry(0.14, 0.012, 6, 16),
   strings: new THREE.CircleGeometry(0.12, 16),
 };
+
+/**
+ * CapsuleGeometry(1,1) has total height ≈ 3 (cyl 1 + caps 2).
+ * Scale XZ for radius and Y so the full capsule spans `length`.
+ */
+function placeCapsule(
+  mesh: THREE.Mesh | null,
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  radius: number,
+  twistRad = 0,
+) {
+  if (!mesh) return;
+  _dir.subVectors(end, start);
+  const length = Math.max(0.06, _dir.length());
+  _mid.addVectors(start, end).multiplyScalar(0.5);
+  mesh.position.copy(_mid);
+  if (length > 1e-6) {
+    _quat.setFromUnitVectors(_yAxis, _dir.normalize());
+    if (Math.abs(twistRad) > 1e-4) {
+      _rollQ.setFromAxisAngle(_yAxis, twistRad);
+      _quat.multiply(_rollQ);
+    }
+    mesh.quaternion.copy(_quat);
+  }
+  mesh.scale.set(radius, length / 3, radius);
+}
 
 /**
  * Imperative biomechanical skeleton.
@@ -113,6 +120,8 @@ export function BiomechanicalSkeleton({
     hitElbow: MeshRef;
     hitWrist: MeshRef;
     nonHitShoulder: MeshRef;
+    nonHitElbow: MeshRef;
+    nonHitWrist: MeshRef;
     handle: MeshRef;
     throat: MeshRef;
     hoop: MeshRef;
@@ -141,6 +150,8 @@ export function BiomechanicalSkeleton({
     hitElbow: null,
     hitWrist: null,
     nonHitShoulder: null,
+    nonHitElbow: null,
+    nonHitWrist: null,
     handle: null,
     throat: null,
     hoop: null,
@@ -215,35 +226,29 @@ export function BiomechanicalSkeleton({
     const m = meshes.current;
     const p = pose;
 
-    placeLimb(m.torso, p.pelvis, p.chest, true);
-    if (m.torso) m.torso.scale.set(0.08, m.torso.scale.y, 0.08);
-    placeLimb(m.neck, p.chest, p.head, true);
-    if (m.neck) m.neck.scale.set(0.04, m.neck.scale.y, 0.04);
+    placeCapsule(m.torso, p.pelvis, p.chest, 0.07);
+    placeCapsule(m.neck, p.chest, p.head, 0.035);
 
     placeAt(m.head, p.head);
     if (m.head) m.head.scale.setScalar(0.11);
     placeAt(m.pelvis, p.pelvis);
-    if (m.pelvis) m.pelvis.scale.setScalar(0.06);
+    if (m.pelvis) m.pelvis.scale.setScalar(0.065);
     placeAt(m.chest, p.chest);
-    if (m.chest) m.chest.scale.setScalar(0.055);
+    if (m.chest) m.chest.scale.setScalar(0.058);
 
-    placeLimb(m.leadThigh, p.leadHip, p.leadKnee, true);
-    if (m.leadThigh) m.leadThigh.scale.set(0.055, m.leadThigh.scale.y, 0.055);
-    placeLimb(m.leadShank, p.leadKnee, p.leadAnkle, true);
-    if (m.leadShank) m.leadShank.scale.set(0.045, m.leadShank.scale.y, 0.045);
-    placeLimb(m.trailThigh, p.trailHip, p.trailKnee, true);
-    if (m.trailThigh) m.trailThigh.scale.set(0.055, m.trailThigh.scale.y, 0.055);
-    placeLimb(m.trailShank, p.trailKnee, p.trailAnkle, true);
-    if (m.trailShank) m.trailShank.scale.set(0.045, m.trailShank.scale.y, 0.045);
+    placeCapsule(m.leadThigh, p.leadHip, p.leadKnee, 0.052);
+    placeCapsule(m.leadShank, p.leadKnee, p.leadAnkle, 0.042);
+    placeCapsule(m.trailThigh, p.trailHip, p.trailKnee, 0.052);
+    placeCapsule(m.trailShank, p.trailKnee, p.trailAnkle, 0.042);
 
     placeAt(m.leadKnee, p.leadKnee);
-    if (m.leadKnee) m.leadKnee.scale.setScalar(0.05);
+    if (m.leadKnee) m.leadKnee.scale.setScalar(0.048);
     placeAt(m.trailKnee, p.trailKnee);
-    if (m.trailKnee) m.trailKnee.scale.setScalar(0.05);
+    if (m.trailKnee) m.trailKnee.scale.setScalar(0.048);
     placeAt(m.leadAnkle, p.leadAnkle);
-    if (m.leadAnkle) m.leadAnkle.scale.setScalar(0.04);
+    if (m.leadAnkle) m.leadAnkle.scale.setScalar(0.038);
     placeAt(m.trailAnkle, p.trailAnkle);
-    if (m.trailAnkle) m.trailAnkle.scale.setScalar(0.04);
+    if (m.trailAnkle) m.trailAnkle.scale.setScalar(0.038);
 
     if (m.leadFoot) {
       m.leadFoot.position.set(p.leadAnkle.x, 0.03, p.leadAnkle.z - 0.04);
@@ -254,23 +259,24 @@ export function BiomechanicalSkeleton({
       m.trailFoot.rotation.set(0, driver.joints.hipYaw * (Math.PI / 180) * (driver.handedness === "left" ? -1 : 1) * 0.35, 0);
     }
 
-    placeLimb(m.hitUpper, p.hitShoulder, p.hitElbow, true);
-    if (m.hitUpper) m.hitUpper.scale.set(0.042, m.hitUpper.scale.y, 0.042);
-    placeLimb(m.hitFore, p.hitElbow, p.hitWrist, true);
-    if (m.hitFore) m.hitFore.scale.set(0.038, m.hitFore.scale.y, 0.038);
-    placeLimb(m.nonHitUpper, p.nonHitShoulder, p.nonHitElbow, true);
-    if (m.nonHitUpper) m.nonHitUpper.scale.set(0.042, m.nonHitUpper.scale.y, 0.042);
-    placeLimb(m.nonHitFore, p.nonHitElbow, p.nonHitWrist, true);
-    if (m.nonHitFore) m.nonHitFore.scale.set(0.038, m.nonHitFore.scale.y, 0.038);
+    // Arms: twist mesh with humeral IR so takeback/pronation reads on the limb, not only the tip
+    placeCapsule(m.hitUpper, p.hitShoulder, p.hitElbow, 0.04, p.hitUpperTwist);
+    placeCapsule(m.hitFore, p.hitElbow, p.hitWrist, 0.034, p.hitUpperTwist * 0.55);
+    placeCapsule(m.nonHitUpper, p.nonHitShoulder, p.nonHitElbow, 0.04, p.nonHitUpperTwist);
+    placeCapsule(m.nonHitFore, p.nonHitElbow, p.nonHitWrist, 0.034, p.nonHitUpperTwist * 0.45);
 
     placeAt(m.hitShoulder, p.hitShoulder);
-    if (m.hitShoulder) m.hitShoulder.scale.setScalar(0.05);
+    if (m.hitShoulder) m.hitShoulder.scale.setScalar(0.048);
     placeAt(m.hitElbow, p.hitElbow);
-    if (m.hitElbow) m.hitElbow.scale.setScalar(0.045);
+    if (m.hitElbow) m.hitElbow.scale.setScalar(0.042);
     placeAt(m.hitWrist, p.hitWrist);
-    if (m.hitWrist) m.hitWrist.scale.setScalar(0.04);
+    if (m.hitWrist) m.hitWrist.scale.setScalar(0.036);
     placeAt(m.nonHitShoulder, p.nonHitShoulder);
-    if (m.nonHitShoulder) m.nonHitShoulder.scale.setScalar(0.05);
+    if (m.nonHitShoulder) m.nonHitShoulder.scale.setScalar(0.048);
+    placeAt(m.nonHitElbow, p.nonHitElbow);
+    if (m.nonHitElbow) m.nonHitElbow.scale.setScalar(0.04);
+    placeAt(m.nonHitWrist, p.nonHitWrist);
+    if (m.nonHitWrist) m.nonHitWrist.scale.setScalar(0.034);
 
     if (racketGroup.current) {
       // Minimum-twist shaft tracking + sign-stable face normal.
@@ -398,6 +404,8 @@ export function BiomechanicalSkeleton({
       <mesh ref={bind("hitElbow")} geometry={geo.joint} material={jointMat} />
       <mesh ref={bind("hitWrist")} geometry={geo.joint} material={jointMat} />
       <mesh ref={bind("nonHitShoulder")} geometry={geo.joint} material={jointMat} />
+      <mesh ref={bind("nonHitElbow")} geometry={geo.joint} material={jointMat} />
+      <mesh ref={bind("nonHitWrist")} geometry={geo.joint} material={jointMat} />
 
       <group ref={racketGroup}>
         <mesh ref={bind("handle")} geometry={geo.handle} material={handleMat} />

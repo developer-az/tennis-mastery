@@ -31,12 +31,15 @@ export type GripType =
  * Lefty mirrors yaw / twist / abduction side / IR.
  *
  * hipYaw: − FH unit turn (hitting shoulder back), + BH turn
+ * hipPitch: + athletic hinge / sit into legs (both hips)
  * spineTwist: shoulder–hip separation, same sign as coil
  * spineLean: + toward net, − arch (serve trophy)
  * shoulderFlexion: 0 hang, 90 forward, 180 up
  * shoulderAbduction: + FH side, − across body (BH wing)
- * shoulderInternalRotation: + IR/pronation, − ER (racket drop)
+ * shoulderInternalRotation: + IR/pronation, − ER (racket drop / takeback cocking)
  * wristExtension: + lag, − snap through contact
+ * nonHittingShoulderAbduction: + away from body (counterbalance / toss)
+ * nonHittingShoulderInternalRotation: lead-arm twist (point / balance)
  * racketFaceAngle: + open (slice), − closed
  * racketPathElevation: tip pitch from horizontal (+ up, − down/scratch-back)
  */
@@ -57,6 +60,8 @@ export interface JointAngles {
   trailHipFlexion: number;
   ankleDorsiflexion: number;
   nonHittingShoulderFlexion: number;
+  nonHittingShoulderAbduction: number;
+  nonHittingShoulderInternalRotation: number;
   nonHittingElbowFlexion: number;
   racketFaceAngle: number;
   racketPathElevation: number;

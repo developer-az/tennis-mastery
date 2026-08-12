@@ -5,12 +5,19 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { EquipmentTab, GripProfile, RacketCatalogMeta, RacketProfile, StringProfile } from "@/types/equipment";
 import { useGearStore } from "@/store/gearStore";
 import { MySetupBar } from "./MySetupBar";
+import { CombinedSetupPanel } from "./CombinedSetupPanel";
 import { RacketExplorer } from "./RacketExplorer";
 import { StringExplorer } from "./StringExplorer";
 import { GripExplorer } from "./GripExplorer";
 import { LeadTapeLab } from "./LeadTapeLab";
 
 const TABS: { id: EquipmentTab; label: string; blurb: string }[] = [
+  {
+    id: "overview",
+    label: "My setup",
+    blurb:
+      "See how racket, string, grip, and lead tape mold together — composite launch, playstyle, and honest pros/cons.",
+  },
   {
     id: "rackets",
     label: "Rackets",
@@ -33,11 +40,17 @@ const TABS: { id: EquipmentTab; label: string; blurb: string }[] = [
     id: "lead-tape",
     label: "Lead tape",
     blurb:
-      "Place virtual lead tape on your frame. Drag strips between tip, 3/9, throat, and handle — see swingweight, balance, launch angle, and swing-path changes live.",
+      "Place virtual lead tape on your frame. Tap tip, 3/9, throat, or handle — see swingweight, balance, launch angle, and swing-path changes live.",
   },
 ];
 
-const TAB_IDS = new Set<EquipmentTab>(["rackets", "strings", "grips", "lead-tape"]);
+const TAB_IDS = new Set<EquipmentTab>([
+  "overview",
+  "rackets",
+  "strings",
+  "grips",
+  "lead-tape",
+]);
 
 export function GearLab({
   rackets,
@@ -73,7 +86,7 @@ export function GearLab({
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10 md:py-14">
-      <MySetupBar />
+      <MySetupBar onSelectTab={selectTab} />
 
       <div
         className="relative z-20 flex flex-wrap gap-2 border-b border-[var(--line)] pb-4"
@@ -119,6 +132,14 @@ export function GearLab({
       </p>
 
       <div className="relative z-10 mt-8">
+        <div
+          id="gear-panel-overview"
+          role="tabpanel"
+          aria-labelledby="gear-tab-overview"
+          hidden={tab !== "overview"}
+        >
+          <CombinedSetupPanel rackets={rackets} strings={strings} grips={grips} />
+        </div>
         <div
           id="gear-panel-rackets"
           role="tabpanel"
