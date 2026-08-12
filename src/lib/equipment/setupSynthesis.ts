@@ -365,7 +365,7 @@ function buildPlaystyleDetail(input: {
   if (input.fit) bits.push(input.fit.blurb);
   if (input.launchAngleDeg != null && input.swingPathDeg != null) {
     bits.push(
-      `Combined window ~${input.launchAngleDeg.toFixed(1)}° launch / ~${input.swingPathDeg.toFixed(0)}° swing path.`,
+      `Combined strike window ~${input.launchAngleDeg.toFixed(1)}° off the bed / ~${input.swingPathDeg.toFixed(0)}° path through contact.`,
     );
   }
   if (input.string && input.tensionLbs != null) {

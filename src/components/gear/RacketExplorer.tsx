@@ -6,7 +6,7 @@ import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
-import { LaunchAngleVisual, SwingPathVisual } from "./RacketVisuals";
+import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets } from "./RacketVisuals";
 import { PlayerFitBadges } from "./PlayerFitBadges";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
@@ -467,9 +467,16 @@ export function RacketExplorer({
           <PlayerFitBadges racket={selected} />
 
           <div className="grid gap-8 md:grid-cols-2">
-            <LaunchAngleVisual degrees={selected.idealLaunchAngleDeg} />
-            <SwingPathVisual degrees={selected.idealSwingPathDeg} />
+            <LaunchAngleVisual degrees={selected.idealLaunchAngleDeg} label="Strike launch (frame)" />
+            <SwingPathVisual degrees={selected.idealSwingPathDeg} label="Path through contact" />
           </div>
+          <StrikeCoachingBullets
+            launchDeg={selected.idealLaunchAngleDeg}
+            pathDeg={selected.idealSwingPathDeg}
+            spin={selected.spin}
+            control={selected.control}
+            power={selected.power}
+          />
 
           <ScoreGrid
             scores={[

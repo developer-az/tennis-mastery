@@ -32,6 +32,8 @@ export type GripType =
  *
  * hipYaw: − FH unit turn (hitting shoulder back), + BH turn
  * hipPitch: + athletic hinge / sit into legs (both hips)
+ * pelvisSurge: COM along facing axis (− back/load, + toward net)
+ * pelvisSway: COM lateral (+ toward hitting side)
  * spineTwist: shoulder–hip separation, same sign as coil
  * spineLean: + toward net, − arch (serve trophy)
  * shoulderFlexion: 0 hang, 90 forward, 180 up
@@ -46,6 +48,8 @@ export type GripType =
 export interface JointAngles {
   hipYaw: number;
   hipPitch: number;
+  pelvisSurge: number;
+  pelvisSway: number;
   spineTwist: number;
   spineLean: number;
   shoulderFlexion: number;

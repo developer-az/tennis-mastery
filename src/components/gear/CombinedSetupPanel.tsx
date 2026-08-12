@@ -7,7 +7,7 @@ import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
 import { LEAD_TAPE_ZONES } from "@/lib/equipment/leadTape";
 import { useGearStore } from "@/store/gearStore";
 import { EquipmentThumb } from "./EquipmentThumb";
-import { LaunchAngleVisual, SwingPathVisual } from "./RacketVisuals";
+import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets } from "./RacketVisuals";
 
 export function CombinedSetupPanel({
   rackets,
@@ -205,35 +205,44 @@ export function CombinedSetupPanel({
         </div>
       </div>
 
-      {/* Launch + path visuals */}
-      <div className="grid gap-6 border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:grid-cols-2 md:p-6">
-        {insight.launchAngleDeg != null ? (
-          <LaunchAngleVisual degrees={insight.launchAngleDeg} />
-        ) : (
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
-              Combined launch
-            </p>
-            <p className="mt-3 text-sm text-[var(--muted)]">Save a racket to unlock the launch diagram.</p>
-            <button
-              type="button"
-              onClick={() => go("rackets")}
-              className="mt-3 text-xs font-medium text-[var(--accent)]"
-            >
-              Choose frame →
-            </button>
-          </div>
-        )}
-        {insight.swingPathDeg != null ? (
-          <SwingPathVisual degrees={insight.swingPathDeg} />
-        ) : (
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
-              Combined swing path
-            </p>
-            <p className="mt-3 text-sm text-[var(--muted)]">Needs a frame base to draw the path.</p>
-          </div>
-        )}
+      {/* Launch + path visuals — from ideal strike on the bed */}
+      <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
+        <div className="grid gap-6 md:grid-cols-2">
+          {insight.launchAngleDeg != null ? (
+            <LaunchAngleVisual degrees={insight.launchAngleDeg} label="Molded strike launch" />
+          ) : (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+                Molded strike launch
+              </p>
+              <p className="mt-3 text-sm text-[var(--muted)]">Save a racket to unlock the strike-launch diagram.</p>
+              <button
+                type="button"
+                onClick={() => go("rackets")}
+                className="mt-3 text-xs font-medium text-[var(--accent)]"
+              >
+                Choose frame →
+              </button>
+            </div>
+          )}
+          {insight.swingPathDeg != null ? (
+            <SwingPathVisual degrees={insight.swingPathDeg} label="Molded path through contact" />
+          ) : (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
+                Molded swing path
+              </p>
+              <p className="mt-3 text-sm text-[var(--muted)]">Needs a frame base to draw the path.</p>
+            </div>
+          )}
+        </div>
+        <StrikeCoachingBullets
+          launchDeg={insight.launchAngleDeg}
+          pathDeg={insight.swingPathDeg}
+          spin={insight.scores.spin}
+          control={insight.scores.control}
+          power={insight.scores.power}
+        />
       </div>
 
       {/* Delta breakdown */}

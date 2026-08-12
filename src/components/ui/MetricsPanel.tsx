@@ -168,12 +168,12 @@ function SetupBridge({
           <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{setupSummary(setup)}</p>
           {launch != null && path != null ? (
             <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">
-              Molded ~{launch.toFixed(1)}° launch / ~{path.toFixed(0)}° path vs {athleteLabel}&apos;s{" "}
+              Molded ~{launch.toFixed(1)}° strike launch / ~{path.toFixed(0)}° path vs {athleteLabel}&apos;s{" "}
               {athleteLaunch.toFixed(1)}° / {athleteSwingPath.toFixed(0)}°
               {launch - athleteLaunch > 2
-                ? " — loftier bag."
+                ? " — loftier bag off the bed."
                 : athleteLaunch - launch > 2
-                  ? " — flatter bag."
+                  ? " — flatter bag off the bed."
                   : " — close match."}
             </p>
           ) : (

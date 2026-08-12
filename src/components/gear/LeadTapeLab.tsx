@@ -9,7 +9,7 @@ import {
   createLeadTapePiece,
 } from "@/lib/equipment/leadTape";
 import { useGearStore } from "@/store/gearStore";
-import { LaunchAngleVisual, SwingPathVisual } from "./RacketVisuals";
+import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets } from "./RacketVisuals";
 
 const VB_W = 200;
 const VB_H = 280;
@@ -343,11 +343,11 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
-              Launch — stock vs taped
+              Strike launch — stock vs taped
             </p>
-            <LaunchAngleVisual degrees={effect.launchAngleDeg} />
+            <LaunchAngleVisual degrees={effect.launchAngleDeg} label="Strike launch (taped)" />
             <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
-              Stock {baseline.launchAngleDeg}°
+              Stock {baseline.launchAngleDeg}° off the bed
               {hasTape
                 ? ` → taped ${effect.launchAngleDeg}° (${effect.deltaLaunchDeg >= 0 ? "+" : ""}${effect.deltaLaunchDeg}°)`
                 : " · add tape to change"}
@@ -355,9 +355,9 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
           </div>
           <div>
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
-              Swing path — stock vs taped
+              Path through contact — stock vs taped
             </p>
-            <SwingPathVisual degrees={effect.swingPathDeg} />
+            <SwingPathVisual degrees={effect.swingPathDeg} label="Path through contact (taped)" />
             <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
               Stock {baseline.swingPathDeg}°
               {hasTape
@@ -366,6 +366,13 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
             </p>
           </div>
         </div>
+        <StrikeCoachingBullets
+          launchDeg={effect.launchAngleDeg}
+          pathDeg={effect.swingPathDeg}
+          spin={baseRacket?.spin}
+          control={baseRacket?.control}
+          power={baseRacket?.power}
+        />
 
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">

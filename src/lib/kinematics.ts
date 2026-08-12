@@ -3,6 +3,8 @@ import type { JointAngles, PhaseKeyframe, StrokePhase, StrokeProfile } from "@/t
 const JOINT_KEYS = Object.keys({
   hipYaw: 0,
   hipPitch: 0,
+  pelvisSurge: 0,
+  pelvisSway: 0,
   spineTwist: 0,
   spineLean: 0,
   shoulderFlexion: 0,

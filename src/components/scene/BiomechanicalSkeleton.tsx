@@ -125,9 +125,11 @@ export function BiomechanicalSkeleton({
     hitShoulder: MeshRef;
     hitElbow: MeshRef;
     hitWrist: MeshRef;
+    hitHand: MeshRef;
     nonHitShoulder: MeshRef;
     nonHitElbow: MeshRef;
     nonHitWrist: MeshRef;
+    nonHitHand: MeshRef;
     handle: MeshRef;
     throat: MeshRef;
     hoop: MeshRef;
@@ -157,9 +159,11 @@ export function BiomechanicalSkeleton({
     hitShoulder: null,
     hitElbow: null,
     hitWrist: null,
+    hitHand: null,
     nonHitShoulder: null,
     nonHitElbow: null,
     nonHitWrist: null,
+    nonHitHand: null,
     handle: null,
     throat: null,
     hoop: null,
@@ -289,26 +293,27 @@ export function BiomechanicalSkeleton({
     // Arms inset at elbows so the fold reads as a joint, not a sharp V
     placeCapsule(m.hitUpper, p.hitShoulder, p.hitElbow, 0.038, p.hitUpperTwist, 0.03);
     placeCapsule(m.hitFore, p.hitElbow, p.hitWrist, 0.032, p.hitUpperTwist * 0.55, 0.028);
+    placeCapsule(m.hitHand, p.hitWrist, p.hitHand, 0.028, p.hitUpperTwist * 0.4, 0.012);
     placeCapsule(m.nonHitUpper, p.nonHitShoulder, p.nonHitElbow, 0.038, p.nonHitUpperTwist, 0.03);
     placeCapsule(m.nonHitFore, p.nonHitElbow, p.nonHitWrist, 0.032, p.nonHitUpperTwist * 0.45, 0.028);
+    placeCapsule(m.nonHitHand, p.nonHitWrist, p.nonHitHand, 0.026, p.nonHitUpperTwist * 0.3, 0.012);
 
     placeAt(m.hitShoulder, p.hitShoulder);
     if (m.hitShoulder) m.hitShoulder.scale.setScalar(0.05);
     placeAt(m.hitElbow, p.hitElbow);
     if (m.hitElbow) m.hitElbow.scale.setScalar(0.046);
     placeAt(m.hitWrist, p.hitWrist);
-    if (m.hitWrist) m.hitWrist.scale.setScalar(0.038);
+    if (m.hitWrist) m.hitWrist.scale.setScalar(0.034);
     placeAt(m.nonHitShoulder, p.nonHitShoulder);
     if (m.nonHitShoulder) m.nonHitShoulder.scale.setScalar(0.05);
     placeAt(m.nonHitElbow, p.nonHitElbow);
     if (m.nonHitElbow) m.nonHitElbow.scale.setScalar(0.044);
     placeAt(m.nonHitWrist, p.nonHitWrist);
-    if (m.nonHitWrist) m.nonHitWrist.scale.setScalar(0.036);
+    if (m.nonHitWrist) m.nonHitWrist.scale.setScalar(0.032);
 
     if (racketGroup.current) {
-      // Minimum-twist shaft tracking + sign-stable face normal.
-      // Avoids setFromUnitVectors pole flips and FK face-hemisphere chatter.
-      _dir.subVectors(p.racketTip, p.hitWrist);
+      // Racket owned by the HAND — grip butt sits in the palm, not the wrist joint
+      _dir.subVectors(p.racketTip, p.hitHand);
       const len = Math.max(0.35, _dir.length());
       _dir.normalize();
 
@@ -374,7 +379,7 @@ export function BiomechanicalSkeleton({
       }
       prevRacketQuat.current.copy(_quat);
 
-      _mid.addVectors(p.hitWrist, p.racketTip).multiplyScalar(0.5);
+      _mid.addVectors(p.hitHand, p.racketTip).multiplyScalar(0.5);
       racketGroup.current.position.copy(_mid);
       racketGroup.current.quaternion.copy(_quat);
 
@@ -427,8 +432,10 @@ export function BiomechanicalSkeleton({
 
       <mesh ref={bind("hitUpper")} geometry={geo.limb} material={skinMat} />
       <mesh ref={bind("hitFore")} geometry={geo.limb} material={skinMat} />
+      <mesh ref={bind("hitHand")} geometry={geo.limb} material={skinMat} />
       <mesh ref={bind("nonHitUpper")} geometry={geo.limb} material={skinMat} />
       <mesh ref={bind("nonHitFore")} geometry={geo.limb} material={skinMat} />
+      <mesh ref={bind("nonHitHand")} geometry={geo.limb} material={skinMat} />
       <mesh ref={bind("hitShoulder")} geometry={geo.joint} material={jointMat} />
       <mesh ref={bind("hitElbow")} geometry={geo.joint} material={jointMat} />
       <mesh ref={bind("hitWrist")} geometry={geo.joint} material={jointMat} />
