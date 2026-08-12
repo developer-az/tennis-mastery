@@ -80,12 +80,10 @@ export function CombinedSetupPanel({
           Combined setup
         </p>
         <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl tracking-tight">
-          Build a full bag, then see how it plays together
+          Build a full bag, then see how it plays
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
-          Individual racket, string, grip, and lead-tape reads are useful — but launch angle,
-          playstyle, and tradeoffs only make sense when they are molded into one setup. Save pieces
-          on the other tabs, then return here for the composite.
+          Save racket, string, grip, and tape — then come back for molded launch, scores, and flight.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           {(
@@ -126,7 +124,7 @@ export function CombinedSetupPanel({
               {insight.playstyleDetail || insight.summary}
             </p>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Completeness {insight.completeness}% — mold all four pieces for the most honest read.
+              Completeness {insight.completeness}%
             </p>
           </div>
           <Link
@@ -235,6 +233,7 @@ export function CombinedSetupPanel({
               spin={insight.scores.spin}
               power={insight.scores.power}
               control={insight.scores.control}
+              flight={insight.flight}
               zone={
                 racket
                   ? strikeZoneForFrame({
@@ -250,7 +249,7 @@ export function CombinedSetupPanel({
                       power: insight.scores.power,
                     })
               }
-              label="Strike mold → flight vs net"
+              label="Flight vs net — this setup"
             />
           ) : (
             <div>
@@ -318,11 +317,10 @@ export function CombinedSetupPanel({
       {insight.forehand ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
-            Forehand grip & face at contact
+            Forehand grip & face
           </p>
           <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
-            Best grip and how closed the face should be for this mold’s path and leave — not a
-            generic “semi-western for everyone.”
+            Best bevel and how closed the face should be for this path and leave.
           </p>
           <div className="mt-5 grid gap-6 md:grid-cols-2">
             <ForehandGripBevelVisual advice={insight.forehand} />
@@ -353,9 +351,8 @@ export function CombinedSetupPanel({
               </p>
               <p className="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">
                 <span className="text-sky-300/90">Science — </span>
-                Grip sets the natural face lean; swing path loads spin across that lean. Opening the
-                face at contact raises leave without adding path — that’s how balls sail on power
-                molds or dump when you panic-close too late.
+                Grip sets face lean; path loads spin across it. Opening the face raises leave without
+                adding path — that’s sail fuel.
               </p>
             </div>
           </div>
@@ -365,38 +362,38 @@ export function CombinedSetupPanel({
       {/* Delta breakdown */}
       <div className="grid gap-4 border border-[var(--line)] bg-[var(--panel)]/90 p-5 sm:grid-cols-2 lg:grid-cols-4 md:p-6">
         <Stat
-          label="Combined launch"
+          label="Launch"
           value={
             insight.launchAngleDeg != null ? `${insight.launchAngleDeg.toFixed(1)}°` : "—"
           }
           hint={
             insight.baseLaunchDeg != null && insight.launchAngleDeg != null
-              ? `Frame ${insight.baseLaunchDeg.toFixed(1)}° → molded ${insight.launchAngleDeg.toFixed(1)}°`
-              : "Save a racket for launch"
+              ? `Stock ${insight.baseLaunchDeg.toFixed(1)}° → molded`
+              : "Needs a frame"
           }
         />
         <Stat
-          label="Combined swing path"
-          value={insight.swingPathDeg != null ? `~${insight.swingPathDeg.toFixed(0)}°` : "—"}
-          hint={`String ${fmtDelta(insight.deltas.stringPath)}° · tape ${fmtDelta(insight.deltas.tapePath)}°`}
+          label="Swing path"
+          value={insight.swingPathDeg != null ? `${insight.swingPathDeg.toFixed(0)}°` : "—"}
+          hint={`String ${fmtDelta(insight.deltas.stringPath)} · tape ${fmtDelta(insight.deltas.tapePath)}`}
         />
         <Stat
-          label="Launch mold deltas"
+          label="Net clear"
+          value={insight.flight ? `+${insight.flight.netClearIn.toFixed(0)}"` : "—"}
+          hint={
+            insight.flight
+              ? `Plow ${insight.flight.plow} · topspin ${insight.flight.topspin}`
+              : "Save a racket"
+          }
+        />
+        <Stat
+          label="Depth / fly"
           value={
-            insight.hasRacket
-              ? `${fmtDelta(insight.deltas.stringLaunch + insight.deltas.gripLaunch + insight.deltas.tapeLaunch)}°`
+            insight.flight
+              ? `${insight.flight.depth} / ${insight.flight.flyRisk}`
               : "—"
           }
-          hint={`String ${fmtDelta(insight.deltas.stringLaunch)} · grip ${fmtDelta(insight.deltas.gripLaunch)} · tape ${fmtDelta(insight.deltas.tapeLaunch)}`}
-        />
-        <Stat
-          label="Molded scores"
-          value={
-            insight.scores.power != null
-              ? `${insight.scores.power} / ${insight.scores.spin} / ${insight.scores.control}`
-              : "—"
-          }
-          hint="Power / spin / control"
+          hint="Depth score · fly risk"
         />
       </div>
 
@@ -406,18 +403,17 @@ export function CombinedSetupPanel({
             Molded scores
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Composite of frame + bed at your tension/gauge + grip. Bars show where you sit; use the
-            tune cards below to push a score without guessing.
+            Frame + string + grip + tape. Deltas vs stock frame.
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {(
               [
-                ["Power", insight.scores.power, "#f4a261"],
-                ["Spin", insight.scores.spin, "#7dd3fc"],
-                ["Control", insight.scores.control, "#c8f560"],
-                ["Comfort", insight.scores.comfort, "#e9c46a"],
+                ["Power", insight.scores.power, insight.stockScores.power, insight.scoreDeltas.total.power, "#f4a261"],
+                ["Spin", insight.scores.spin, insight.stockScores.spin, insight.scoreDeltas.total.spin, "#7dd3fc"],
+                ["Control", insight.scores.control, insight.stockScores.control, insight.scoreDeltas.total.control, "#c8f560"],
+                ["Comfort", insight.scores.comfort, insight.stockScores.comfort, insight.scoreDeltas.total.comfort, "#e9c46a"],
               ] as const
-            ).map(([label, v, color]) => (
+            ).map(([label, v, stock, delta, color]) => (
               <div key={label}>
                 <p className="text-[10px] uppercase tracking-[0.14em]" style={{ color }}>
                   {label}
@@ -433,21 +429,46 @@ export function CombinedSetupPanel({
                 </div>
                 <p className="mt-1 font-[family-name:var(--font-display)] text-xl tabular-nums tracking-tight">
                   {v ?? "—"}
+                  {stock != null && Math.abs(delta) >= 0.5 ? (
+                    <span className="ml-1.5 text-xs text-[var(--muted)]">
+                      {stock}
+                      <span style={{ color }}>
+                        {" "}
+                        {delta > 0 ? "+" : ""}
+                        {Math.round(delta)}
+                      </span>
+                    </span>
+                  ) : null}
                 </p>
               </div>
             ))}
           </div>
+          {(insight.hasString || insight.hasGrip || insight.hasTape) && (
+            <p className="mt-3 text-[11px] tabular-nums text-[var(--muted)]">
+              Shifts — string P/S/C{" "}
+              {fmtDelta(insight.scoreDeltas.string.power)}/
+              {fmtDelta(insight.scoreDeltas.string.spin)}/
+              {fmtDelta(insight.scoreDeltas.string.control)}
+              {" · "}grip{" "}
+              {fmtDelta(insight.scoreDeltas.grip.power)}/
+              {fmtDelta(insight.scoreDeltas.grip.spin)}/
+              {fmtDelta(insight.scoreDeltas.grip.control)}
+              {" · "}tape{" "}
+              {fmtDelta(insight.scoreDeltas.tape.power)}/
+              {fmtDelta(insight.scoreDeltas.tape.spin)}/
+              {fmtDelta(insight.scoreDeltas.tape.control)}
+            </p>
+          )}
         </div>
       )}
 
       {insight.tuneTips.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
-            Perfect the mold — levers & tradeoffs
+            Perfect the mold
           </p>
           <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
-            String dials and lead-tape placements — not just tension. Raising one score usually costs
-            another; open Lead tape to place grams after you pick a lever.
+            String dials and lead-tape placements. Raising one score usually costs another.
           </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {insight.tuneTips.map((tip) => {
@@ -558,10 +579,10 @@ export function CombinedSetupPanel({
       {insight.weakPoints.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
-            Frame weak points — what holds you back
+            Frame weak points
           </p>
           <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
-            The mold’s liability on court, plus specific practice — not generic “hit more balls.”
+            What holds this mold back — and what to practice.
           </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {insight.weakPoints.map((wp) => (

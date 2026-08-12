@@ -8,6 +8,7 @@ import { racketImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 import { deriveForehandMold } from "@/lib/equipment/forehandMold";
+import { computeFlightMetrics } from "@/lib/equipment/setupSynthesis";
 import { PlayerFitBadges } from "./PlayerFitBadges";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
@@ -133,6 +134,20 @@ export function RacketExplorer({
 
   const forehandAdvice = useMemo(
     () => (selected ? deriveForehandMold({ racket: selected }) : null),
+    [selected],
+  );
+  const stockFlight = useMemo(
+    () =>
+      selected
+        ? computeFlightMetrics({
+            launchDeg: selected.idealLaunchAngleDeg,
+            pathDeg: selected.idealSwingPathDeg,
+            power: selected.power,
+            spin: selected.spin,
+            control: selected.control,
+            swingweight: selected.swingweight,
+          })
+        : null,
     [selected],
   );
 
@@ -527,8 +542,9 @@ export function RacketExplorer({
               spin={selected.spin}
               power={selected.power}
               control={selected.control}
+              flight={stockFlight}
               zone={strikeZoneForFrame(selected)}
-              label="Strike mold → flight vs net"
+              label="Flight vs net — stock frame"
             />
             <SwingPathVisual
               degrees={selected.idealSwingPathDeg}

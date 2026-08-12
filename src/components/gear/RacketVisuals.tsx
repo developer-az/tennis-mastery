@@ -7,6 +7,7 @@
 
 import { useId } from "react";
 import type { ForehandMoldAdvice } from "@/lib/equipment/forehandMold";
+import type { FlightMetrics } from "@/lib/equipment/setupSynthesis";
 
 export type StrikeBand = "neck" | "chest" | "waist";
 
@@ -80,13 +81,12 @@ function pathTypeLabel(degrees: number): string {
 }
 
 function strikeWindowCopy(launchDeg: number, pathDeg: number, zone: StrikeZoneHint): string {
-  return `Best strike height: ${zone.label.toLowerCase()}. ${zone.detail}`;
+  return `${zone.label} · ${launchDeg.toFixed(1)}° leave · path ~${pathDeg.toFixed(0)}°.`;
 }
 
 /**
- * Side-view: body strike mold (neck/chest/waist) + perfect face contact →
- * ball clears the net → topspin drop. Gauges fly / spin / depth likelihood
- * for this frame on a clean hit.
+ * Side-view: strike mold → flight vs net.
+ * When `flight` is passed, gauges and path match the molded setup exactly.
  */
 export function LaunchAngleVisual({
   degrees,
@@ -95,6 +95,7 @@ export function LaunchAngleVisual({
   spin = 55,
   power = 55,
   control = 55,
+  flight = null,
   label = "Strike mold → flight",
 }: {
   degrees: number;
@@ -103,11 +104,12 @@ export function LaunchAngleVisual({
   spin?: number | null;
   power?: number | null;
   control?: number | null;
+  flight?: FlightMetrics | null;
   label?: string;
 }) {
   const uid = useId().replace(/:/g, "");
-  const launch = Math.max(1.5, Math.min(16, degrees));
-  const path = Math.max(5, Math.min(40, pathDeg));
+  const launch = Math.max(1.5, Math.min(16, flight?.launchDeg ?? degrees));
+  const path = Math.max(5, Math.min(40, flight?.pathDeg ?? pathDeg));
   const z =
     zone ??
     strikeZoneForFrame({
@@ -132,32 +134,23 @@ export function LaunchAngleVisual({
   const netTop = 58;
   const netBot = 138;
 
-  const clearancePx = 14 + launch * 2.8 + Math.max(0, path - 18) * 0.2;
+  const plow = flight?.plow ?? Math.round((power ?? 55) * 0.55 + 20);
+  const topspin = flight?.topspin ?? Math.round((spin ?? 55) * 0.55 + path * 1.1);
+  const depth = flight?.depth ?? 55;
+  const flyRisk = flight?.flyRisk ?? 40;
+  const netClearIn = flight?.netClearIn ?? roundClear(launch, path);
+
+  // Geometry from setup leave + topspin + plow (deeper plow → lands farther)
+  const clearancePx = 10 + netClearIn * 1.15;
   const overNetY = netTop - clearancePx;
-  const apexX = netX + 24 + launch * 1.1;
-  const apexY = overNetY - (8 + launch * 1.5);
-  const spinDrop = 0.3 + (path / 40) * 0.7;
-  const landX = 208;
-  const landY = Math.min(floorY - 4, apexY + 32 + spinDrop * 34 - launch * 1.1);
+  const apexX = netX + 18 + launch * 1.2 + plow * 0.08;
+  const apexY = overNetY - (6 + launch * 1.4);
+  const spinDrop = 0.25 + (topspin / 100) * 0.85;
+  const landX = clampNum(168 + depth * 0.42 + plow * 0.12 - topspin * 0.08, 175, 212);
+  const landY = Math.min(floorY - 4, apexY + 28 + spinDrop * 36 - launch * 1.0);
   const midPreX = (faceCx + netX) / 2;
   const midPreY = faceCy + (overNetY - faceCy) * 0.5 - 8;
-  const flight = `M ${faceCx} ${faceCy} Q ${midPreX} ${midPreY}, ${netX} ${overNetY} Q ${apexX} ${apexY}, ${landX} ${landY}`;
-
-  const sp = spin ?? 55;
-  const pw = power ?? 55;
-  const ct = control ?? 55;
-  const flyRisk = Math.max(
-    8,
-    Math.min(96, Math.round(28 + (launch - 7) * 7 + (22 - path) * 1.2 + (pw - ct) * 0.25)),
-  );
-  const spinLev = Math.max(
-    8,
-    Math.min(96, Math.round(sp * 0.55 + path * 1.1 + (launch > 9 ? 6 : 0))),
-  );
-  const depth = Math.max(
-    8,
-    Math.min(96, Math.round(pw * 0.5 + (18 - Math.abs(launch - 7)) * 2.2 + (40 - path) * 0.35)),
-  );
+  const flightPath = `M ${faceCx} ${faceCy} Q ${midPreX} ${midPreY}, ${netX} ${overNetY} Q ${apexX} ${apexY}, ${landX} ${landY}`;
 
   return (
     <div className="relative">
@@ -288,7 +281,7 @@ export function LaunchAngleVisual({
           net
         </text>
         <path
-          d={flight}
+          d={flightPath}
           fill="none"
           stroke={`url(#ballArc-${uid})`}
           strokeWidth="2.5"
@@ -305,7 +298,7 @@ export function LaunchAngleVisual({
           strokeDasharray="2 2"
         />
         <text x={netX + 9} y={(overNetY + netTop) / 2 + 3} fill="#7dd3fc" fontSize="7">
-          clear
+          +{netClearIn.toFixed(0)}"
         </text>
         <path
           d={`M ${apexX + 3} ${apexY + 2} q ${16 + spinDrop * 8} ${10 + spinDrop * 12}, ${30 + spinDrop * 8} ${20 + spinDrop * 16}`}
@@ -325,25 +318,36 @@ export function LaunchAngleVisual({
       </svg>
 
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
-        {z.label}
+        {launch.toFixed(1)}° leave
         <span className="ml-2 text-base text-[var(--muted)]">
-          · {launch.toFixed(1)}° leave · path ~{path.toFixed(0)}°
+          · path {path.toFixed(0)}° · +{netClearIn.toFixed(0)}" clear
         </span>
       </p>
       <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-        Same height mold as “where to strike” — the green face mark is the perfect stringbed
-        center. From there the ball clears the tape (~{launch.toFixed(1)}°), then path ~
-        {path.toFixed(0)}° pulls it down. Gauges show fly risk, spin leverage, and depth on a
-        clean hit.
+        {z.label}. Face-center hit — numbers match this setup’s string, grip, and tape.
       </p>
 
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <FlightGauge label="Fly risk" value={flyRisk} color="#f4a261" hint="Long / sail" />
-        <FlightGauge label="Spin lever" value={spinLev} color="#7dd3fc" hint="Drop after tape" />
-        <FlightGauge label="Depth" value={depth} color="#c8f560" hint="Through the court" />
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <FlightGauge label="Plow" value={plow} color="#e9c46a" hint="Mass through hit" />
+        <FlightGauge label="Topspin" value={topspin} color="#7dd3fc" hint="Drop after tape" />
+        <FlightGauge
+          label="Launch"
+          value={clampNum(Math.round(launch * 6.2), 8, 98)}
+          color="#c8f560"
+          hint={`${launch.toFixed(1)}° leave`}
+        />
+        <FlightGauge label="Depth" value={depth} color="#f4a261" hint={`Fly risk ${flyRisk}`} />
       </div>
     </div>
   );
+}
+
+function roundClear(launch: number, path: number): number {
+  return Math.round((2.2 + launch * 1.85 + Math.max(0, path - 18) * 0.12) * 10) / 10;
+}
+
+function clampNum(v: number, a: number, b: number): number {
+  return Math.max(a, Math.min(b, v));
 }
 
 function FlightGauge({
@@ -538,34 +542,26 @@ export function StrikeCoachingBullets({
 
   bullets.push(strikeWindowCopy(launch, path, z));
   bullets.push(
-    `Path type: ${pathTypeLabel(path).toLowerCase()} (~${path.toFixed(0)}°). Through the ${z.primary} band, swing along that shape — don’t invent a flatter or steeper path than the frame wants.`,
+    `Path ~${path.toFixed(0)}° (${pathTypeLabel(path).toLowerCase()}) through the ${z.primary} band.`,
   );
   bullets.push(
-    `Net science: ~${launch.toFixed(1)}° leave clears the tape; topspin from the ~${path.toFixed(0)}° path is what pulls the ball down. Dumping short = late / low contact. Floating long = face too open or bed too soft — try +1–2 lbs before changing frames.`,
+    `~${launch.toFixed(1)}° leave clears the tape; path drops it. Dump = late/low. Long = face open or bed soft (+1–2 lbs).`,
   );
 
   if ((spin ?? 0) >= 72 || path >= 28) {
-    bullets.push(
-      "Tune spin window: shaped poly, mid gauge, or +2–4 g at 12 o’clock supports this launch; don’t soften tension so much you scoop waist-low balls.",
-    );
+    bullets.push("Spin window: shaped poly or +2–4 g at 12 — don’t soften so much you scoop lows.");
   } else if ((control ?? 0) >= 72 || path <= 16) {
-    bullets.push(
-      "Tune precision: denser pattern / +2 lbs / less tip mass keeps launch honest. If depth fades, open the path slightly — don’t wait on contact.",
-    );
+    bullets.push("Precision: +2 lbs or less tip mass. Need depth? Open the path slightly — don’t wait.");
   } else if ((power ?? 0) >= 72) {
-    bullets.push(
-      "Tune easy depth: shorter swing is fine; +2 lbs or handle-side tape flattens launch if you’re floating long on clean chest strikes.",
-    );
+    bullets.push("Easy depth: shorter swing is fine. Floating? +2 lbs or handle tape.");
   } else {
-    bullets.push(
-      "Tune the mold: tension (±2 lbs ≈ small launch shift), gauge, or a few grams tip vs handle — then re-check clearance and strike height here.",
-    );
+    bullets.push("Fine-tune: ±2 lbs, gauge, or a few grams tip vs handle — then re-check clearance.");
   }
 
   return (
     <div className="mt-4 border-t border-[var(--line)] pt-4">
       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
-        How to use this at a high level
+        How to use this
       </p>
       <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--foreground)]/90">
         {bullets.map((b) => (

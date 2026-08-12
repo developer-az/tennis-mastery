@@ -29,6 +29,29 @@ export interface FramePracticeTip {
   practice: string[];
 }
 
+/** Quantified clean-hit flight for the molded setup. */
+export interface FlightMetrics {
+  launchDeg: number;
+  pathDeg: number;
+  /** Effective plow-through (mass × tip bias) 0–100 */
+  plow: number;
+  /** Topspin / drop leverage 0–100 */
+  topspin: number;
+  /** Through-court depth 0–100 */
+  depth: number;
+  /** Estimated inches over the tape on a center hit */
+  netClearIn: number;
+  /** Sail / long tendency 0–100 */
+  flyRisk: number;
+}
+
+export interface ScorePieceDeltas {
+  power: number;
+  spin: number;
+  control: number;
+  comfort: number;
+}
+
 export interface CombinedSetupInsight {
   hasAny: boolean;
   hasRacket: boolean;
@@ -46,6 +69,21 @@ export interface CombinedSetupInsight {
     stringPath: number;
     tapePath: number;
   };
+  /** Stock frame scores (before string/grip/tape mold) */
+  stockScores: {
+    power: number | null;
+    spin: number | null;
+    control: number | null;
+    comfort: number | null;
+  };
+  /** How each piece shifted scores vs stock blend */
+  scoreDeltas: {
+    string: ScorePieceDeltas;
+    grip: ScorePieceDeltas;
+    tape: ScorePieceDeltas;
+    total: ScorePieceDeltas;
+  };
+  flight: FlightMetrics | null;
   playstyle: string;
   playstyleDetail: string;
   pros: string[];
@@ -73,6 +111,102 @@ function clamp(v: number, a: number, b: number): number {
 
 function round1(v: number): number {
   return Math.round(v * 10) / 10;
+}
+
+function fmtSigned(n: number): string {
+  const r = round1(n);
+  if (Math.abs(r) < 0.05) return "0";
+  return `${r > 0 ? "+" : ""}${r}`;
+}
+
+/**
+ * Lead-tape → score shifts (coaching-grade).
+ * Tip/12: plow + power, flatter leave, arm tax.
+ * 3/9: twist stability → control.
+ * Handle: whip, slightly less plow, easier steep path.
+ */
+export function scoreDeltasFromTape(input: {
+  tipG: number;
+  handleG: number;
+  sideG: number;
+  throatG: number;
+  deltaSw: number;
+  deltaPath: number;
+}): ScorePieceDeltas {
+  const { tipG, handleG, sideG, throatG, deltaSw, deltaPath } = input;
+  return {
+    power: round1(tipG * 1.45 + sideG * 0.35 + throatG * 0.45 - handleG * 0.4 + deltaSw * 0.12),
+    spin: round1(tipG * 0.4 + sideG * 0.2 + deltaPath * 0.55 - handleG * 0.15),
+    control: round1(sideG * 1.25 + handleG * 0.55 + throatG * 0.35 - tipG * 0.35),
+    comfort: round1(-tipG * 0.95 - deltaSw * 0.1 + handleG * 0.35 + throatG * 0.25),
+  };
+}
+
+/** Clean-hit flight quantities from molded leave/path/scores/SW. */
+export function computeFlightMetrics(input: {
+  launchDeg: number;
+  pathDeg: number;
+  power: number | null;
+  spin: number | null;
+  control: number | null;
+  swingweight: number | null;
+  tipG?: number;
+  handleG?: number;
+}): FlightMetrics {
+  const launch = clamp(input.launchDeg, 1.5, 16);
+  const path = clamp(input.pathDeg, 4, 48);
+  const pw = input.power ?? 55;
+  const sp = input.spin ?? 55;
+  const ct = input.control ?? 55;
+  const sw = input.swingweight ?? 315;
+  const tipG = input.tipG ?? 0;
+  const handleG = input.handleG ?? 0;
+
+  const plow = clamp(
+    Math.round(pw * 0.45 + (sw - 300) * 0.55 + tipG * 2.2 - handleG * 1.1),
+    5,
+    98,
+  );
+  const topspin = clamp(
+    Math.round(sp * 0.5 + path * 1.15 + (launch > 9 ? 4 : 0) + tipG * 0.4),
+    5,
+    98,
+  );
+  const depth = clamp(
+    Math.round(
+      plow * 0.35 +
+        pw * 0.25 +
+        (18 - Math.abs(launch - 7.2)) * 2.4 +
+        (40 - path) * 0.28 -
+        Math.max(0, topspin - 70) * 0.15,
+    ),
+    5,
+    98,
+  );
+  // ~net height 36"; clearance scales with leave + a touch of path lift
+  const netClearIn = round1(clamp(2.2 + launch * 1.85 + Math.max(0, path - 18) * 0.12, 0.5, 42));
+  const flyRisk = clamp(
+    Math.round(
+      22 +
+        (launch - 7) * 6.5 +
+        (22 - path) * 1.15 +
+        (pw - ct) * 0.28 +
+        Math.max(0, plow - 70) * 0.12 -
+        Math.max(0, topspin - 65) * 0.18,
+    ),
+    5,
+    98,
+  );
+
+  return {
+    launchDeg: round1(launch),
+    pathDeg: round1(path),
+    plow,
+    topspin,
+    depth,
+    netClearIn,
+    flyRisk,
+  };
 }
 
 function avg(
@@ -184,6 +318,15 @@ export function synthesizeCombinedSetup(
   let tapeLaunch = 0;
   let tapePath = 0;
   let tapeHints: string[] = [];
+  let tapeScore: ScorePieceDeltas = { power: 0, spin: 0, control: 0, comfort: 0 };
+  let tapeSwDelta = 0;
+  let tapeTipG = 0;
+  let tapeHandleG = 0;
+  let tapeSideG = 0;
+  let tapeThroatG = 0;
+  let effectiveSw: number | null =
+    racket?.swingweight ?? setup.racketSwingweight ?? null;
+
   if (hasRacket && (racket || (setup.racketLaunchDeg != null && setup.racketSwingPathDeg != null))) {
     const tapeInput = racket ?? {
       weightG: setup.racketWeightG,
@@ -196,6 +339,21 @@ export function synthesizeCombinedSetup(
     tapeLaunch = effect.deltaLaunchDeg;
     tapePath = effect.deltaSwingPathDeg;
     tapeHints = effect.hints.filter((h) => !h.startsWith("Add tape"));
+    tapeSwDelta = effect.deltaSwingweight;
+    effectiveSw = effect.swingweight;
+    const zs = effect.zoneSummary;
+    tapeTipG = (zs.tip ?? 0) + (zs.twelve ?? 0);
+    tapeHandleG = zs.handle ?? 0;
+    tapeSideG = (zs.three ?? 0) + (zs.nine ?? 0);
+    tapeThroatG = zs.throat ?? 0;
+    tapeScore = scoreDeltasFromTape({
+      tipG: tapeTipG,
+      handleG: tapeHandleG,
+      sideG: tapeSideG,
+      throatG: tapeThroatG,
+      deltaSw: tapeSwDelta,
+      deltaPath: tapePath,
+    });
   }
 
   let launchAngleDeg: number | null = null;
@@ -211,47 +369,123 @@ export function synthesizeCombinedSetup(
     swingPathDeg = clamp(round1(basePath + stringPath + tapePath), 4, 48);
   }
 
-  const power = avg([
-    { v: racket?.power ?? setup.racketPower ?? NaN, w: 0.5 },
-    { v: string ? tensionOutcome(string, setup.tensionLbs ?? string.recommendedTensionLbs, setup.gaugeMm ?? undefined).power : (setup.stringPower ?? NaN), w: 0.4 },
-    { v: setup.gripCushion ?? grip?.cushion ?? stack.cushion ?? NaN, w: 0.1 },
+  const stockScores = {
+    power: racket?.power ?? setup.racketPower ?? null,
+    spin: racket?.spin ?? setup.racketSpin ?? null,
+    control: racket?.control ?? setup.racketControl ?? null,
+    comfort: racket?.comfort ?? setup.racketComfort ?? null,
+  };
+
+  const bed =
+    string && setup.tensionLbs != null
+      ? tensionOutcome(string, setup.tensionLbs, setup.gaugeMm ?? undefined)
+      : string
+        ? tensionOutcome(
+            string,
+            string.recommendedTensionLbs,
+            setup.gaugeMm ?? undefined,
+          )
+        : null;
+
+  // Frame-weighted blend, then additive grip/tape science deltas
+  const blendPower = avg([
+    { v: stockScores.power ?? NaN, w: hasString || bed ? 0.55 : 1 },
+    { v: bed?.power ?? setup.stringPower ?? NaN, w: 0.45 },
   ]);
-  const spinRaw = avg([
-    { v: racket?.spin ?? setup.racketSpin ?? NaN, w: 0.45 },
-    {
-      v: string
-        ? tensionOutcome(string, setup.tensionLbs ?? string.recommendedTensionLbs, setup.gaugeMm ?? undefined).spin
-        : (setup.stringSpin ?? NaN),
-      w: 0.5,
-    },
-    { v: 50, w: 0.05 },
+  const blendSpin = avg([
+    { v: stockScores.spin ?? NaN, w: hasString || bed ? 0.5 : 1 },
+    { v: bed?.spin ?? setup.stringSpin ?? NaN, w: 0.5 },
   ]);
-  const controlRaw = avg([
-    { v: racket?.control ?? setup.racketControl ?? NaN, w: 0.5 },
-    {
-      v: string
-        ? tensionOutcome(string, setup.tensionLbs ?? string.recommendedTensionLbs, setup.gaugeMm ?? undefined).control
-        : (setup.stringControl ?? NaN),
-      w: 0.4,
-    },
-    { v: stack.tackiness || grip?.tackiness || setup.gripTackiness || NaN, w: 0.1 },
+  const blendControl = avg([
+    { v: stockScores.control ?? NaN, w: hasString || bed ? 0.55 : 1 },
+    { v: bed?.control ?? setup.stringControl ?? NaN, w: 0.45 },
   ]);
-  const comfortRaw = avg([
-    { v: racket?.comfort ?? setup.racketComfort ?? NaN, w: 0.35 },
-    {
-      v: string
-        ? tensionOutcome(string, setup.tensionLbs ?? string.recommendedTensionLbs, setup.gaugeMm ?? undefined).comfort
-        : (setup.stringComfort ?? NaN),
-      w: 0.4,
-    },
-    { v: stack.cushion || grip?.cushion || setup.gripCushion || NaN, w: 0.25 },
+  const blendComfort = avg([
+    { v: stockScores.comfort ?? NaN, w: hasString || bed ? 0.45 : 1 },
+    { v: bed?.comfort ?? setup.stringComfort ?? NaN, w: 0.55 },
   ]);
+
+  const stringScore: ScorePieceDeltas = {
+    power: blendPower != null && stockScores.power != null ? blendPower - stockScores.power : 0,
+    spin: blendSpin != null && stockScores.spin != null ? blendSpin - stockScores.spin : 0,
+    control:
+      blendControl != null && stockScores.control != null
+        ? blendControl - stockScores.control
+        : 0,
+    comfort:
+      blendComfort != null && stockScores.comfort != null
+        ? blendComfort - stockScores.comfort
+        : 0,
+  };
+
+  const gripScore: ScorePieceDeltas = hasGrip
+    ? {
+        power: round1((stack.cushion - 50) * 0.04),
+        spin: stack.spinBias,
+        control: stack.controlBias,
+        comfort: stack.comfortBias,
+      }
+    : { power: 0, spin: 0, control: 0, comfort: 0 };
+
+  const power =
+    blendPower != null
+      ? clamp(Math.round(blendPower + gripScore.power + tapeScore.power), 5, 98)
+      : null;
   const spin =
-    spinRaw != null ? clamp(spinRaw + (hasGrip ? stack.spinBias : 0), 5, 98) : null;
+    blendSpin != null
+      ? clamp(Math.round(blendSpin + gripScore.spin + tapeScore.spin), 5, 98)
+      : null;
   const control =
-    controlRaw != null ? clamp(controlRaw + (hasGrip ? stack.controlBias : 0), 5, 98) : null;
+    blendControl != null
+      ? clamp(Math.round(blendControl + gripScore.control + tapeScore.control), 5, 98)
+      : null;
   const comfort =
-    comfortRaw != null ? clamp(comfortRaw + (hasGrip ? stack.comfortBias : 0), 5, 98) : null;
+    blendComfort != null
+      ? clamp(Math.round(blendComfort + gripScore.comfort + tapeScore.comfort), 5, 98)
+      : null;
+
+  const scoreDeltas = {
+    string: {
+      power: round1(stringScore.power),
+      spin: round1(stringScore.spin),
+      control: round1(stringScore.control),
+      comfort: round1(stringScore.comfort),
+    },
+    grip: gripScore,
+    tape: {
+      power: round1(tapeScore.power),
+      spin: round1(tapeScore.spin),
+      control: round1(tapeScore.control),
+      comfort: round1(tapeScore.comfort),
+    },
+    total: {
+      power:
+        power != null && stockScores.power != null ? power - stockScores.power : 0,
+      spin: spin != null && stockScores.spin != null ? spin - stockScores.spin : 0,
+      control:
+        control != null && stockScores.control != null
+          ? control - stockScores.control
+          : 0,
+      comfort:
+        comfort != null && stockScores.comfort != null
+          ? comfort - stockScores.comfort
+          : 0,
+    },
+  };
+
+  const flight =
+    launchAngleDeg != null && swingPathDeg != null
+      ? computeFlightMetrics({
+          launchDeg: launchAngleDeg,
+          pathDeg: swingPathDeg,
+          power,
+          spin,
+          control,
+          swingweight: effectiveSw,
+          tipG: tapeTipG,
+          handleG: tapeHandleG,
+        })
+      : null;
 
   const fit = racket ? derivePlayerFit(racket) : null;
   const playstyle = buildPlaystyle({
@@ -472,49 +706,52 @@ export function synthesizeCombinedSetup(
   if (hasTape) {
     const g = pieces.reduce((n, p) => n + p.massG, 0);
     pros.push(`Lead tape +${round1(g)}g across ${pieces.length} piece${pieces.length === 1 ? "" : "s"}.`);
-    for (const h of tapeHints.slice(0, 3)) pros.push(h);
+    for (const h of tapeHints.slice(0, 2)) pros.push(h);
     if (Math.abs(tapeLaunch) >= 0.15 || Math.abs(tapePath) >= 0.2) {
       pros.push(
         `Tape vs stock: launch ${tapeLaunch >= 0 ? "+" : ""}${tapeLaunch}° · path ${tapePath >= 0 ? "+" : ""}${tapePath}°.`,
       );
     }
+    const td = tapeScore;
+    if (Math.abs(td.power) + Math.abs(td.spin) + Math.abs(td.control) >= 1.5) {
+      pros.push(
+        `Tape score shift: Pwr ${fmtSigned(td.power)} · Spin ${fmtSigned(td.spin)} · Ctl ${fmtSigned(td.control)} · Comfort ${fmtSigned(td.comfort)}.`,
+      );
+    }
     if (g >= 8) {
-      cons.push("Heavy customization (≥8g) — SW jump can fatigue the arm; try −2g or move mass toward the handle.");
+      cons.push("Heavy tape (≥8g) — big SW jump; try −2g or move mass to the handle.");
     }
     if (g > 0 && g < 2) {
-      pros.push("Light tape dose — good for A/B testing tip vs handle without remolding the frame.");
+      pros.push("Light tape dose — clean A/B for tip vs handle.");
     }
   } else if (hasRacket) {
-    cons.push("No lead tape — tip/handle mass is still a free lever for plow vs whip.");
+    cons.push("No lead tape — tip/handle mass is still free for plow vs whip.");
   }
 
   if (launchAngleDeg != null && swingPathDeg != null) {
-    pros.push(
-      `Composite teaching now: ~${launchAngleDeg}° leave / ~${swingPathDeg}° path (frame + string + grip + tape).`,
-    );
+    pros.push(`Molded flight: ${launchAngleDeg}° leave / ${swingPathDeg}° path.`);
+    if (flight) {
+      pros.push(
+        `Clean hit: +${flight.netClearIn}" clear · plow ${flight.plow} · topspin ${flight.topspin} · depth ${flight.depth}.`,
+      );
+    }
     if (launchAngleDeg >= 10) {
-      cons.push(
-        "Composite leave is lofty — if balls sail, +1–2 lbs tension or less tip weight is the first accountable cut.",
-      );
+      cons.push("Lofty leave — sailing? +1–2 lbs or less tip mass.");
     } else if (launchAngleDeg <= 6) {
-      cons.push(
-        "Composite leave is flat — if you clip the tape, −1–2 lbs or a touch more tip mass opens the window.",
-      );
+      cons.push("Flat leave — clipping tape? −1–2 lbs or a touch of tip mass.");
     }
   }
 
   if (!hasRacket) {
-    cons.push("No racket saved — composite launch needs a frame as the base.");
+    cons.push("No racket — need a frame for launch.");
   }
 
   if (forehand) {
-    pros.push(
-      `Optimal FH for this mold: ${forehand.summary} — ${forehand.face.label.toLowerCase()} at ${forehand.prefersHeight}-high contact.`,
-    );
+    pros.push(`FH: ${forehand.summary}.`);
   }
 
   if (pros.length === 0 && hasAny) {
-    pros.push("Setup pieces saved — add more components for a fuller composite read.");
+    pros.push("Pieces saved — add more for a fuller mold.");
   }
 
   const completeness =
@@ -549,6 +786,9 @@ export function synthesizeCombinedSetup(
       stringPath,
       tapePath,
     },
+    stockScores,
+    scoreDeltas,
+    flight,
     playstyle: playstyle.label,
     playstyleDetail: playstyleDetail,
     pros,
@@ -642,37 +882,21 @@ function buildPlaystyleDetail(input: {
 }): string {
   const bits: string[] = [];
   if (input.fit) bits.push(input.fit.blurb);
-  else bits.push(`Mold reads as ${input.playstyleLabel}.`);
+  else bits.push(input.playstyleLabel);
 
   if (input.launchAngleDeg != null && input.swingPathDeg != null) {
-    const dLaunch =
-      input.baseLaunch != null ? input.launchAngleDeg - input.baseLaunch : null;
     bits.push(
-      `Combined strike window ~${input.launchAngleDeg.toFixed(1)}° off the bed / ~${input.swingPathDeg.toFixed(0)}° path` +
-        (dLaunch != null && Math.abs(dLaunch) >= 0.2
-          ? ` (${dLaunch >= 0 ? "+" : ""}${dLaunch.toFixed(1)}° vs stock frame from string/grip/tape).`
-          : "."),
+      `${input.launchAngleDeg.toFixed(1)}° leave / ${input.swingPathDeg.toFixed(0)}° path` +
+        (input.baseLaunch != null && Math.abs(input.launchAngleDeg - input.baseLaunch) >= 0.2
+          ? ` (${input.launchAngleDeg - input.baseLaunch >= 0 ? "+" : ""}${(input.launchAngleDeg - input.baseLaunch).toFixed(1)}° vs stock)`
+          : ""),
     );
   }
-  const moldParts: string[] = [];
-  if (Math.abs(input.deltas.stringLaunch) >= 0.15 || Math.abs(input.deltas.stringPath) >= 0.2) {
-    moldParts.push(
-      `string ${input.deltas.stringLaunch >= 0 ? "+" : ""}${input.deltas.stringLaunch}° launch / ${input.deltas.stringPath >= 0 ? "+" : ""}${input.deltas.stringPath}° path`,
-    );
-  }
-  if (Math.abs(input.deltas.tapeLaunch) >= 0.15 || Math.abs(input.deltas.tapePath) >= 0.2) {
-    moldParts.push(
-      `tape ${input.deltas.tapeLaunch >= 0 ? "+" : ""}${input.deltas.tapeLaunch}° / ${input.deltas.tapePath >= 0 ? "+" : ""}${input.deltas.tapePath}°`,
-    );
-  }
-  if (moldParts.length) bits.push(`Mold deltas: ${moldParts.join("; ")}.`);
-
   if (input.string && input.tensionLbs != null) {
-    const g = input.gaugeMm != null ? ` · ${input.gaugeMm} mm` : "";
-    bits.push(`${input.string.brand} ${input.string.name} @ ${input.tensionLbs} lbs${g} — ${input.string.bestFor}`);
+    const g = input.gaugeMm != null ? ` · ${input.gaugeMm}mm` : "";
+    bits.push(`${input.string.name} @ ${input.tensionLbs}lbs${g}`);
   }
-  if (input.grip) bits.push(`Grip: ${input.grip.bestFor}`);
-  return bits.filter(Boolean).join(" ");
+  return bits.filter(Boolean).join(" · ");
 }
 
 function verdictFor(score: number | null, low: number, high: number): "low" | "ok" | "high" {
