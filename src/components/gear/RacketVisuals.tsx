@@ -5,6 +5,8 @@
  * and strike-height zones (neck / chest / waist) per frame personality.
  */
 
+import { useId } from "react";
+
 export type StrikeBand = "neck" | "chest" | "waist";
 
 export interface StrikeZoneHint {
@@ -33,7 +35,6 @@ export function strikeZoneForFrame(input: {
   const control = input.control ?? 55;
   const style = (input.style ?? "").toLowerCase();
 
-  // High-spin / steep path → chest (sometimes up toward neck on kick sits)
   if (path >= 28 || spin >= 78 || /spin|rpms|shape/.test(style)) {
     return {
       primary: "chest",
@@ -43,7 +44,6 @@ export function strikeZoneForFrame(input: {
         "Most consistent on chest-high balls — brush up through the strike zone. Neck-high sits are playable; avoid scooping waist-low with this path.",
     };
   }
-  // Precision mids / control → waist–chest, tighter
   if (hs < 98 || control >= 74 || /precision|player|control/.test(style)) {
     return {
       primary: "waist",
@@ -53,7 +53,6 @@ export function strikeZoneForFrame(input: {
         "Tight sweet spot — take balls at waist to low-chest, out in front. Neck-high contact gets late and sprays; step in rather than reach up.",
     };
   }
-  // Power / oversize → forgiving mid body
   if (hs > 100 || (input.power ?? 50) >= 74) {
     return {
       primary: "chest",
@@ -63,11 +62,10 @@ export function strikeZoneForFrame(input: {
         "Larger bed forgives height variance — still prefer waist–chest out front for depth. Neck-high is usable; don’t wait on waist-low floaters.",
     };
   }
-  // Balanced modern
   return {
     primary: "chest",
     bands: ["waist", "chest"],
-    label: "Waist–chest (all-court)",
+    label: "Waist–chest (drive window)",
     detail:
       "Strike most balls between waist and chest, contact out front. Match path steepness — flatter frames hate late low contact; steeper frames hate blocked chest drives.",
   };
@@ -85,8 +83,9 @@ function strikeWindowCopy(launchDeg: number, pathDeg: number, zone: StrikeZoneHi
 }
 
 /**
- * Side-view: ideal strike → ball flight over the net → topspin drop.
- * User gauges clearance and how much leverage a clean strike buys.
+ * Side-view: ideal strike → ball flight OVER the net → topspin drop.
+ * Geometry is teaching-first: clearance scales with launch; path steepness
+ * adds drop after the tape so users can gauge leverage on a clean strike.
  */
 export function LaunchAngleVisual({
   degrees,
@@ -94,27 +93,36 @@ export function LaunchAngleVisual({
   label = "Strike launch vs net",
 }: {
   degrees: number;
-  /** Swing path steepness — more path ≈ more topspin drop after the net */
   pathDeg?: number;
   label?: string;
 }) {
-  const launch = Math.max(0, Math.min(20, degrees));
+  const uid = useId().replace(/:/g, "");
+  const launch = Math.max(1.5, Math.min(16, degrees));
   const path = Math.max(5, Math.min(40, pathDeg));
-  // Contact ~ waist/chest height; net ~ 0.91 m ≈ mid diagram
-  const sx = 48; // strike x
-  const sy = 78; // strike y (higher on svg = lower on court… flip: smaller y = higher)
-  const netX = 130;
-  const netTop = 52; // net tape
-  const netBot = 95;
-  const rad = (launch * Math.PI) / 180;
-  // Apex and landing shaped by launch + path (spin drop)
-  const spinDrop = 0.35 + (path / 40) * 0.55;
-  const apexX = netX + 18;
-  const apexY = sy - Math.sin(rad) * 85 - path * 0.35;
-  const landX = 205;
-  const landY = 108 - launch * 0.8 + spinDrop * 18;
-  const clearY = sy - Math.sin(rad) * ((netX - sx) * 0.95);
-  const clearance = Math.max(0, netTop - clearY);
+
+  const floorY = 118;
+  const sx = 36;
+  const sy = 92; // contact height (waist/chest)
+  const netX = 118;
+  const netTop = 50;
+  const netBot = 108;
+
+  // Always clear the tape on an ideal strike; loft buys more margin.
+  // SVG y decreases upward — lower numbers = higher in the air.
+  const clearancePx = 8 + launch * 2.4 + Math.max(0, path - 18) * 0.25;
+  const overNetY = netTop - clearancePx;
+  const apexX = netX + 22 + launch * 1.2;
+  const apexLift = 6 + launch * 1.6;
+  const apexY = overNetY - apexLift;
+  // Topspin drop: steeper path → lands shorter / pulls down harder after apex
+  const spinDrop = 0.3 + (path / 40) * 0.7;
+  const landX = 198;
+  const landY = Math.min(floorY - 2, apexY + 28 + spinDrop * 36 - launch * 1.2);
+
+  // Smooth path that explicitly passes above the net tape
+  const midPreX = (sx + netX) / 2;
+  const midPreY = sy + (overNetY - sy) * 0.55 - 6;
+  const flight = `M ${sx} ${sy} Q ${midPreX} ${midPreY}, ${netX} ${overNetY} Q ${apexX} ${apexY}, ${landX} ${landY}`;
 
   return (
     <div className="relative">
@@ -123,79 +131,97 @@ export function LaunchAngleVisual({
       </p>
       <svg viewBox="0 0 220 140" className="h-auto w-full max-w-sm" aria-hidden>
         <defs>
-          <linearGradient id="ballArc" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#c8f560" stopOpacity="0.35" />
-            <stop offset="45%" stopColor="#c8f560" stopOpacity="1" />
-            <stop offset="100%" stopColor="#f4a261" stopOpacity="0.85" />
+          <linearGradient id={`ballArc-${uid}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#c8f560" stopOpacity="0.4" />
+            <stop offset="40%" stopColor="#c8f560" stopOpacity="1" />
+            <stop offset="100%" stopColor="#f4a261" stopOpacity="0.9" />
           </linearGradient>
         </defs>
-        {/* Court floor */}
-        <line x1="16" y1="110" x2="210" y2="110" stroke="rgba(232,239,233,0.25)" strokeWidth="1.5" />
-        {/* Net */}
+        <line
+          x1="14"
+          y1={floorY}
+          x2="210"
+          y2={floorY}
+          stroke="rgba(232,239,233,0.25)"
+          strokeWidth="1.5"
+        />
+        {/* Net mesh hint */}
         <line x1={netX} y1={netTop} x2={netX} y2={netBot} stroke="#e8efe9" strokeWidth="2.5" />
-        <line x1={netX - 10} y1={netTop} x2={netX + 10} y2={netTop} stroke="#c8f560" strokeWidth="2" />
-        <text x={netX - 8} y={netTop - 6} fill="#8aa396" fontSize="9">
+        <line
+          x1={netX - 12}
+          y1={netTop}
+          x2={netX + 12}
+          y2={netTop}
+          stroke="#c8f560"
+          strokeWidth="2.5"
+        />
+        <text x={netX - 10} y={netTop - 6} fill="#8aa396" fontSize="9">
           net
         </text>
-        {/* Racket face at strike (small hoop) */}
+        {/* Racket face */}
         <ellipse
           cx={sx}
           cy={sy}
-          rx="14"
-          ry="10"
-          fill="rgba(200,245,96,0.08)"
+          rx="13"
+          ry="9"
+          fill="rgba(200,245,96,0.1)"
           stroke="#c8f560"
           strokeWidth="1.5"
         />
-        <circle cx={sx} cy={sy} r="3.5" fill="#c8f560">
-          <animate attributeName="opacity" values="0.5;1;0.5" dur="2.2s" repeatCount="indefinite" />
+        <circle cx={sx} cy={sy} r="3.2" fill="#c8f560">
+          <animate attributeName="opacity" values="0.45;1;0.45" dur="2s" repeatCount="indefinite" />
         </circle>
-        <text x="20" y={sy + 22} fill="#8aa396" fontSize="9">
+        <text x="18" y={sy + 20} fill="#8aa396" fontSize="9">
           ideal strike
         </text>
-        {/* Flight: strike → over net → topspin drop */}
+        {/* Flight path — guaranteed over net */}
         <path
-          d={`M ${sx} ${sy} Q ${(sx + apexX) / 2} ${apexY - 8}, ${apexX} ${apexY} T ${landX} ${landY}`}
+          d={flight}
           fill="none"
-          stroke="url(#ballArc)"
-          strokeWidth="2.5"
+          stroke={`url(#ballArc-${uid})`}
+          strokeWidth="2.6"
           strokeLinecap="round"
           style={{ transition: "d 0.55s ease" }}
         />
-        {/* Net clearance marker */}
+        {/* Ball marker at apex */}
+        <circle cx={apexX} cy={apexY} r="3" fill="#f4a261" opacity="0.9" />
+        {/* Clearance bracket */}
         <line
-          x1={netX + 4}
-          y1={clearY}
-          x2={netX + 4}
+          x1={netX + 6}
+          y1={overNetY}
+          x2={netX + 6}
           y2={netTop}
           stroke="#7dd3fc"
           strokeWidth="1.5"
           strokeDasharray="2 2"
         />
-        <text x={netX + 8} y={(clearY + netTop) / 2 + 3} fill="#7dd3fc" fontSize="8">
-          clear
+        <text x={netX + 10} y={(overNetY + netTop) / 2 + 3} fill="#7dd3fc" fontSize="8">
+          +{clearancePx.toFixed(0)}px clear
         </text>
-        {/* Topspin drop cue after net */}
+        {/* Topspin drop cue */}
         <path
-          d={`M ${apexX + 8} ${apexY + 4} q 20 ${8 + spinDrop * 10}, 36 ${16 + spinDrop * 14}`}
+          d={`M ${apexX + 4} ${apexY + 2} q ${18 + spinDrop * 8} ${10 + spinDrop * 14}, ${34 + spinDrop * 10} ${22 + spinDrop * 18}`}
           fill="none"
           stroke="#f4a261"
           strokeWidth="1.5"
           strokeDasharray="3 2"
         />
-        <text x="168" y={apexY + 28} fill="#f4a261" fontSize="8">
+        <text x={Math.min(168, landX - 36)} y={Math.min(apexY + 36, landY - 8)} fill="#f4a261" fontSize="8">
           topspin drop
         </text>
       </svg>
       <p className="mt-1 font-[family-name:var(--font-display)] text-3xl tracking-tight">
         {launch.toFixed(1)}
-        <span className="ml-1 text-base text-[var(--muted)]">° launch · net clearance</span>
+        <span className="ml-1 text-base text-[var(--muted)]">° leave · clears the tape</span>
       </p>
       <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-        Off a perfect strike, this frame aims ~{launch.toFixed(1)}° up so the ball clears the net,
-        then topspin (path ~{path.toFixed(0)}°) pulls it down into the court — more path = more
-        drop leverage after the tape.
-        {clearance > 2 ? " Comfortable tape clearance on clean contact." : " Thin clearance — late or flat contact clips."}
+        Ideal strike leaves ~{launch.toFixed(1)}° so the ball passes{" "}
+        <span className="text-[var(--foreground)]/80">over</span> the net, then path ~{path.toFixed(0)}°
+        (topspin) pulls it down. More path = more drop leverage after the tape; flat path keeps the ball
+        penetrating deeper.
+        {clearancePx >= 18
+          ? " Comfortable clearance on clean contact."
+          : " Thin margin — late or blocked contact clips."}
       </p>
     </div>
   );
@@ -213,6 +239,7 @@ export function SwingPathVisual({
   zone?: StrikeZoneHint;
   label?: string;
 }) {
+  const uid = useId().replace(/:/g, "");
   const deg = Math.max(5, Math.min(40, degrees));
   const z = zone ?? strikeZoneForFrame({ idealSwingPathDeg: deg });
   const steep = deg / 40;
@@ -231,15 +258,28 @@ export function SwingPathVisual({
       </p>
       <svg viewBox="0 0 220 150" className="h-auto w-full max-w-sm" aria-hidden>
         <defs>
-          <linearGradient id="pathStrokeZones" x1="0" y1="1" x2="1" y2="0">
+          <linearGradient id={`pathStroke-${uid}`} x1="0" y1="1" x2="1" y2="0">
             <stop offset="0%" stopColor="#f4a261" stopOpacity="0.3" />
             <stop offset="55%" stopColor="#f4a261" stopOpacity="1" />
             <stop offset="100%" stopColor="#c8f560" stopOpacity="0.9" />
           </linearGradient>
         </defs>
-        {/* Body silhouette column */}
-        <rect x="28" y="18" width="36" height="92" rx="14" fill="rgba(232,239,233,0.06)" stroke="rgba(232,239,233,0.25)" />
-        <circle cx="46" cy="14" r="9" fill="rgba(232,239,233,0.12)" stroke="rgba(232,239,233,0.35)" />
+        <rect
+          x="28"
+          y="18"
+          width="36"
+          height="92"
+          rx="14"
+          fill="rgba(232,239,233,0.06)"
+          stroke="rgba(232,239,233,0.25)"
+        />
+        <circle
+          cx="46"
+          cy="14"
+          r="9"
+          fill="rgba(232,239,233,0.12)"
+          stroke="rgba(232,239,233,0.35)"
+        />
         {(Object.keys(bandY) as StrikeBand[]).map((band) => {
           const b = bandY[band];
           const active = z.bands.includes(band);
@@ -259,23 +299,33 @@ export function SwingPathVisual({
                       ? "rgba(200,245,96,0.12)"
                       : "transparent"
                 }
-                stroke={primary ? "#c8f560" : active ? "rgba(200,245,96,0.45)" : "rgba(232,239,233,0.12)"}
+                stroke={
+                  primary
+                    ? "#c8f560"
+                    : active
+                      ? "rgba(200,245,96,0.45)"
+                      : "rgba(232,239,233,0.12)"
+                }
                 strokeWidth={primary ? 1.5 : 1}
               />
-              <text x="70" y={b.y + b.h / 2 + 3} fill={primary ? "#c8f560" : "#8aa396"} fontSize="10">
+              <text
+                x="70"
+                y={b.y + b.h / 2 + 3}
+                fill={primary ? "#c8f560" : "#8aa396"}
+                fontSize="10"
+              >
                 {b.title}
                 {primary ? " · best" : active ? " · ok" : ""}
               </text>
             </g>
           );
         })}
-        {/* Path through primary band, out front */}
         <path
           d={`M 52 ${bandY[z.primary].y + bandY[z.primary].h * 0.55 + 8 * (1 - steep)}
               Q 100 ${bandY[z.primary].y + 10 - steep * 12}, 150 ${bandY[z.primary].y - 4 - steep * 8}
               T 205 ${bandY[z.primary].y - 10 - steep * 14}`}
           fill="none"
-          stroke="url(#pathStrokeZones)"
+          stroke={`url(#pathStroke-${uid})`}
           strokeWidth="2.8"
           strokeLinecap="round"
         />
@@ -342,7 +392,7 @@ export function StrikeCoachingBullets({
     `Path type: ${pathTypeLabel(path).toLowerCase()} (~${path.toFixed(0)}°). Through the ${z.primary} band, swing along that shape — don’t invent a flatter or steeper path than the frame wants.`,
   );
   bullets.push(
-    `Net read: ~${launch.toFixed(1)}° off the bed. If you’re dumping in the tape, strike earlier / higher in the ${z.primary} window; if you’re long, close the face slightly or take +1–2 lbs on the bed.`,
+    `Net science: ~${launch.toFixed(1)}° leave clears the tape; topspin from the ~${path.toFixed(0)}° path is what pulls the ball down. Dumping short = late / low contact. Floating long = face too open or bed too soft — try +1–2 lbs before changing frames.`,
   );
 
   if ((spin ?? 0) >= 72 || path >= 28) {

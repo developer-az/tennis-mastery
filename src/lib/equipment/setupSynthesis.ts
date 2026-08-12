@@ -4,6 +4,18 @@ import { computeLeadTapeEffect } from "@/lib/equipment/leadTape";
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
 import { tensionOutcome } from "@/lib/equipment/strings";
 
+export interface ScoreTuneTip {
+  score: "power" | "spin" | "control" | "comfort";
+  current: number | null;
+  verdict: "low" | "ok" | "high";
+  /** What to do to move this score toward a more "perfect" mold for the user's role */
+  raise: string[];
+  lower: string[];
+  /** Physics / lab-style tradeoff */
+  tradeoff: string;
+  science: string;
+}
+
 export interface CombinedSetupInsight {
   hasAny: boolean;
   hasRacket: boolean;
@@ -26,6 +38,9 @@ export interface CombinedSetupInsight {
   playstyleDetail: string;
   pros: string[];
   cons: string[];
+  /** Actionable levers to perfect each molded score + science tradeoffs */
+  tuneTips: ScoreTuneTip[];
+  scienceNotes: string[];
   scores: {
     power: number | null;
     spin: number | null;
@@ -204,18 +219,58 @@ export function synthesizeCombinedSetup(
     power,
     spin,
     control,
+    comfort,
+    launchAngleDeg,
+    swingPathDeg,
     hasTape,
     tipHeavy: tapeLaunch < -0.15,
     handleHeavy: tapeLaunch > 0.1,
     stringMaterial: string?.material ?? null,
+    stringShape: string?.shape ?? null,
   });
   const playstyleDetail = buildPlaystyleDetail({
     fit,
+    playstyleLabel: playstyle.label,
+    launchAngleDeg,
+    swingPathDeg,
+    baseLaunch,
+    basePath,
+    string,
+    tensionLbs: setup.tensionLbs,
+    gaugeMm: setup.gaugeMm,
+    grip,
+    deltas: {
+      stringLaunch,
+      gripLaunch,
+      tapeLaunch,
+      stringPath,
+      tapePath,
+    },
+  });
+
+  const tuneTips = buildTuneTips({
+    power,
+    spin,
+    control,
+    comfort,
+    role: fit?.courtRole ?? playstyle.label,
     launchAngleDeg,
     swingPathDeg,
     string,
     tensionLbs: setup.tensionLbs,
-    grip,
+    gaugeMm: setup.gaugeMm,
+    hasTape,
+    tipHeavy: tapeLaunch < -0.15,
+  });
+
+  const scienceNotes = buildScienceNotes({
+    racket,
+    string,
+    tensionLbs: setup.tensionLbs,
+    gaugeMm: setup.gaugeMm,
+    launchAngleDeg,
+    swingPathDeg,
+    deltas: { stringLaunch, gripLaunch, tapeLaunch, stringPath, tapePath },
   });
 
   const pros: string[] = [];
@@ -428,6 +483,8 @@ export function synthesizeCombinedSetup(
     playstyleDetail: playstyleDetail,
     pros,
     cons,
+    tuneTips,
+    scienceNotes,
     scores: { power, spin, control, comfort },
     summary: summaryParts.join(" · ") || "No gear saved yet.",
     completeness,
@@ -440,53 +497,286 @@ function buildPlaystyle(input: {
   power: number | null;
   spin: number | null;
   control: number | null;
+  comfort: number | null;
+  launchAngleDeg: number | null;
+  swingPathDeg: number | null;
   hasTape: boolean;
   tipHeavy: boolean;
   handleHeavy: boolean;
   stringMaterial: StringProfile["material"] | null;
+  stringShape: StringProfile["shape"] | null;
 }): { label: string } {
-  const { power: p, spin: s, control: c } = input;
-  let core =
-    input.fitRole ??
-    (input.racketStyle && input.racketStyle.length < 40 ? input.racketStyle : null) ??
-    "Modern all-court";
+  const { power: p, spin: s, control: c, launchAngleDeg: launch, swingPathDeg: path } = input;
 
-  if (s != null && p != null && s >= 72 && p >= 62) core = "Heavy-spin baseliner";
-  else if (c != null && p != null && c >= 72 && p <= 65) core = "Precision all-courter";
-  else if (p != null && p >= 74 && (c ?? 50) <= 62) core = "Power first-striker";
-  else if (s != null && c != null && s >= 68 && c >= 68) core = "Shape-and-control baseliner";
+  // Prefer fit role (now more specific); only override when composite scores clearly shift the mold
+  let core = input.fitRole ?? "Balanced all-courter";
+
+  if (s != null && p != null && s >= 74 && s >= (c ?? 50) + 6 && (path == null || path >= 24)) {
+    core = "Heavy-spin baseliner";
+  } else if (s != null && c != null && s >= 68 && c >= 68 && Math.abs(s - c) <= 8) {
+    core = "Shape-and-control baseliner";
+  } else if (c != null && p != null && c >= 74 && c >= p + 8) {
+    core = path != null && path <= 16 ? "Precision / flat-drive" : "Precision baseliner";
+  } else if (p != null && p >= 74 && (c ?? 50) <= 60) {
+    core = "First-strike power";
+  } else if (launch != null && launch >= 10 && (s ?? 50) >= 68) {
+    core = "High-margin spinner";
+  } else if (launch != null && launch <= 6 && (c ?? 50) >= 68) {
+    core = "Low-launch penetrator";
+  } else if (input.racketStyle && !/balanced|versatile|modern frame/i.test(input.racketStyle)) {
+    // Keep a specific catalog style if fit didn't already specialize
+    if (core === "Balanced all-courter" || core === "Net-transition all-courter") {
+      core = input.racketStyle.length < 42 ? input.racketStyle : core;
+    }
+  }
 
   const tags: string[] = [core];
   if (input.stringMaterial === "polyester" || input.stringMaterial === "co-poly") {
-    tags.push("poly pocket");
+    tags.push(input.stringShape && input.stringShape !== "round" ? "shaped poly" : "poly pocket");
   } else if (input.stringMaterial === "natural-gut" || input.stringMaterial === "multifilament") {
     tags.push("soft bed");
+  } else if (input.stringMaterial === "hybrid") {
+    tags.push("hybrid bed");
   }
-  if (input.tipHeavy) tags.push("tip-weighted");
-  if (input.handleHeavy) tags.push("handle-weighted");
-  if (input.hasTape && !input.tipHeavy && !input.handleHeavy) tags.push("custom balance");
+  if (input.tipHeavy) tags.push("tip-weighted plow");
+  else if (input.handleHeavy) tags.push("handle-weighted whip");
+  else if (input.hasTape) tags.push("custom balance");
+  if (launch != null && path != null) {
+    tags.push(`${launch.toFixed(1)}°/${Math.round(path)}° window`);
+  }
 
   return { label: tags.join(" · ") };
 }
 
 function buildPlaystyleDetail(input: {
   fit: ReturnType<typeof derivePlayerFit> | null;
+  playstyleLabel: string;
+  launchAngleDeg: number | null;
+  swingPathDeg: number | null;
+  baseLaunch: number | null;
+  basePath: number | null;
+  string: StringProfile | null | undefined;
+  tensionLbs: number | null | undefined;
+  gaugeMm: number | null | undefined;
+  grip: GripProfile | null | undefined;
+  deltas: {
+    stringLaunch: number;
+    gripLaunch: number;
+    tapeLaunch: number;
+    stringPath: number;
+    tapePath: number;
+  };
+}): string {
+  const bits: string[] = [];
+  if (input.fit) bits.push(input.fit.blurb);
+  else bits.push(`Mold reads as ${input.playstyleLabel}.`);
+
+  if (input.launchAngleDeg != null && input.swingPathDeg != null) {
+    const dLaunch =
+      input.baseLaunch != null ? input.launchAngleDeg - input.baseLaunch : null;
+    bits.push(
+      `Combined strike window ~${input.launchAngleDeg.toFixed(1)}° off the bed / ~${input.swingPathDeg.toFixed(0)}° path` +
+        (dLaunch != null && Math.abs(dLaunch) >= 0.2
+          ? ` (${dLaunch >= 0 ? "+" : ""}${dLaunch.toFixed(1)}° vs stock frame from string/grip/tape).`
+          : "."),
+    );
+  }
+  const moldParts: string[] = [];
+  if (Math.abs(input.deltas.stringLaunch) >= 0.15 || Math.abs(input.deltas.stringPath) >= 0.2) {
+    moldParts.push(
+      `string ${input.deltas.stringLaunch >= 0 ? "+" : ""}${input.deltas.stringLaunch}° launch / ${input.deltas.stringPath >= 0 ? "+" : ""}${input.deltas.stringPath}° path`,
+    );
+  }
+  if (Math.abs(input.deltas.tapeLaunch) >= 0.15 || Math.abs(input.deltas.tapePath) >= 0.2) {
+    moldParts.push(
+      `tape ${input.deltas.tapeLaunch >= 0 ? "+" : ""}${input.deltas.tapeLaunch}° / ${input.deltas.tapePath >= 0 ? "+" : ""}${input.deltas.tapePath}°`,
+    );
+  }
+  if (moldParts.length) bits.push(`Mold deltas: ${moldParts.join("; ")}.`);
+
+  if (input.string && input.tensionLbs != null) {
+    const g = input.gaugeMm != null ? ` · ${input.gaugeMm} mm` : "";
+    bits.push(`${input.string.brand} ${input.string.name} @ ${input.tensionLbs} lbs${g} — ${input.string.bestFor}`);
+  }
+  if (input.grip) bits.push(`Grip: ${input.grip.bestFor}`);
+  return bits.filter(Boolean).join(" ");
+}
+
+function verdictFor(score: number | null, low: number, high: number): "low" | "ok" | "high" {
+  if (score == null) return "ok";
+  if (score < low) return "low";
+  if (score > high) return "high";
+  return "ok";
+}
+
+function buildTuneTips(input: {
+  power: number | null;
+  spin: number | null;
+  control: number | null;
+  comfort: number | null;
+  role: string;
   launchAngleDeg: number | null;
   swingPathDeg: number | null;
   string: StringProfile | null | undefined;
   tensionLbs: number | null | undefined;
-  grip: GripProfile | null | undefined;
-}): string {
-  const bits: string[] = [];
-  if (input.fit) bits.push(input.fit.blurb);
-  if (input.launchAngleDeg != null && input.swingPathDeg != null) {
-    bits.push(
-      `Combined strike window ~${input.launchAngleDeg.toFixed(1)}° off the bed / ~${input.swingPathDeg.toFixed(0)}° path through contact.`,
-    );
+  gaugeMm: number | null | undefined;
+  hasTape: boolean;
+  tipHeavy: boolean;
+}): ScoreTuneTip[] {
+  const role = input.role.toLowerCase();
+  const wantsSpin = /spin|shape|rpms|baseliner/.test(role);
+  const wantsControl = /precision|control|counter|volley/.test(role);
+  const wantsPower = /power|first-strike|forgiving/.test(role);
+
+  const spinLow = wantsSpin ? 70 : 55;
+  const spinHigh = wantsSpin ? 92 : 82;
+  const ctlLow = wantsControl ? 70 : 55;
+  const ctlHigh = wantsControl ? 90 : 82;
+  const pwrLow = wantsPower ? 68 : 52;
+  const pwrHigh = wantsPower ? 90 : 80;
+
+  return [
+    {
+      score: "spin",
+      current: input.spin,
+      verdict: verdictFor(input.spin, spinLow, spinHigh),
+      raise: [
+        "−1–2 lbs tension (more snap-back dwell)",
+        "Thinner gauge (−0.05 mm) if durability allows",
+        "Shaped / textured poly mains",
+        "+2–4 g at 12 o’clock for plow into the brush",
+      ],
+      lower: [
+        "+1–2 lbs tension",
+        "Thicker gauge or denser pattern feel",
+        "Rounder poly / multi hybrid",
+        "Strip tip mass if the face feels tip-heavy and grabby",
+      ],
+      tradeoff:
+        "More spin usually costs some control on flat redirects and can loft launch if the face stays open.",
+      science:
+        "Spin rises when mains can stretch & snap back (lower tension, thinner gauge, shaped profile) while the hoop still digs into the ball — SW at 12 supports that without changing string friction.",
+    },
+    {
+      score: "control",
+      current: input.control,
+      verdict: verdictFor(input.control, ctlLow, ctlHigh),
+      raise: [
+        "+1–3 lbs toward the top of the string’s range",
+        "Thicker gauge or 18×20-style denser response",
+        "Lower-powered poly (ALU / 4G family)",
+        "Less tip mass / a touch of handle tape",
+      ],
+      lower: [
+        "−2 lbs if the bed feels boardy and depth dies",
+        "Thinner gauge or more open pattern feel",
+        "Softer multi/gut in crosses",
+      ],
+      tradeoff:
+        "Chasing control flattens the pocket — depth and comfort drop unless your timing is already early and clean.",
+      science:
+        "Higher tension + thicker mains shorten dwell time (less trampoline), so launch angle falls and directional errors shrink — until the bed is so firm you mistime and dump short.",
+    },
+    {
+      score: "power",
+      current: input.power,
+      verdict: verdictFor(input.power, pwrLow, pwrHigh),
+      raise: [
+        "−1–2 lbs or a livelier gauge",
+        "Softer multi / gut hybrid",
+        "+2–3 g tip / 12 for plow-through",
+        "Slightly more open stringbed personality",
+      ],
+      lower: [
+        "+2 lbs tension",
+        "Control poly / thicker gauge",
+        "Handle-side tape to quiet tip-heavy trampoline",
+      ],
+      tradeoff:
+        "Free power lengthens the ball — if you’re already long, add control levers before adding tip mass.",
+      science:
+        "Power ≈ COR of the bed × effective mass at impact. Soft tension and tip mass both raise outbound speed; spin path is what keeps that speed from sailing long.",
+    },
+    {
+      score: "comfort",
+      current: input.comfort,
+      verdict: verdictFor(input.comfort, 48, 88),
+      raise: [
+        "−2 lbs or thicker gauge on a stiff poly",
+        "Multi/gut hybrid or softer co-poly",
+        "Cushioned overgrip / replacement grip",
+        "Avoid stacking tip mass on an already stiff RA frame",
+      ],
+      lower: [
+        "Only if the bed feels muted — +1 lb or a firmer poly",
+        "Thinner, tackier overgrip for more feedback",
+      ],
+      tradeoff:
+        "Comfort softens feedback — some players lose the ‘connected’ hit cue they use for timing.",
+      science:
+        "Peak force into the arm tracks dynamic stiffness (RA + string bed). Tension and material change bed stiffness faster than lead tape; tape mainly changes SW and plow.",
+    },
+  ];
+}
+
+function buildScienceNotes(input: {
+  racket: RacketProfile | null | undefined;
+  string: StringProfile | null | undefined;
+  tensionLbs: number | null | undefined;
+  gaugeMm: number | null | undefined;
+  launchAngleDeg: number | null;
+  swingPathDeg: number | null;
+  deltas: {
+    stringLaunch: number;
+    gripLaunch: number;
+    tapeLaunch: number;
+    stringPath: number;
+    tapePath: number;
+  };
+}): string[] {
+  const notes: string[] = [];
+  if (input.racket) {
+    const ra = input.racket.stiffnessRa;
+    const sw = input.racket.swingweight;
+    if (ra != null) {
+      notes.push(
+        `Frame RA ${ra}: higher RA → faster energy return, sharper shock. Soften the bed before adding tip mass if your arm complains.`,
+      );
+    }
+    if (sw != null) {
+      notes.push(
+        `Swingweight ${sw}: ~1 g at the tip ≈ +2–3 SW points. Tip mass raises plow and can flatten perceived launch; handle mass does the opposite for whip.`,
+      );
+    }
+    if (input.racket.stringPattern) {
+      notes.push(
+        `Pattern ${input.racket.stringPattern}: denser beds reduce string movement (less free spin, more control); open beds do the reverse — tension is your fine dial inside that.`,
+      );
+    }
   }
   if (input.string && input.tensionLbs != null) {
-    bits.push(`${input.string.bestFor}`);
+    const mid = input.string.recommendedTensionLbs;
+    const d = input.tensionLbs - mid;
+    notes.push(
+      `Tension ${input.tensionLbs} lbs vs midpoint ${mid}: ${d === 0 ? "on reference" : d > 0 ? `+${d} lbs firmer` : `${d} lbs softer`} — each ~2 lbs is a noticeable dwell/launch step on poly.`,
+    );
+    if (input.gaugeMm != null) {
+      notes.push(
+        `Gauge ${input.gaugeMm} mm: thinner → more bite & pocket, less durability; thicker → firmer control and longer life.`,
+      );
+    }
   }
-  if (input.grip) bits.push(input.grip.bestFor);
-  return bits.filter(Boolean).join(" ");
+  if (input.launchAngleDeg != null && input.swingPathDeg != null) {
+    notes.push(
+      `Flight: leave angle clears the tape; path angle (spin) is the restoring force that drops the ball. Tuning one without the other is why “more spin” can still sail or dump.`,
+    );
+  }
+  const totalLaunch =
+    input.deltas.stringLaunch + input.deltas.gripLaunch + input.deltas.tapeLaunch;
+  if (Math.abs(totalLaunch) >= 0.3) {
+    notes.push(
+      `Your mold shifts stock leave by ${totalLaunch >= 0 ? "+" : ""}${totalLaunch.toFixed(1)}° (string ${input.deltas.stringLaunch >= 0 ? "+" : ""}${input.deltas.stringLaunch}, grip ${input.deltas.gripLaunch >= 0 ? "+" : ""}${input.deltas.gripLaunch}, tape ${input.deltas.tapeLaunch >= 0 ? "+" : ""}${input.deltas.tapeLaunch}).`,
+    );
+  }
+  return notes;
 }

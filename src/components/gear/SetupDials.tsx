@@ -67,6 +67,16 @@ export function SetupDials({
         ) : null}
       </div>
 
+      {outcome ? (
+        <p className="mt-2 text-[11px] leading-relaxed text-[var(--muted)]">
+          <span className="text-sky-300/90">Science — </span>
+          {outcome.dwellHint} {outcome.launchHint}
+          {string && setup.tensionLbs != null
+            ? ` Midpoint ${string.recommendedTensionLbs} lbs; ±2 lbs is a clean A/B step.`
+            : ""}
+        </p>
+      ) : null}
+
       <div
         className={`mt-3 grid gap-4 ${
           hasString && hasGrip ? "sm:grid-cols-3" : hasString ? "sm:grid-cols-2" : ""

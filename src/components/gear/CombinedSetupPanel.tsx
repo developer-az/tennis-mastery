@@ -327,28 +327,143 @@ export function CombinedSetupPanel({
       </div>
 
       {(insight.scores.power != null || insight.scores.comfort != null) && (
-        <div className="grid grid-cols-2 gap-3 border border-[var(--line)] bg-[var(--panel)]/90 p-5 sm:grid-cols-4 md:p-6">
-          {(
-            [
-              ["Power", insight.scores.power],
-              ["Spin", insight.scores.spin],
-              ["Control", insight.scores.control],
-              ["Comfort", insight.scores.comfort],
-            ] as const
-          ).map(([label, v]) => (
-            <div key={label}>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">{label}</p>
-              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/5">
-                <div
-                  className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-500"
-                  style={{ width: `${Math.max(0, Math.min(100, v ?? 0))}%` }}
-                />
+        <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+            Molded scores
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Composite of frame + bed at your tension/gauge + grip. Bars show where you sit; use the
+            tune cards below to push a score without guessing.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(
+              [
+                ["Power", insight.scores.power, "#f4a261"],
+                ["Spin", insight.scores.spin, "#7dd3fc"],
+                ["Control", insight.scores.control, "#c8f560"],
+                ["Comfort", insight.scores.comfort, "#e9c46a"],
+              ] as const
+            ).map(([label, v, color]) => (
+              <div key={label}>
+                <p className="text-[10px] uppercase tracking-[0.14em]" style={{ color }}>
+                  {label}
+                </p>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/5">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-500"
+                    style={{
+                      width: `${Math.max(0, Math.min(100, v ?? 0))}%`,
+                      background: color,
+                    }}
+                  />
+                </div>
+                <p className="mt-1 font-[family-name:var(--font-display)] text-xl tabular-nums tracking-tight">
+                  {v ?? "—"}
+                </p>
               </div>
-              <p className="mt-1 text-xs text-[var(--foreground)]/80">{v ?? "—"}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
+
+      {insight.tuneTips.length > 0 ? (
+        <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+            Perfect the mold — levers & tradeoffs
+          </p>
+          <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
+            Each score has accountable dials (tension, gauge, tip vs handle mass). Raising one usually
+            costs another — the science line explains why.
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {insight.tuneTips.map((tip) => {
+              const accent =
+                tip.score === "spin"
+                  ? "#7dd3fc"
+                  : tip.score === "power"
+                    ? "#f4a261"
+                    : tip.score === "comfort"
+                      ? "#e9c46a"
+                      : "#c8f560";
+              const verdictLabel =
+                tip.verdict === "low"
+                  ? "Room to raise"
+                  : tip.verdict === "high"
+                    ? "May be hot — can dial back"
+                    : "In a healthy band";
+              return (
+                <article
+                  key={tip.score}
+                  className="rounded-md p-3"
+                  style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h3
+                      className="font-[family-name:var(--font-display)] text-lg capitalize tracking-tight"
+                      style={{ color: accent }}
+                    >
+                      {tip.score}
+                      {tip.current != null ? (
+                        <span className="ml-2 text-sm tabular-nums text-[var(--foreground)]/80">
+                          {tip.current}
+                        </span>
+                      ) : null}
+                    </h3>
+                    <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
+                      {verdictLabel}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
+                        To raise
+                      </p>
+                      <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
+                        {tip.raise.slice(0, 3).map((r) => (
+                          <li key={r}>· {r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--amber)]">
+                        To lower
+                      </p>
+                      <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
+                        {tip.lower.slice(0, 3).map((r) => (
+                          <li key={r}>· {r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <p className="mt-3 border-t border-[var(--line)] pt-2 text-xs leading-relaxed text-[var(--muted)]">
+                    <span className="text-[var(--amber)]">Tradeoff — </span>
+                    {tip.tradeoff}
+                  </p>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--foreground)]/70">
+                    <span className="text-sky-300/90">Science — </span>
+                    {tip.science}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {insight.scienceNotes.length > 0 ? (
+        <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
+            Setup science
+          </p>
+          <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-[var(--foreground)]/85">
+            {insight.scienceNotes.map((n) => (
+              <li key={n} className="border-l-2 border-sky-400/40 pl-3">
+                {n}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {/* Tape zone diagram when present */}
       {insight.hasTape ? (

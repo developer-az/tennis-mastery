@@ -1,7 +1,15 @@
 import type { RacketProfile } from "@/types/equipment";
 
 export type SkillBand = "Beginner-friendly" | "Intermediate" | "Advanced" | "Tour / expert";
-export type CourtRole = "Baseliner" | "All-court" | "Serve & volley" | "Counterpuncher" | "Power hitter";
+export type CourtRole =
+  | "Heavy-spin baseliner"
+  | "Shape baseliner"
+  | "Precision baseliner"
+  | "Counterpuncher"
+  | "First-strike power"
+  | "Serve & volley"
+  | "Net-transition all-courter"
+  | "Balanced all-courter";
 export type WeightClass = "Light" | "Midweight" | "Heavy";
 export type HeadFeel = "Precision mid" | "Midplus sweet spot" | "Forgiving oversize";
 export type FeelAxis = "Power-oriented" | "Control-oriented" | "Spin-oriented" | "Balanced";
@@ -42,9 +50,12 @@ function feelAxisOf(r: RacketProfile): FeelAxis {
   const { power, control, spin } = r;
   const max = Math.max(power, control, spin);
   const spread = max - Math.min(power, control, spin);
-  if (spread <= 10) return "Balanced";
-  if (max === spin && spin >= power && spin >= control) return "Spin-oriented";
-  if (max === control && control > power) return "Control-oriented";
+  if (spread <= 8) return "Balanced";
+  if (max === spin && spin >= power - 2 && spin >= control - 2) return "Spin-oriented";
+  if (max === control && control >= power + 4) return "Control-oriented";
+  if (max === power && power >= control + 4) return "Power-oriented";
+  if (max === spin) return "Spin-oriented";
+  if (max === control) return "Control-oriented";
   if (max === power) return "Power-oriented";
   return "Balanced";
 }
@@ -60,42 +71,99 @@ function skillOf(r: RacketProfile): SkillBand {
         return (parseInt(parts[0], 10) || 16) >= 18;
       })());
 
-  // Tour / expert: heavy, small head, dense pattern, high control
   if ((w >= 315 || dense) && (hs <= 98 || r.control >= 78) && r.power <= 72) {
     return "Tour / expert";
   }
-  // Beginner-friendly: light, large head, high power, high comfort
   if (hs >= 102 && r.power >= 68 && (w < 300 || r.comfort >= 70)) {
     return "Beginner-friendly";
   }
-  // Advanced: control-forward player frames
   if (r.control >= 72 && hs <= 100 && w >= 300) {
     return "Advanced";
   }
   return "Intermediate";
 }
 
+/**
+ * Court role from style tags first, then score dominance.
+ * Avoid defaulting everything to a vague "All-court".
+ */
 function courtRoleOf(r: RacketProfile): CourtRole {
-  const style = r.style.toLowerCase();
+  const style = (r.style ?? "").toLowerCase();
   const { power, spin, control } = r;
+  const path = r.idealSwingPathDeg ?? 20;
+  const launch = r.idealLaunchAngleDeg ?? 8;
 
-  if (/serve|volley|net/.test(style) || (control >= 74 && spin <= 62 && power <= 65)) {
-    return "Serve & volley";
+  if (/serve|volley|net/.test(style)) return "Serve & volley";
+  if (/heavy-?spin/.test(style) || (spin >= 82 && path >= 26 && power >= 58)) {
+    return "Heavy-spin baseliner";
   }
-  if (/spin|baseliner|rpms|shape/.test(style) || (spin >= 78 && power >= 60)) {
-    return "Baseliner";
+  if (/\brpms\b|modern shape/.test(style) || (spin >= 72 && spin >= control + 4 && path >= 22)) {
+    return spin >= 80 && path >= 28 ? "Heavy-spin baseliner" : "Shape baseliner";
   }
-  if (/power|easy depth|forgiving/.test(style) || (power >= 74 && control <= 62)) {
-    return "Power hitter";
+  if (/\bbaseliner\b/.test(style) && spin >= 68) {
+    return spin >= 78 ? "Heavy-spin baseliner" : "Shape baseliner";
   }
-  if (control >= 70 && spin <= 68 && power <= 68) {
+  if (/precision|player.?s? frame|control-forward/.test(style) || (control >= 76 && power <= 66)) {
+    return path <= 18 ? "Precision baseliner" : control >= 80 && spin <= 70 ? "Counterpuncher" : "Precision baseliner";
+  }
+  if (/power|easy depth|forgiving/.test(style) || (power >= 74 && control <= 60)) {
+    return "First-strike power";
+  }
+
+  // Score-led (need a clear winner — avoid vague all-court)
+  if (spin >= 80 && spin >= control + 8 && path >= 24) {
+    return "Heavy-spin baseliner";
+  }
+  if (spin >= 70 && spin >= control + 4 && spin >= power - 4) {
+    return "Shape baseliner";
+  }
+  if (control >= 74 && control >= power + 8) {
+    return spin <= 62 && power <= 64 ? "Serve & volley" : "Precision baseliner";
+  }
+  if (power >= 74 && power >= control + 8) {
+    return "First-strike power";
+  }
+  if (control >= 70 && spin <= 66 && power <= 66) {
     return "Counterpuncher";
   }
-  if (/all-court|versatile|balanced/.test(style) || Math.abs(power - control) <= 12) {
-    return "All-court";
+  if (spin >= 66 && control >= 66 && Math.abs(spin - control) <= 8) {
+    return "Shape baseliner";
   }
-  if (spin >= 70) return "Baseliner";
-  return "All-court";
+
+  const spread = Math.max(power, spin, control) - Math.min(power, spin, control);
+  if (spread <= 10 && launch >= 6 && launch <= 10 && path >= 16 && path <= 26) {
+    return control >= 68 ? "Net-transition all-courter" : "Balanced all-courter";
+  }
+  if (control >= power && control >= spin) return "Precision baseliner";
+  if (spin >= power) return "Shape baseliner";
+  return "First-strike power";
+}
+
+function roleBlurb(role: CourtRole, r: RacketProfile): string {
+  const launch = r.idealLaunchAngleDeg;
+  const path = r.idealSwingPathDeg;
+  const window =
+    launch != null && path != null
+      ? ` Teaching window ~${launch.toFixed(1)}° leave / ~${path.toFixed(0)}° path.`
+      : "";
+  switch (role) {
+    case "Heavy-spin baseliner":
+      return `Built to shape heavy topspin from the back — high spin axis and a steeper path through contact.${window}`;
+    case "Shape baseliner":
+      return `Baseline-first mold that wants shape and margin over the tape more than flat penetration.${window}`;
+    case "Precision baseliner":
+      return `Rewards clean timing and directional control; less free power, more accountability on contact.${window}`;
+    case "Counterpuncher":
+      return `Absorbs pace and redirects — control-forward with a compact, honest response.${window}`;
+    case "First-strike power":
+      return `Easy depth and pace on clean hits — watch launch if you open the face or soften the bed too far.${window}`;
+    case "Serve & volley":
+      return `Maneuverable, control-biased feel that favors first strike into the net and compact volleys.${window}`;
+    case "Net-transition all-courter":
+      return `Balanced enough to finish forward after a solid groundstroke — not a pure baseliner mold.${window}`;
+    case "Balanced all-courter":
+      return `No single score dominates — a flexible mold you tune with string, tension, and a few grams of tape.${window}`;
+  }
 }
 
 export function derivePlayerFit(r: RacketProfile): PlayerFit {
@@ -105,7 +173,7 @@ export function derivePlayerFit(r: RacketProfile): PlayerFit {
   const headFeel = headFeelOf(r);
   const feelAxis = feelAxisOf(r);
 
-  const blurb = `${skill} ${courtRole.toLowerCase()} frame — ${feelAxis.toLowerCase()} with a ${headFeel.toLowerCase()} and ${weightClass.toLowerCase()} swing weight class.`;
+  const blurb = `${skill} · ${courtRole}. ${feelAxis} with a ${headFeel.toLowerCase()} (${weightClass.toLowerCase()}). ${roleBlurb(courtRole, r)}`;
 
   return { skill, courtRole, weightClass, headFeel, feelAxis, blurb };
 }
@@ -118,11 +186,14 @@ const SKILL_COLOR: Record<SkillBand, string> = {
 };
 
 const ROLE_COLOR: Record<CourtRole, string> = {
-  Baseliner: "#7dd3fc",
-  "All-court": "#c8f560",
-  "Serve & volley": "#e9c46a",
+  "Heavy-spin baseliner": "#7dd3fc",
+  "Shape baseliner": "#7dd3fc",
+  "Precision baseliner": "#c8f560",
   Counterpuncher: "#f4a261",
-  "Power hitter": "#f4a261",
+  "First-strike power": "#f4a261",
+  "Serve & volley": "#e9c46a",
+  "Net-transition all-courter": "#c8f560",
+  "Balanced all-courter": "#e8efe9",
 };
 
 const AXIS_COLOR: Record<FeelAxis, string> = {
@@ -145,7 +216,7 @@ export function playerFitBadges(r: RacketProfile): FitBadge[] {
       key: "role",
       label: fit.courtRole,
       color: ROLE_COLOR[fit.courtRole],
-      hint: "Court role inferred from style tags and spin/power/control scores.",
+      hint: "Court role from style tags, spin/power/control dominance, and launch/path teaching window.",
     },
     {
       key: "feel",
@@ -173,7 +244,7 @@ export function playerFitBadges(r: RacketProfile): FitBadge[] {
           ? "Under 98\" — smaller sweet spot, sharper feedback."
           : fit.headFeel === "Forgiving oversize"
             ? 'Over 100" — larger sweet spot and higher launch.'
-            : '98–100" midplus — modern all-round sweet spot.',
+            : '98–100" midplus — modern drive sweet spot.',
     },
   ];
 }
