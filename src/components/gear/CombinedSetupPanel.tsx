@@ -7,6 +7,7 @@ import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
 import { LEAD_TAPE_ZONES } from "@/lib/equipment/leadTape";
 import { findSimilarStrings } from "@/lib/equipment/strings";
 import { gripSizeLabel } from "@/lib/equipment/gripSize";
+import { summarizeGripLayers } from "@/lib/equipment/gripStack";
 import { useGearStore } from "@/store/gearStore";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
@@ -31,14 +32,22 @@ export function CombinedSetupPanel({
     () => strings.find((s) => s.id === setup.stringId) ?? null,
     [strings, setup.stringId],
   );
-  const grip = useMemo(
-    () => grips.find((g) => g.id === setup.gripId) ?? null,
-    [grips, setup.gripId],
+  const grip = useMemo(() => {
+    const outerId =
+      setup.gripLayers?.[setup.gripLayers.length - 1]?.id ?? setup.gripId;
+    return outerId ? grips.find((g) => g.id === outerId) ?? null : null;
+  }, [grips, setup.gripId, setup.gripLayers]);
+
+  const gripStackLabel = useMemo(
+    () =>
+      summarizeGripLayers(setup.gripLayers ?? [], setup.gripSize) ||
+      setup.gripLabel,
+    [setup.gripLayers, setup.gripSize, setup.gripLabel],
   );
 
   const insight = useMemo(
-    () => synthesizeCombinedSetup(setup, racket, string, grip),
-    [setup, racket, string, grip],
+    () => synthesizeCombinedSetup(setup, racket, string, grip, grips),
+    [setup, racket, string, grip, grips],
   );
 
   const stringAlts = useMemo(
@@ -178,16 +187,16 @@ export function CombinedSetupPanel({
               setup.gripId ? (
                 <EquipmentThumb
                   src={`/api/equipment/grips/${setup.gripId}/image`}
-                  alt={setup.gripLabel ?? "Grip"}
+                  alt={gripStackLabel ?? "Grip"}
                   size="md"
                 />
               ) : null
             }
-            title={setup.gripLabel ?? "Add a grip"}
+            title={gripStackLabel ?? "Add grip / overgrips"}
             meta={
               setup.gripSize
-                ? `${gripSizeLabel(setup.gripSize)} · handle feel`
-                : "Set size L0–L5 in dials"
+                ? `${gripSizeLabel(setup.gripSize)} · size + stack in math`
+                : "Size L0–L5 + up to 3 overgrips"
             }
           />
           <PieceCard
@@ -223,7 +232,25 @@ export function CombinedSetupPanel({
             <LaunchAngleVisual
               degrees={insight.launchAngleDeg}
               pathDeg={insight.swingPathDeg ?? undefined}
-              label="Molded strike launch vs net"
+              spin={insight.scores.spin}
+              power={insight.scores.power}
+              control={insight.scores.control}
+              zone={
+                racket
+                  ? strikeZoneForFrame({
+                      ...racket,
+                      idealLaunchAngleDeg: insight.launchAngleDeg ?? racket.idealLaunchAngleDeg,
+                      idealSwingPathDeg: insight.swingPathDeg ?? racket.idealSwingPathDeg,
+                    })
+                  : strikeZoneForFrame({
+                      idealLaunchAngleDeg: insight.launchAngleDeg,
+                      idealSwingPathDeg: insight.swingPathDeg,
+                      spin: insight.scores.spin,
+                      control: insight.scores.control,
+                      power: insight.scores.power,
+                    })
+              }
+              label="Strike mold → flight vs net"
             />
           ) : (
             <div>
@@ -372,8 +399,8 @@ export function CombinedSetupPanel({
             Perfect the mold — levers & tradeoffs
           </p>
           <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
-            Each score has accountable dials (tension, gauge, tip vs handle mass). Raising one usually
-            costs another — the science line explains why.
+            String dials and lead-tape placements — not just tension. Raising one score usually costs
+            another; open Lead tape to place grams after you pick a lever.
           </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {insight.tuneTips.map((tip) => {
@@ -416,23 +443,47 @@ export function CombinedSetupPanel({
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
-                        To raise
+                        String / grip — raise
                       </p>
                       <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
                         {tip.raise.slice(0, 3).map((r) => (
                           <li key={r}>· {r}</li>
                         ))}
                       </ul>
+                      {tip.tapeRaise?.length ? (
+                        <>
+                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-300">
+                            Lead tape — raise
+                          </p>
+                          <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
+                            {tip.tapeRaise.slice(0, 2).map((r) => (
+                              <li key={r}>· {r}</li>
+                            ))}
+                          </ul>
+                        </>
+                      ) : null}
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--amber)]">
-                        To lower
+                        String / grip — lower
                       </p>
                       <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
                         {tip.lower.slice(0, 3).map((r) => (
                           <li key={r}>· {r}</li>
                         ))}
                       </ul>
+                      {tip.tapeLower?.length ? (
+                        <>
+                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-300/80">
+                            Lead tape — lower
+                          </p>
+                          <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
+                            {tip.tapeLower.slice(0, 2).map((r) => (
+                              <li key={r}>· {r}</li>
+                            ))}
+                          </ul>
+                        </>
+                      ) : null}
                     </div>
                   </div>
                   <p className="mt-3 border-t border-[var(--line)] pt-2 text-xs leading-relaxed text-[var(--muted)]">
@@ -443,10 +494,61 @@ export function CombinedSetupPanel({
                     <span className="text-sky-300/90">Science — </span>
                     {tip.science}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => go("lead-tape")}
+                    className="mt-2 text-[11px] font-medium text-sky-300"
+                  >
+                    Open lead tape lab →
+                  </button>
                 </article>
               );
             })}
           </div>
+        </div>
+      ) : null}
+
+      {insight.weakPoints.length > 0 ? (
+        <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+            Frame weak points — what holds you back
+          </p>
+          <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
+            The mold’s liability on court, plus specific practice — not generic “hit more balls.”
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {insight.weakPoints.map((wp) => (
+              <article
+                key={wp.title}
+                className="rounded-md p-3"
+                style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
+              >
+                <h3 className="font-[family-name:var(--font-display)] text-lg tracking-tight text-[var(--amber)]">
+                  {wp.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/90">
+                  <span className="text-[var(--amber)]">Holding you back — </span>
+                  {wp.holdingBack}
+                </p>
+                <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
+                  Practice this
+                </p>
+                <ul className="mt-1.5 space-y-1.5 text-xs leading-relaxed text-[var(--foreground)]/85">
+                  {wp.practice.map((p) => (
+                    <li key={p} className="border-l-2 border-[var(--accent)]/40 pl-2.5">
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+          {insight.gripBuildNote ? (
+            <p className="mt-4 border-t border-[var(--line)] pt-3 text-xs leading-relaxed text-[var(--muted)]">
+              <span className="text-[var(--amber)]">Handle build — </span>
+              {insight.gripBuildNote}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -593,8 +695,8 @@ export function CombinedSetupPanel({
         </Chip>
         <Chip active={insight.hasGrip} onClick={() => go("grips")}>
           {insight.hasGrip
-            ? `Grip · ${setup.gripLabel}${setup.gripSize ? ` · ${setup.gripSize}` : ""}`
-            : "Add grip"}
+            ? `Grip · ${gripStackLabel ?? setup.gripLabel}`
+            : "Add grip / overgrips"}
         </Chip>
         <Chip active={insight.hasTape} onClick={() => go("lead-tape")}>
           {insight.hasTape

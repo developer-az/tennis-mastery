@@ -83,145 +83,293 @@ function strikeWindowCopy(launchDeg: number, pathDeg: number, zone: StrikeZoneHi
 }
 
 /**
- * Side-view: ideal strike → ball flight OVER the net → topspin drop.
- * Geometry is teaching-first: clearance scales with launch; path steepness
- * adds drop after the tape so users can gauge leverage on a clean strike.
+ * Side-view: body strike mold (neck/chest/waist) + perfect face contact →
+ * ball clears the net → topspin drop. Gauges fly / spin / depth likelihood
+ * for this frame on a clean hit.
  */
 export function LaunchAngleVisual({
   degrees,
   pathDeg = 22,
-  label = "Strike launch vs net",
+  zone,
+  spin = 55,
+  power = 55,
+  control = 55,
+  label = "Strike mold → flight",
 }: {
   degrees: number;
   pathDeg?: number;
+  zone?: StrikeZoneHint;
+  spin?: number | null;
+  power?: number | null;
+  control?: number | null;
   label?: string;
 }) {
   const uid = useId().replace(/:/g, "");
   const launch = Math.max(1.5, Math.min(16, degrees));
   const path = Math.max(5, Math.min(40, pathDeg));
+  const z =
+    zone ??
+    strikeZoneForFrame({
+      idealLaunchAngleDeg: launch,
+      idealSwingPathDeg: path,
+      spin,
+      control,
+      power,
+    });
 
-  const floorY = 118;
-  const sx = 36;
-  const sy = 92; // contact height (waist/chest)
-  const netX = 118;
-  const netTop = 50;
-  const netBot = 108;
+  const bandY: Record<StrikeBand, { y: number; h: number; title: string }> = {
+    neck: { y: 18, h: 20, title: "Neck" },
+    chest: { y: 40, h: 26, title: "Chest" },
+    waist: { y: 68, h: 24, title: "Waist" },
+  };
 
-  // Always clear the tape on an ideal strike; loft buys more margin.
-  // SVG y decreases upward — lower numbers = higher in the air.
-  const clearancePx = 8 + launch * 2.4 + Math.max(0, path - 18) * 0.25;
+  const primary = bandY[z.primary];
+  const faceCx = 78;
+  const faceCy = primary.y + primary.h * 0.55;
+  const floorY = 148;
+  const netX = 132;
+  const netTop = 58;
+  const netBot = 138;
+
+  const clearancePx = 14 + launch * 2.8 + Math.max(0, path - 18) * 0.2;
   const overNetY = netTop - clearancePx;
-  const apexX = netX + 22 + launch * 1.2;
-  const apexLift = 6 + launch * 1.6;
-  const apexY = overNetY - apexLift;
-  // Topspin drop: steeper path → lands shorter / pulls down harder after apex
+  const apexX = netX + 24 + launch * 1.1;
+  const apexY = overNetY - (8 + launch * 1.5);
   const spinDrop = 0.3 + (path / 40) * 0.7;
-  const landX = 198;
-  const landY = Math.min(floorY - 2, apexY + 28 + spinDrop * 36 - launch * 1.2);
+  const landX = 208;
+  const landY = Math.min(floorY - 4, apexY + 32 + spinDrop * 34 - launch * 1.1);
+  const midPreX = (faceCx + netX) / 2;
+  const midPreY = faceCy + (overNetY - faceCy) * 0.5 - 8;
+  const flight = `M ${faceCx} ${faceCy} Q ${midPreX} ${midPreY}, ${netX} ${overNetY} Q ${apexX} ${apexY}, ${landX} ${landY}`;
 
-  // Smooth path that explicitly passes above the net tape
-  const midPreX = (sx + netX) / 2;
-  const midPreY = sy + (overNetY - sy) * 0.55 - 6;
-  const flight = `M ${sx} ${sy} Q ${midPreX} ${midPreY}, ${netX} ${overNetY} Q ${apexX} ${apexY}, ${landX} ${landY}`;
+  const sp = spin ?? 55;
+  const pw = power ?? 55;
+  const ct = control ?? 55;
+  const flyRisk = Math.max(
+    8,
+    Math.min(96, Math.round(28 + (launch - 7) * 7 + (22 - path) * 1.2 + (pw - ct) * 0.25)),
+  );
+  const spinLev = Math.max(
+    8,
+    Math.min(96, Math.round(sp * 0.55 + path * 1.1 + (launch > 9 ? 6 : 0))),
+  );
+  const depth = Math.max(
+    8,
+    Math.min(96, Math.round(pw * 0.5 + (18 - Math.abs(launch - 7)) * 2.2 + (40 - path) * 0.35)),
+  );
 
   return (
     <div className="relative">
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
         {label}
       </p>
-      <svg viewBox="0 0 220 140" className="h-auto w-full max-w-sm" aria-hidden>
+      <svg viewBox="0 0 220 168" className="h-auto w-full max-w-md" aria-hidden>
         <defs>
           <linearGradient id={`ballArc-${uid}`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#c8f560" stopOpacity="0.4" />
+            <stop offset="0%" stopColor="#c8f560" stopOpacity="0.45" />
             <stop offset="40%" stopColor="#c8f560" stopOpacity="1" />
             <stop offset="100%" stopColor="#f4a261" stopOpacity="0.9" />
           </linearGradient>
         </defs>
         <line
-          x1="14"
+          x1="12"
           y1={floorY}
-          x2="210"
+          x2="214"
           y2={floorY}
-          stroke="rgba(232,239,233,0.25)"
+          stroke="rgba(232,239,233,0.22)"
           strokeWidth="1.5"
         />
-        {/* Net mesh hint */}
-        <line x1={netX} y1={netTop} x2={netX} y2={netBot} stroke="#e8efe9" strokeWidth="2.5" />
+        <rect
+          x="14"
+          y="14"
+          width="28"
+          height="86"
+          rx="12"
+          fill="rgba(232,239,233,0.05)"
+          stroke="rgba(232,239,233,0.22)"
+        />
+        <circle
+          cx="28"
+          cy="10"
+          r="7"
+          fill="rgba(232,239,233,0.1)"
+          stroke="rgba(232,239,233,0.3)"
+        />
+        {(Object.keys(bandY) as StrikeBand[]).map((band) => {
+          const b = bandY[band];
+          const active = z.bands.includes(band);
+          const isPrimary = z.primary === band;
+          return (
+            <g key={band}>
+              <rect
+                x="16"
+                y={b.y}
+                width="24"
+                height={b.h}
+                rx="3"
+                fill={
+                  isPrimary
+                    ? "rgba(200,245,96,0.3)"
+                    : active
+                      ? "rgba(200,245,96,0.1)"
+                      : "transparent"
+                }
+                stroke={
+                  isPrimary
+                    ? "#c8f560"
+                    : active
+                      ? "rgba(200,245,96,0.4)"
+                      : "rgba(232,239,233,0.1)"
+                }
+                strokeWidth={isPrimary ? 1.4 : 1}
+              />
+              <text
+                x="46"
+                y={b.y + b.h / 2 + 3}
+                fill={isPrimary ? "#c8f560" : "#8aa396"}
+                fontSize="8"
+              >
+                {b.title}
+                {isPrimary ? " · mold" : ""}
+              </text>
+            </g>
+          );
+        })}
+        <ellipse
+          cx={faceCx}
+          cy={faceCy}
+          rx="16"
+          ry="11"
+          fill="rgba(200,245,96,0.12)"
+          stroke="#c8f560"
+          strokeWidth="1.8"
+        />
         <line
-          x1={netX - 12}
+          x1={faceCx - 10}
+          y1={faceCy - 4}
+          x2={faceCx + 10}
+          y2={faceCy - 4}
+          stroke="rgba(200,245,96,0.35)"
+          strokeWidth="0.8"
+        />
+        <line
+          x1={faceCx - 10}
+          y1={faceCy}
+          x2={faceCx + 10}
+          y2={faceCy}
+          stroke="rgba(200,245,96,0.35)"
+          strokeWidth="0.8"
+        />
+        <line
+          x1={faceCx - 10}
+          y1={faceCy + 4}
+          x2={faceCx + 10}
+          y2={faceCy + 4}
+          stroke="rgba(200,245,96,0.35)"
+          strokeWidth="0.8"
+        />
+        <circle cx={faceCx} cy={faceCy} r="3.4" fill="#c8f560">
+          <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" />
+        </circle>
+        <text x={faceCx - 18} y={faceCy + 22} fill="#8aa396" fontSize="8">
+          face center
+        </text>
+        <line x1={netX} y1={netTop} x2={netX} y2={netBot} stroke="#e8efe9" strokeWidth="2.4" />
+        <line
+          x1={netX - 11}
           y1={netTop}
-          x2={netX + 12}
+          x2={netX + 11}
           y2={netTop}
           stroke="#c8f560"
-          strokeWidth="2.5"
+          strokeWidth="2.4"
         />
-        <text x={netX - 10} y={netTop - 6} fill="#8aa396" fontSize="9">
+        <text x={netX - 9} y={netTop - 5} fill="#8aa396" fontSize="8">
           net
         </text>
-        {/* Racket face */}
-        <ellipse
-          cx={sx}
-          cy={sy}
-          rx="13"
-          ry="9"
-          fill="rgba(200,245,96,0.1)"
-          stroke="#c8f560"
-          strokeWidth="1.5"
-        />
-        <circle cx={sx} cy={sy} r="3.2" fill="#c8f560">
-          <animate attributeName="opacity" values="0.45;1;0.45" dur="2s" repeatCount="indefinite" />
-        </circle>
-        <text x="18" y={sy + 20} fill="#8aa396" fontSize="9">
-          ideal strike
-        </text>
-        {/* Flight path — guaranteed over net */}
         <path
           d={flight}
           fill="none"
           stroke={`url(#ballArc-${uid})`}
-          strokeWidth="2.6"
+          strokeWidth="2.5"
           strokeLinecap="round"
-          style={{ transition: "d 0.55s ease" }}
         />
-        {/* Ball marker at apex */}
-        <circle cx={apexX} cy={apexY} r="3" fill="#f4a261" opacity="0.9" />
-        {/* Clearance bracket */}
+        <circle cx={apexX} cy={apexY} r="2.8" fill="#f4a261" />
         <line
-          x1={netX + 6}
+          x1={netX + 5}
           y1={overNetY}
-          x2={netX + 6}
+          x2={netX + 5}
           y2={netTop}
           stroke="#7dd3fc"
-          strokeWidth="1.5"
+          strokeWidth="1.4"
           strokeDasharray="2 2"
         />
-        <text x={netX + 10} y={(overNetY + netTop) / 2 + 3} fill="#7dd3fc" fontSize="8">
-          +{clearancePx.toFixed(0)}px clear
+        <text x={netX + 9} y={(overNetY + netTop) / 2 + 3} fill="#7dd3fc" fontSize="7">
+          clear
         </text>
-        {/* Topspin drop cue */}
         <path
-          d={`M ${apexX + 4} ${apexY + 2} q ${18 + spinDrop * 8} ${10 + spinDrop * 14}, ${34 + spinDrop * 10} ${22 + spinDrop * 18}`}
+          d={`M ${apexX + 3} ${apexY + 2} q ${16 + spinDrop * 8} ${10 + spinDrop * 12}, ${30 + spinDrop * 8} ${20 + spinDrop * 16}`}
           fill="none"
           stroke="#f4a261"
-          strokeWidth="1.5"
+          strokeWidth="1.4"
           strokeDasharray="3 2"
         />
-        <text x={Math.min(168, landX - 36)} y={Math.min(apexY + 36, landY - 8)} fill="#f4a261" fontSize="8">
+        <text
+          x={Math.min(170, landX - 40)}
+          y={Math.min(apexY + 34, landY - 6)}
+          fill="#f4a261"
+          fontSize="7"
+        >
           topspin drop
         </text>
       </svg>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-3xl tracking-tight">
-        {launch.toFixed(1)}
-        <span className="ml-1 text-base text-[var(--muted)]">° leave · clears the tape</span>
+
+      <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
+        {z.label}
+        <span className="ml-2 text-base text-[var(--muted)]">
+          · {launch.toFixed(1)}° leave · path ~{path.toFixed(0)}°
+        </span>
       </p>
       <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-        Ideal strike leaves ~{launch.toFixed(1)}° so the ball passes{" "}
-        <span className="text-[var(--foreground)]/80">over</span> the net, then path ~{path.toFixed(0)}°
-        (topspin) pulls it down. More path = more drop leverage after the tape; flat path keeps the ball
-        penetrating deeper.
-        {clearancePx >= 18
-          ? " Comfortable clearance on clean contact."
-          : " Thin margin — late or blocked contact clips."}
+        Same height mold as “where to strike” — the green face mark is the perfect stringbed
+        center. From there the ball clears the tape (~{launch.toFixed(1)}°), then path ~
+        {path.toFixed(0)}° pulls it down. Gauges show fly risk, spin leverage, and depth on a
+        clean hit.
+      </p>
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <FlightGauge label="Fly risk" value={flyRisk} color="#f4a261" hint="Long / sail" />
+        <FlightGauge label="Spin lever" value={spinLev} color="#7dd3fc" hint="Drop after tape" />
+        <FlightGauge label="Depth" value={depth} color="#c8f560" hint="Through the court" />
+      </div>
+    </div>
+  );
+}
+
+function FlightGauge({
+  label,
+  value,
+  color,
+  hint,
+}: {
+  label: string;
+  value: number;
+  color: string;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-md px-2 py-2" style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}>
+      <p className="text-[9px] uppercase tracking-[0.12em]" style={{ color }}>
+        {label}
+      </p>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full transition-[width] duration-500"
+          style={{ width: `${value}%`, background: color }}
+        />
+      </div>
+      <p className="mt-1 text-[11px] tabular-nums text-[var(--foreground)]/85">
+        {value}
+        <span className="ml-1 text-[10px] text-[var(--muted)]">{hint}</span>
       </p>
     </div>
   );

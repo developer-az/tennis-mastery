@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { EquipmentTab } from "@/types/equipment";
 import { gripSizeLabel } from "@/lib/equipment/gripSize";
+import { summarizeGripLayers } from "@/lib/equipment/gripStack";
 import { setupSummary, useGearStore } from "@/store/gearStore";
 
 export function MySetupBar({
@@ -14,8 +15,10 @@ export function MySetupBar({
   const clearSetup = useGearStore((s) => s.clearSetup);
   const setTab = useGearStore((s) => s.setTab);
   const tapeG = setup.leadTape?.pieces?.reduce((n, p) => n + p.massG, 0) ?? 0;
+  const hasGrip =
+    (setup.gripLayers?.length ?? 0) > 0 || Boolean(setup.gripId);
   const hasAny =
-    setup.racketSlug || setup.stringId || setup.gripId || tapeG > 0;
+    setup.racketSlug || setup.stringId || hasGrip || tapeG > 0;
 
   const go = (tab: EquipmentTab) => {
     if (onSelectTab) onSelectTab(tab);
@@ -109,15 +112,16 @@ export function MySetupBar({
               </button>
             </li>
           ) : null}
-          {setup.gripLabel ? (
+          {hasGrip ? (
             <li>
               <button
                 type="button"
                 onClick={() => go("grips")}
                 className="rounded bg-[var(--amber)]/15 px-2 py-1 text-[var(--amber)] transition hover:brightness-110"
               >
-                Grip · {setup.gripLabel}
-                {setup.gripSize ? ` · ${gripSizeLabel(setup.gripSize)}` : ""}
+                Grip ·{" "}
+                {summarizeGripLayers(setup.gripLayers ?? [], setup.gripSize) ||
+                  `${setup.gripLabel ?? "Grip"}${setup.gripSize ? ` · ${gripSizeLabel(setup.gripSize)}` : ""}`}
               </button>
             </li>
           ) : null}

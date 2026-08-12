@@ -518,7 +518,11 @@ export function RacketExplorer({
             <LaunchAngleVisual
               degrees={selected.idealLaunchAngleDeg}
               pathDeg={selected.idealSwingPathDeg}
-              label="Strike launch vs net"
+              spin={selected.spin}
+              power={selected.power}
+              control={selected.control}
+              zone={strikeZoneForFrame(selected)}
+              label="Strike mold → flight vs net"
             />
             <SwingPathVisual
               degrees={selected.idealSwingPathDeg}
