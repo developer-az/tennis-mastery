@@ -222,14 +222,75 @@ export function synthesizeCombinedSetup(
   const cons: string[] = [];
 
   if (racket) {
-    if (racket.spin >= 72) pros.push(`Frame leans spin (${racket.spin}/100) — helps shape and net clearance.`);
-    if (racket.control >= 72) pros.push(`Control-forward frame (${racket.control}/100) — rewards clean contact.`);
-    if (racket.power >= 72) pros.push(`Easy depth from the frame (${racket.power}/100 power).`);
-    if (racket.comfort >= 70) pros.push(`Comfortable stock feel (${racket.comfort}/100).`);
-    if ((racket.weightG ?? 300) >= 320) cons.push("Heavier frame — more plow, but harder to whip on short balls.");
-    if ((racket.weightG ?? 300) < 290) cons.push("Light frame — easy to swing, less inherent plow-through.");
+    const sw = racket.swingweight;
+    const ra = racket.stiffnessRa;
+    const wt = racket.weightG;
+    const hs = racket.headSizeSqIn;
+    const bal = racket.balanceMm;
+    if (sw != null) {
+      if (sw >= 330) {
+        pros.push(`High swingweight (${sw}) — plow & stability through contact; add tip weight carefully.`);
+      } else if (sw <= 310) {
+        pros.push(`Maneuverable SW (${sw}) — easy whip; tip tape if you want more plow.`);
+      } else {
+        pros.push(`Mid swingweight (${sw}) — balanced plow vs whip; ±2–4g tip/handle is a clean lever.`);
+      }
+    }
+    if (ra != null) {
+      if (ra >= 68) {
+        cons.push(`Stiff frame (RA ${ra}) — crisp response; soften via −2 lbs, multi/gut, or thicker gauge.`);
+      } else if (ra <= 62) {
+        pros.push(`Flexible frame (RA ${ra}) — pocket & comfort; raise tension or firmer poly for more pop.`);
+      } else {
+        pros.push(`Mid stiffness (RA ${ra}) — tension ±2–3 lbs is an accountable fine-tune.`);
+      }
+    }
+    if (wt != null) {
+      if (wt >= 320) {
+        cons.push(`Heavy static (${wt}g) — more plow, slower on short balls; strip handle mass if you’re late.`);
+      } else if (wt < 290) {
+        cons.push(`Light static (${wt}g) — easy to swing, less inherent mass; tip tape adds plow without resizing.`);
+      } else {
+        pros.push(`Static weight ${wt}g — room to customize ±4–8g without remolding feel.`);
+      }
+    }
+    if (hs != null) {
+      if (hs < 98) {
+        pros.push(`Dense head (${hs} in²) — smaller sweet spot favors control; prefer waist–chest strikes.`);
+      } else if (hs > 100) {
+        pros.push(`Larger head (${hs} in²) — forgiveness; can launch higher if you miss high on the bed.`);
+      }
+    }
+    if (bal != null) {
+      if (bal >= 330) {
+        cons.push(`Head-heavy balance (${bal} mm) — plow but tip-heavy whip; handle tape can rebalance.`);
+      } else if (bal <= 315) {
+        pros.push(`Head-light (${bal} mm) — quick preparation; tip tape if you want more drive.`);
+      }
+    }
+    if (racket.stringPattern) {
+      const pat = racket.stringPattern.replace(/\s/g, "").toLowerCase();
+      if (pat.startsWith("18x20")) {
+        pros.push(`18×20 pattern — denser bed, flatter launch bias; −1–2 lbs or open gauge for spin.`);
+      } else if (pat.startsWith("16x19")) {
+        pros.push(`16×19 pattern — more bite & launch; +1–2 lbs or thicker gauge if you spray long.`);
+      } else {
+        pros.push(`Pattern ${racket.stringPattern} — treat tension as the main spin/control dial.`);
+      }
+    }
+    if (racket.spin >= 72) pros.push(`Frame spin score ${racket.spin}/100 — helps shape & net clearance.`);
+    if (racket.control >= 72) pros.push(`Control score ${racket.control}/100 — rewards clean contact.`);
+    if (racket.power >= 72) pros.push(`Power score ${racket.power}/100 — easy depth when you catch the bed.`);
+    if (racket.comfort >= 70) pros.push(`Comfort score ${racket.comfort}/100 — stock shock path is friendly.`);
     if (racket.control <= 55 && racket.power >= 70) {
-      cons.push("Power-biased frame can spray if contact is late — string/tension matter more.");
+      cons.push(
+        "Power-biased frame sprays if contact is late — raise control via +2 lbs tension or denser bed feel.",
+      );
+    }
+    if (baseLaunch != null && basePath != null) {
+      pros.push(
+        `Stock teaching: ~${baseLaunch}° leave / ~${basePath}° path — check My Setup after string/tape.`,
+      );
     }
   } else if (hasRacket && setup.racketLabel) {
     pros.push(`Saved frame: ${setup.racketLabel}.`);
@@ -237,35 +298,90 @@ export function synthesizeCombinedSetup(
 
   if (string && setup.tensionLbs != null) {
     const o = tensionOutcome(string, setup.tensionLbs, setup.gaugeMm ?? undefined);
-    pros.push(`${string.brand} ${string.name} @ ${setup.tensionLbs} lbs — ${o.dwellHint}`);
+    const gauge = setup.gaugeMm ?? string.gaugesMm[0];
+    pros.push(
+      `${string.brand} ${string.name}${gauge != null ? ` ${gauge}mm` : ""} @ ${setup.tensionLbs} lbs — ${o.dwellHint}`,
+    );
+    pros.push(
+      `Bed @ this tension: power ${o.power} · spin ${o.spin} · control ${o.control} · comfort ${o.comfort} · durability ${o.durability}.`,
+    );
     if (stringHint) pros.push(stringHint);
-    if (o.comfort <= 45) cons.push("Firm bed — arm-friendly players may want softer tension or multi/gut.");
-    if (o.durability <= 45) cons.push("Softer/thinner bed may notch or lose tension sooner.");
-    if (o.spin >= 72) pros.push("String bed favors snap-back / spin window.");
+    if (stringLaunch !== 0 || stringPath !== 0) {
+      pros.push(
+        `String/tension vs bare frame: launch ${stringLaunch >= 0 ? "+" : ""}${stringLaunch}° · path ${stringPath >= 0 ? "+" : ""}${stringPath}°.`,
+      );
+    }
+    const rec = string.recommendedTensionLbs;
+    if (Math.abs(setup.tensionLbs - rec) >= 3) {
+      cons.push(
+        `Tension ${setup.tensionLbs} lbs is ${setup.tensionLbs > rec ? "above" : "below"} the string’s ${rec} lbs midpoint — expect a clear feel shift; ±2 lbs is a safer first tweak.`,
+      );
+    } else {
+      pros.push(`Near recommended midpoint (${rec} lbs) — ±1–2 lb moves are accountable next steps.`);
+    }
+    if (o.comfort <= 45) cons.push("Firm bed — soften with −2 lbs, thicker gauge, or multi/gut hybrid.");
+    if (o.durability <= 45) cons.push("Softer/thinner bed may notch or lose tension sooner — plan restring cadence.");
+    if (o.spin >= 72) pros.push("Snap-back / spin window is open on this bed.");
+    if (o.control >= 72 && o.power <= 55) {
+      cons.push("Control-heavy bed — add depth with −1–2 lbs or a livelier gauge before changing frames.");
+    }
   } else if (!hasString) {
-    cons.push("No string saved — launch and pocket feel are incomplete without a bed.");
+    cons.push("No string saved — launch and pocket feel are incomplete without a bed (biggest fine-tune lever).");
   }
 
   if (grip) {
-    if (grip.tackiness >= 70) pros.push(`Tacky grip (${grip.name}) — secure handle on sweaty days.`);
-    if (grip.cushion >= 70) pros.push(`Cushioned grip — softer shock path into the hand.`);
-    if (grip.absorbency >= 70) pros.push("High absorbency — stays playable longer in heat.");
-    if (grip.durability <= 45) cons.push("Grip may wear or lose tack quickly — plan to replace often.");
-    if (grip.tackiness <= 40) cons.push("Low tack — may slip unless you like a dry/tour hold.");
+    pros.push(
+      `${grip.brand} ${grip.name}: tack ${grip.tackiness} · cushion ${grip.cushion} · absorb ${grip.absorbency} · durability ${grip.durability}.`,
+    );
+    if (gripLaunch !== 0) {
+      pros.push(
+        `Grip feel bias ~${gripLaunch >= 0 ? "+" : ""}${gripLaunch}° launch (cushion/tack path into the hand).`,
+      );
+    }
+    if (grip.tackiness >= 70) pros.push("High tack — secure on sweat; replace when glaze appears.");
+    if (grip.cushion >= 70) pros.push("High cushion — softer shock; may mute feedback slightly.");
+    if (grip.absorbency >= 70) pros.push("High absorbency — lasts longer in heat before slip.");
+    if (grip.durability <= 45) cons.push("Low grip durability — budget frequent replacements or a tougher overgrip.");
+    if (grip.tackiness <= 40) cons.push("Low tack — dry/tour hold; add a tackier overgrip if the handle spins.");
+    if (grip.thicknessMm != null && grip.thicknessMm >= 0.7) {
+      cons.push(`Thick overgrip (${grip.thicknessMm} mm) — builds handle size; strip if the bevels feel round.`);
+    }
   } else if (!hasGrip) {
-    cons.push("No grip saved — handle feel and sweat management are unknown.");
+    cons.push("No grip saved — handle size and sweat management are unknown levers.");
   }
 
   if (hasTape) {
     const g = pieces.reduce((n, p) => n + p.massG, 0);
-    pros.push(`Lead tape (+${round1(g)}g) customizes SW/balance.`);
-    for (const h of tapeHints.slice(0, 2)) pros.push(h);
-    if (Math.abs(tapeLaunch) >= 0.3) {
+    pros.push(`Lead tape +${round1(g)}g across ${pieces.length} piece${pieces.length === 1 ? "" : "s"}.`);
+    for (const h of tapeHints.slice(0, 3)) pros.push(h);
+    if (Math.abs(tapeLaunch) >= 0.15 || Math.abs(tapePath) >= 0.2) {
       pros.push(
-        `Tape shifts launch ~${tapeLaunch > 0 ? "+" : ""}${tapeLaunch}° vs stock frame.`,
+        `Tape vs stock: launch ${tapeLaunch >= 0 ? "+" : ""}${tapeLaunch}° · path ${tapePath >= 0 ? "+" : ""}${tapePath}°.`,
       );
     }
-    if (g >= 8) cons.push("Heavy customization — swingweight jump can tire the arm on long sessions.");
+    if (g >= 8) {
+      cons.push("Heavy customization (≥8g) — SW jump can fatigue the arm; try −2g or move mass toward the handle.");
+    }
+    if (g > 0 && g < 2) {
+      pros.push("Light tape dose — good for A/B testing tip vs handle without remolding the frame.");
+    }
+  } else if (hasRacket) {
+    cons.push("No lead tape — tip/handle mass is still a free lever for plow vs whip.");
+  }
+
+  if (launchAngleDeg != null && swingPathDeg != null) {
+    pros.push(
+      `Composite teaching now: ~${launchAngleDeg}° leave / ~${swingPathDeg}° path (frame + string + grip + tape).`,
+    );
+    if (launchAngleDeg >= 10) {
+      cons.push(
+        "Composite leave is lofty — if balls sail, +1–2 lbs tension or less tip weight is the first accountable cut.",
+      );
+    } else if (launchAngleDeg <= 6) {
+      cons.push(
+        "Composite leave is flat — if you clip the tape, −1–2 lbs or a touch more tip mass opens the window.",
+      );
+    }
   }
 
   if (!hasRacket) {

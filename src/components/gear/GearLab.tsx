@@ -85,49 +85,53 @@ export function GearLab({
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10 md:py-14">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:px-10 md:py-14">
       <MySetupBar onSelectTab={selectTab} />
 
       <div
-        className="relative z-20 flex flex-wrap gap-2 border-b border-[var(--line)] pb-4"
-        role="tablist"
-        aria-label="Equipment category"
+        className="sticky top-[3.25rem] z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none md:top-auto"
       >
-        {TABS.map((t) => {
-          const active = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              aria-controls={`gear-panel-${t.id}`}
-              id={`gear-tab-${t.id}`}
-              tabIndex={active ? 0 : -1}
-              onClick={() => selectTab(t.id)}
-              onKeyDown={(e) => {
-                const idx = TABS.findIndex((x) => x.id === t.id);
-                if (e.key === "ArrowRight") {
-                  e.preventDefault();
-                  selectTab(TABS[(idx + 1) % TABS.length].id);
-                } else if (e.key === "ArrowLeft") {
-                  e.preventDefault();
-                  selectTab(TABS[(idx - 1 + TABS.length) % TABS.length].id);
-                }
-              }}
-              className={`relative z-20 cursor-pointer rounded-md px-4 py-2.5 text-sm transition ${
-                active
-                  ? "bg-[var(--accent)] font-medium text-[#0b1a14]"
-                  : "text-[var(--muted)] hover:bg-white/5 hover:text-[var(--foreground)]"
-              }`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
+        <div
+          className="relative z-20 flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-4 [&::-webkit-scrollbar]:hidden"
+          role="tablist"
+          aria-label="Equipment category"
+        >
+          {TABS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-controls={`gear-panel-${t.id}`}
+                id={`gear-tab-${t.id}`}
+                tabIndex={active ? 0 : -1}
+                onClick={() => selectTab(t.id)}
+                onKeyDown={(e) => {
+                  const idx = TABS.findIndex((x) => x.id === t.id);
+                  if (e.key === "ArrowRight") {
+                    e.preventDefault();
+                    selectTab(TABS[(idx + 1) % TABS.length].id);
+                  } else if (e.key === "ArrowLeft") {
+                    e.preventDefault();
+                    selectTab(TABS[(idx - 1 + TABS.length) % TABS.length].id);
+                  }
+                }}
+                className={`relative z-20 shrink-0 cursor-pointer rounded-md px-3.5 py-2 text-sm transition sm:px-4 sm:py-2.5 ${
+                  active
+                    ? "bg-[var(--accent)] font-medium text-[#0b1a14]"
+                    : "text-[var(--muted)] hover:bg-white/5 hover:text-[var(--foreground)]"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <p className="mt-4 max-w-2xl text-sm text-[var(--muted)]">
+      <p className="mt-3 hidden max-w-2xl text-sm text-[var(--muted)] sm:mt-4 sm:block">
         {TABS.find((t) => t.id === tab)?.blurb}
       </p>
 

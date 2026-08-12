@@ -30,18 +30,18 @@ export function MySetupBar({
 
   return (
     <div
-      className="sticky top-0 z-20 mb-8 border border-[var(--line)] bg-[var(--panel)]/95 px-4 py-3 backdrop-blur md:px-5"
+      className="sticky top-0 z-40 mb-5 border border-[var(--line)] bg-[var(--panel)]/95 px-3 py-2.5 backdrop-blur sm:mb-8 sm:px-4 sm:py-3 md:px-5"
       style={{ animation: "rise 0.45s ease-out both" }}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
             My setup
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/90">
+          <p className="mt-1 text-sm leading-snug text-[var(--foreground)]/90 sm:leading-relaxed">
             {setupSummary(setup)}
           </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">
+          <p className="mt-1 hidden text-xs text-[var(--muted)] sm:block">
             Saved in this browser. Open{" "}
             <button
               type="button"

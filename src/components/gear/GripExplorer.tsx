@@ -58,6 +58,17 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
 
   const selected = filtered.find((g) => g.id === selectedId) ?? filtered[0] ?? null;
   const inSetup = selected != null && selected.id === setupGripId;
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const saveGrip = (g: GripProfile) => {
+    setGrip(g.id, `${g.brand} ${g.name}`, {
+      tackiness: g.tackiness,
+      cushion: g.cushion,
+      absorbency: g.absorbency,
+      durability: g.durability,
+    });
+  };
+
   const compareGrips = compareIds
     .map((id) => grips.find((g) => g.id === id))
     .filter((g): g is GripProfile => g != null);
@@ -104,17 +115,31 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
     : [];
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-      <div className="space-y-4">
-        <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
+      <div className="order-1 space-y-3 lg:space-y-4">
+        <div className="sticky top-[6.5rem] z-20 -mx-1 space-y-2 bg-[var(--background)]/95 px-1 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search Tourna, Super Grap, leather…"
             aria-label="Search grips"
-            className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            inputMode="search"
+            enterKeyHint="search"
+            autoCapitalize="off"
+            autoCorrect="off"
+            className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-3 text-base outline-none focus:border-[var(--accent)] sm:py-2.5 sm:text-sm"
           />
-          <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)] lg:hidden"
+            style={{ boxShadow: "0 0 0 1px var(--line)" }}
+            onClick={() => setFiltersOpen((o) => !o)}
+            aria-expanded={filtersOpen}
+          >
+            <span>Filters</span>
+            <span className="text-xs">{filtersOpen ? "Hide" : "Show"}</span>
+          </button>
+          <div className={`grid grid-cols-2 gap-2 ${filtersOpen ? "" : "hidden lg:grid"}`}>
             <select
               value={kind}
               onChange={(e) => setKind(e.target.value as typeof kind)}
@@ -148,15 +173,15 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
           Compare up to {MAX_COMPARE} (checkboxes)
         </p>
 
-        <ul className="max-h-[28rem] divide-y divide-[var(--line)] overflow-y-auto border-y border-[var(--line)]">
+        <ul className="max-h-[min(70vh,28rem)] divide-y divide-[var(--line)] overflow-y-auto overscroll-contain border-y border-[var(--line)] md:max-h-[32rem]">
           {filtered.map((g) => {
             const active = g.id === selected?.id;
             const saved = g.id === setupGripId;
             const inCompare = compareIds.includes(g.id);
             return (
-              <li key={g.id} className="flex items-stretch gap-1">
+              <li key={g.id} className="flex items-stretch gap-0.5">
                 <label
-                  className="flex shrink-0 items-center px-2"
+                  className="hidden shrink-0 items-center px-2 sm:flex"
                   title={inCompare ? "Remove from compare" : "Add to compare"}
                 >
                   <span className="sr-only">
@@ -173,7 +198,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                   type="button"
                   onClick={() => setSelectedId(g.id)}
                   aria-pressed={active}
-                  className={`flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left transition ${
+                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-3 text-left transition sm:gap-3 ${
                     active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
                   }`}
                 >
@@ -183,7 +208,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                     size="sm"
                   />
                   <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="flex items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
+                    <span className="flex flex-wrap items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
                       {g.brand} {g.name}
                       {saved ? (
                         <span className="rounded bg-[var(--amber)]/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-[var(--amber)]">
@@ -197,6 +222,26 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                     </span>
                   </span>
                 </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    saveGrip(g);
+                  }}
+                  className="m-1.5 shrink-0 self-center rounded-md px-2.5 py-2 text-[11px] font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:px-3"
+                  style={{
+                    background: saved ? "rgba(244,162,97,0.15)" : "var(--accent)",
+                    color: saved ? "var(--amber)" : "#0b1a14",
+                    boxShadow: saved ? "0 0 0 1px var(--amber)" : "none",
+                  }}
+                  aria-label={
+                    saved
+                      ? `${g.brand} ${g.name} already in setup`
+                      : `Save ${g.brand} ${g.name} to my setup`
+                  }
+                >
+                  {saved ? "Saved" : "Save"}
+                </button>
               </li>
             );
           })}
@@ -209,7 +254,11 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
       </div>
 
       {selected && (
-        <div className="space-y-6" key={selected.id} style={{ animation: "rise 0.45s ease-out both" }}>
+        <div
+          className="order-2 space-y-6"
+          key={selected.id}
+          style={{ animation: "rise 0.45s ease-out both" }}
+        >
           <header className="flex flex-wrap gap-5">
             <EquipmentThumb
               src={gripImageUrl(selected)}
@@ -227,15 +276,8 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
               <p className="mt-1 text-sm text-[var(--foreground)]/85">{selected.uniqueTrait}</p>
               <button
                 type="button"
-                onClick={() =>
-                  setGrip(selected.id, `${selected.brand} ${selected.name}`, {
-                    tackiness: selected.tackiness,
-                    cushion: selected.cushion,
-                    absorbency: selected.absorbency,
-                    durability: selected.durability,
-                  })
-                }
-                className="mt-4 rounded-md px-4 py-2 text-sm font-medium transition hover:brightness-110"
+                onClick={() => saveGrip(selected)}
+                className="mt-4 min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
                 style={{
                   background: inSetup ? "rgba(244,162,97,0.15)" : "var(--accent)",
                   color: inSetup ? "var(--amber)" : "#0b1a14",

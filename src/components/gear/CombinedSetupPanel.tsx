@@ -7,7 +7,7 @@ import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
 import { LEAD_TAPE_ZONES } from "@/lib/equipment/leadTape";
 import { useGearStore } from "@/store/gearStore";
 import { EquipmentThumb } from "./EquipmentThumb";
-import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets } from "./RacketVisuals";
+import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
 
 export function CombinedSetupPanel({
   rackets,
@@ -209,11 +209,15 @@ export function CombinedSetupPanel({
       <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
         <div className="grid gap-6 md:grid-cols-2">
           {insight.launchAngleDeg != null ? (
-            <LaunchAngleVisual degrees={insight.launchAngleDeg} label="Molded strike launch" />
+            <LaunchAngleVisual
+              degrees={insight.launchAngleDeg}
+              pathDeg={insight.swingPathDeg ?? undefined}
+              label="Molded strike launch vs net"
+            />
           ) : (
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
-                Molded strike launch
+                Molded strike launch vs net
               </p>
               <p className="mt-3 text-sm text-[var(--muted)]">Save a racket to unlock the strike-launch diagram.</p>
               <button
@@ -226,13 +230,31 @@ export function CombinedSetupPanel({
             </div>
           )}
           {insight.swingPathDeg != null ? (
-            <SwingPathVisual degrees={insight.swingPathDeg} label="Molded path through contact" />
+            <SwingPathVisual
+              degrees={insight.swingPathDeg}
+              zone={
+                racket
+                  ? strikeZoneForFrame({
+                      ...racket,
+                      idealLaunchAngleDeg: insight.launchAngleDeg ?? racket.idealLaunchAngleDeg,
+                      idealSwingPathDeg: insight.swingPathDeg,
+                    })
+                  : strikeZoneForFrame({
+                      idealLaunchAngleDeg: insight.launchAngleDeg,
+                      idealSwingPathDeg: insight.swingPathDeg,
+                      spin: insight.scores.spin,
+                      control: insight.scores.control,
+                      power: insight.scores.power,
+                    })
+              }
+              label="Where to strike with this mold"
+            />
           ) : (
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
-                Molded swing path
+                Where to strike
               </p>
-              <p className="mt-3 text-sm text-[var(--muted)]">Needs a frame base to draw the path.</p>
+              <p className="mt-3 text-sm text-[var(--muted)]">Needs a frame base to draw strike heights.</p>
             </div>
           )}
         </div>
@@ -242,6 +264,16 @@ export function CombinedSetupPanel({
           spin={insight.scores.spin}
           control={insight.scores.control}
           power={insight.scores.power}
+          headSizeSqIn={racket?.headSizeSqIn}
+          zone={
+            racket
+              ? strikeZoneForFrame({
+                  ...racket,
+                  idealLaunchAngleDeg: insight.launchAngleDeg ?? racket.idealLaunchAngleDeg,
+                  idealSwingPathDeg: insight.swingPathDeg ?? racket.idealSwingPathDeg,
+                })
+              : undefined
+          }
         />
       </div>
 

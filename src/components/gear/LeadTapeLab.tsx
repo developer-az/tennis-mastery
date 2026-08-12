@@ -9,7 +9,7 @@ import {
   createLeadTapePiece,
 } from "@/lib/equipment/leadTape";
 import { useGearStore } from "@/store/gearStore";
-import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets } from "./RacketVisuals";
+import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
 
 const VB_W = 200;
 const VB_H = 280;
@@ -345,7 +345,11 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
               Strike launch — stock vs taped
             </p>
-            <LaunchAngleVisual degrees={effect.launchAngleDeg} label="Strike launch (taped)" />
+            <LaunchAngleVisual
+              degrees={effect.launchAngleDeg}
+              pathDeg={effect.swingPathDeg}
+              label="Strike launch vs net (taped)"
+            />
             <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
               Stock {baseline.launchAngleDeg}° off the bed
               {hasTape
@@ -357,7 +361,15 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
               Path through contact — stock vs taped
             </p>
-            <SwingPathVisual degrees={effect.swingPathDeg} label="Path through contact (taped)" />
+            <SwingPathVisual
+              degrees={effect.swingPathDeg}
+              zone={strikeZoneForFrame({
+                ...baseRacket,
+                idealLaunchAngleDeg: effect.launchAngleDeg,
+                idealSwingPathDeg: effect.swingPathDeg,
+              })}
+              label="Where to strike (taped mold)"
+            />
             <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
               Stock {baseline.swingPathDeg}°
               {hasTape
@@ -372,6 +384,12 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
           spin={baseRacket?.spin}
           control={baseRacket?.control}
           power={baseRacket?.power}
+          headSizeSqIn={baseRacket?.headSizeSqIn}
+          zone={strikeZoneForFrame({
+            ...baseRacket,
+            idealLaunchAngleDeg: effect.launchAngleDeg,
+            idealSwingPathDeg: effect.swingPathDeg,
+          })}
         />
 
         <div>
