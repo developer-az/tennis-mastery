@@ -18,12 +18,25 @@ export default function LabPage() {
             Biomechanics lab
           </span>
         </div>
-        <nav className="flex items-center gap-4 text-xs text-[var(--muted)]">
-          <Link href="/gear" className="transition hover:text-[var(--foreground)]">
-            Gear lab
+        <nav className="flex items-center gap-2 text-xs sm:gap-3">
+          <Link
+            href="/gear?tab=overview"
+            className="rounded-md bg-[var(--accent)] px-3 py-1.5 font-medium text-[#0b1a14] transition hover:brightness-110"
+          >
+            My setup
           </Link>
-          <Link href="/" className="transition hover:text-[var(--foreground)]">
-            ← Home
+          <Link
+            href="/gear?tab=rackets"
+            className="rounded-md px-3 py-1.5 text-[var(--foreground)] transition hover:bg-white/5"
+            style={{ boxShadow: "0 0 0 1px var(--line)" }}
+          >
+            Return to Gear lab
+          </Link>
+          <Link
+            href="/"
+            className="hidden text-[var(--muted)] transition hover:text-[var(--foreground)] sm:inline"
+          >
+            Home
           </Link>
         </nav>
       </header>

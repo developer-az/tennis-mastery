@@ -45,7 +45,13 @@ export function MetricsPanel() {
 
   return (
     <div className="space-y-1">
-      <div className="mb-4">
+      <SetupBridge
+        athleteLaunch={m.launchAngleDeg}
+        athleteSwingPath={m.swingPathDeg}
+        athleteLabel={player.shortName}
+      />
+
+      <div className="mb-4 mt-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
           Live biomechanics
         </p>
@@ -126,12 +132,6 @@ export function MetricsPanel() {
           </div>
         </dl>
       </div>
-
-      <SetupBridge
-        athleteLaunch={m.launchAngleDeg}
-        athleteSwingPath={m.swingPathDeg}
-        athleteLabel={player.shortName}
-      />
     </div>
   );
 }
@@ -151,75 +151,73 @@ function SetupBridge({
     [setup],
   );
   const hasGear = insight.hasAny;
-
   const launch = insight.launchAngleDeg ?? setup.racketLaunchDeg;
   const path = insight.swingPathDeg ?? setup.racketSwingPathDeg;
 
   return (
-    <div className="mt-5 border-t border-[var(--line)] pt-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+    <div
+      className="rounded-md border border-[var(--line)] bg-black/20 p-3"
+      style={{ boxShadow: "inset 0 0 0 1px rgba(200,245,96,0.06)" }}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
         Your combined setup
       </p>
       {hasGear ? (
         <>
-          <p className="mt-2 text-sm font-medium text-[var(--accent)]">{insight.playstyle}</p>
-          <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/90">
-            {setupSummary(setup)}
-          </p>
+          <p className="mt-1.5 text-sm font-medium text-[var(--foreground)]">{insight.playstyle}</p>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{setupSummary(setup)}</p>
           {launch != null && path != null ? (
-            <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
-              {athleteLabel}&apos;s stroke targets ~{athleteLaunch.toFixed(1)}° launch / ~
-              {athleteSwingPath.toFixed(0)}° path. Your molded bag models ~{launch.toFixed(1)}°
-              launch / ~{path.toFixed(0)}° path
+            <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">
+              Molded ~{launch.toFixed(1)}° launch / ~{path.toFixed(0)}° path vs {athleteLabel}&apos;s{" "}
+              {athleteLaunch.toFixed(1)}° / {athleteSwingPath.toFixed(0)}°
               {launch - athleteLaunch > 2
-                ? " — loftier than this pattern; expect easier net clearance."
+                ? " — loftier bag."
                 : athleteLaunch - launch > 2
-                  ? " — flatter than this pattern; reward clean, penetrating contact."
-                  : " — close to this stroke's launch window."}
-              {insight.baseLaunchDeg != null &&
-              insight.launchAngleDeg != null &&
-              Math.abs(insight.launchAngleDeg - insight.baseLaunchDeg) >= 0.3
-                ? ` (frame base ${insight.baseLaunchDeg.toFixed(1)}° + string/grip/tape).`
-                : ""}
+                  ? " — flatter bag."
+                  : " — close match."}
             </p>
           ) : (
             <p className="mt-2 text-xs text-[var(--muted)]">
-              Add a racket in Gear lab so combined launch can be calculated against this stroke.
+              Save a racket in Gear lab to unlock molded launch vs this stroke.
             </p>
           )}
-          {insight.pros[0] ? (
-            <p className="mt-2 text-xs text-[var(--foreground)]/75">Pro: {insight.pros[0]}</p>
-          ) : null}
-          {insight.cons[0] ? (
-            <p className="mt-1 text-xs text-[var(--muted)]">Watch: {insight.cons[0]}</p>
-          ) : null}
-          <div className="mt-3 flex flex-wrap gap-3">
+          <div className="mt-3 flex flex-col gap-2">
             <Link
               href="/gear?tab=overview"
-              className="text-xs font-medium text-[var(--accent)] transition hover:brightness-110"
+              className="rounded-md bg-[var(--accent)] px-3 py-2 text-center text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
             >
-              Full combined readout →
+              Open My setup (pros / cons / launch)
             </Link>
             <Link
               href="/gear?tab=rackets"
-              className="text-xs text-[var(--muted)] transition hover:text-[var(--foreground)]"
+              className="rounded-md px-3 py-2 text-center text-xs text-[var(--foreground)] transition hover:bg-white/5"
+              style={{ boxShadow: "0 0 0 1px var(--line)" }}
             >
-              Edit gear
+              Return to Gear lab
             </Link>
           </div>
         </>
       ) : (
         <>
-          <p className="mt-2 text-sm text-[var(--muted)]">
-            Save a racket, string, and grip in Gear lab — molded launch and playstyle show up here
-            while you study form.
+          <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
+            Build a racket + string + grip (+ optional tape) in Gear lab. The molded launch and
+            playstyle show here while you study form.
           </p>
-          <Link
-            href="/gear?tab=overview"
-            className="mt-3 inline-block rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
-          >
-            Build my setup
-          </Link>
+          <div className="mt-3 flex flex-col gap-2">
+            <Link
+              href="/gear?tab=overview"
+              className="rounded-md bg-[var(--accent)] px-3 py-2 text-center text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
+            >
+              Build my setup
+            </Link>
+            <Link
+              href="/gear?tab=rackets"
+              className="rounded-md px-3 py-2 text-center text-xs text-[var(--foreground)] transition hover:bg-white/5"
+              style={{ boxShadow: "0 0 0 1px var(--line)" }}
+            >
+              Return to Gear lab
+            </Link>
+          </div>
         </>
       )}
     </div>
