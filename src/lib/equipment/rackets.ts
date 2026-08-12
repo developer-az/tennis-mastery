@@ -19,6 +19,67 @@ type RacqixRow = {
   wta_players?: string[];
 };
 
+/** Line-only model tokens Racqix often returns without the variant (Pro / MP / CX 200…). */
+const LINE_ONLY_RE =
+  /^(prestige|gravity|radical|extreme|boom|speed|instinct|cx|fx|sx|vcore|ezone|percept|blade|clash|shift|pure aero|pure drive|pure strike|pro staff|tfight|strike|aero|drive)$/i;
+
+const BRAND_PREFIX_RE =
+  /^(head|babolat|wilson|yonex|dunlop|tecnifibre|prince|volkl|solinco|gamma|prokennex|donnay|lacoste|adidas)-/i;
+
+/**
+ * Prefer a human display name from the slug when Racqix truncates `model`
+ * (e.g. slug head-prestige-pro-2024 + model "Prestige" → "Prestige Pro").
+ */
+export function resolveDisplayModel(slug: string, model: string): string {
+  const cleaned = (model || "").trim();
+  let body = slug.replace(BRAND_PREFIX_RE, "");
+  body = body.replace(/-?\d{4}$/, "");
+  body = body.replace(/^graphene(-\d+)?(-plus)?-/, "");
+  body = body.replace(/^srixon-/, "");
+
+  const fromSlug = body
+    .split("-")
+    .filter(Boolean)
+    .map((seg) => {
+      if (/^\d+x\d+$/i.test(seg)) return seg.toLowerCase();
+      if (/^\d+$/.test(seg)) return seg;
+      const lower = seg.toLowerCase();
+      const acronyms: Record<string, string> = {
+        mp: "MP",
+        ls: "LS",
+        os: "OS",
+        pro: "Pro",
+        tour: "Tour",
+        team: "Team",
+        elite: "Elite",
+        limited: "Limited",
+        mid: "Mid",
+        plus: "Plus",
+        lite: "Lite",
+        cx: "CX",
+        fx: "FX",
+        sx: "SX",
+        g360: "G360",
+      };
+      if (acronyms[lower]) return acronyms[lower];
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ")
+    .replace(/\bMp L\b/g, "MP L")
+    .replace(/\b18x20\b/gi, "18x20")
+    .replace(/\b16x19\b/gi, "16x19");
+
+  const modelCompact = cleaned.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const slugCompact = body.replace(/-/g, "").toLowerCase();
+  const lineOnly = LINE_ONLY_RE.test(cleaned);
+  const slugRicher = slugCompact.length >= modelCompact.length + 3;
+
+  if (!cleaned || lineOnly || slugRicher) {
+    return fromSlug || cleaned || slug;
+  }
+  return cleaned;
+}
+
 function yearOf(r: RacqixRow): number {
   try {
     return parseInt(String(r.year).slice(0, 4), 10) || 0;
@@ -131,7 +192,7 @@ export function enrichRacket(r: RacqixRow): RacketProfile | null {
   return {
     slug: r.slug,
     brand: r.brand,
-    model: r.model,
+    model: resolveDisplayModel(r.slug, r.model),
     year,
     weightG: r.weight,
     swingweight: r.swingweight,
@@ -153,7 +214,10 @@ export function enrichRacket(r: RacqixRow): RacketProfile | null {
 }
 
 export function snapshotRackets(): { rackets: RacketProfile[]; meta: RacketCatalogMeta } {
-  const rackets = snapshot.rackets as RacketProfile[];
+  const rackets = (snapshot.rackets as RacketProfile[]).map((r) => ({
+    ...r,
+    model: resolveDisplayModel(r.slug, r.model),
+  }));
   return {
     rackets,
     meta: {

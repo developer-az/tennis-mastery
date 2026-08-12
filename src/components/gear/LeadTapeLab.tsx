@@ -8,8 +8,10 @@ import {
   computeLeadTapeEffect,
   createLeadTapePiece,
 } from "@/lib/equipment/leadTape";
+import type { TapeTowardPlan } from "@/lib/equipment/leadTapePlan";
 import { useGearStore } from "@/store/gearStore";
-import { LaunchAngleVisual, SwingPathVisual } from "./RacketVisuals";
+import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
+import { MoldTowardPanel } from "./MoldTowardPanel";
 
 const VB_W = 200;
 const VB_H = 280;
@@ -83,10 +85,18 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
           </h3>
           <p className="mt-2 max-w-lg text-sm text-[var(--muted)]">
             {setup.racketSlug
-              ? "Using your saved frame. Tap a zone to add tape, then compare launch and swing path with vs without."
-              : "Save a racket to My setup for your exact frame — demo base shown below."}
+              ? "Using your saved frame. Place tape by hand, or mold toward a pro/target frame with a calculated plan."
+              : "Save a racket to My setup for your exact frame — demo base shown below. Mold-toward works best on your saved frame."}
           </p>
         </header>
+
+        <MoldTowardPanel
+          rackets={rackets}
+          stock={baseRacket}
+          onApplyPlan={(plan: TapeTowardPlan) => {
+            updatePieces(plan.pieces);
+          }}
+        />
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-[var(--muted)]">Strip mass</span>
@@ -343,11 +353,15 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
-              Launch — stock vs taped
+              Strike launch — stock vs taped
             </p>
-            <LaunchAngleVisual degrees={effect.launchAngleDeg} />
+            <LaunchAngleVisual
+              degrees={effect.launchAngleDeg}
+              pathDeg={effect.swingPathDeg}
+              label="Strike launch vs net (taped)"
+            />
             <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
-              Stock {baseline.launchAngleDeg}°
+              Stock {baseline.launchAngleDeg}° off the bed
               {hasTape
                 ? ` → taped ${effect.launchAngleDeg}° (${effect.deltaLaunchDeg >= 0 ? "+" : ""}${effect.deltaLaunchDeg}°)`
                 : " · add tape to change"}
@@ -355,9 +369,17 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
           </div>
           <div>
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
-              Swing path — stock vs taped
+              Path through contact — stock vs taped
             </p>
-            <SwingPathVisual degrees={effect.swingPathDeg} />
+            <SwingPathVisual
+              degrees={effect.swingPathDeg}
+              zone={strikeZoneForFrame({
+                ...baseRacket,
+                idealLaunchAngleDeg: effect.launchAngleDeg,
+                idealSwingPathDeg: effect.swingPathDeg,
+              })}
+              label="Where to strike (taped mold)"
+            />
             <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
               Stock {baseline.swingPathDeg}°
               {hasTape
@@ -366,6 +388,19 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
             </p>
           </div>
         </div>
+        <StrikeCoachingBullets
+          launchDeg={effect.launchAngleDeg}
+          pathDeg={effect.swingPathDeg}
+          spin={baseRacket?.spin}
+          control={baseRacket?.control}
+          power={baseRacket?.power}
+          headSizeSqIn={baseRacket?.headSizeSqIn}
+          zone={strikeZoneForFrame({
+            ...baseRacket,
+            idealLaunchAngleDeg: effect.launchAngleDeg,
+            idealSwingPathDeg: effect.swingPathDeg,
+          })}
+        />
 
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">

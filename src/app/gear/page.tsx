@@ -24,11 +24,21 @@ export default async function GearPage() {
           </Link>
           <span className="hidden text-xs text-[var(--muted)] sm:inline">Gear lab</span>
         </div>
-        <nav className="flex items-center gap-4 text-sm text-[var(--muted)]">
-          <Link href="/lab" className="transition hover:text-[var(--foreground)]">
+        <nav className="flex items-center gap-2 text-sm sm:gap-3">
+          <Link
+            href="/lab"
+            className="rounded-md bg-[var(--accent)] px-3 py-1.5 font-medium text-[#0b1a14] transition hover:brightness-110"
+          >
             Form lab
           </Link>
-          <Link href="/" className="transition hover:text-[var(--foreground)]">
+          <Link
+            href="/gear?tab=overview"
+            className="rounded-md px-3 py-1.5 text-[var(--foreground)] transition hover:bg-white/5"
+            style={{ boxShadow: "0 0 0 1px var(--line)" }}
+          >
+            My setup
+          </Link>
+          <Link href="/" className="text-[var(--muted)] transition hover:text-[var(--foreground)]">
             Home
           </Link>
         </nav>

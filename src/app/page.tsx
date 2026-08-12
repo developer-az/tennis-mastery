@@ -210,38 +210,53 @@ export default function Home() {
               {
                 title: "Modern rackets",
                 body: "Live Racqix specs with portraits, filters, and vs-my-setup launch and swing deltas.",
+                href: "/gear?tab=rackets",
               },
               {
                 title: "String beds",
                 body: "Material, gauge, and shape filters — learn a category, then compare to your tested bed.",
+                href: "/gear?tab=strings",
               },
               {
                 title: "Overgrips & bases",
                 body: "What makes Tourna dry, Wilson Pro thin, leather connected — compared to your grip.",
+                href: "/gear?tab=grips",
               },
               {
                 title: "Lead tape",
-                body: "Drag virtual strips on tip, 3/9, throat, or handle and watch swingweight and launch change.",
+                body: "Place virtual strips on tip, 3/9, throat, or handle and watch swingweight and launch change.",
+                href: "/gear?tab=lead-tape",
               },
             ].map((item, i) => (
-              <div
+              <Link
                 key={item.title}
-                className="border-t border-[var(--line)] pt-5"
+                href={item.href}
+                className="border-t border-[var(--line)] pt-5 transition hover:border-[var(--accent)]/40"
                 style={{ animation: `rise 0.7s ease-out ${0.1 * i}s both` }}
               >
                 <h3 className="font-[family-name:var(--font-display)] text-lg tracking-tight">
                   {item.title}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">{item.body}</p>
-              </div>
+                <p className="mt-3 text-xs font-medium text-[var(--accent)]">Open →</p>
+              </Link>
             ))}
           </div>
-          <Link
-            href="/gear"
-            className="mt-10 inline-block rounded-md bg-[var(--accent)] px-6 py-3 font-medium text-[#0b1a14] transition hover:brightness-110"
-          >
-            Open gear lab
-          </Link>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link
+              href="/gear?tab=overview"
+              className="inline-block rounded-md bg-[var(--accent)] px-6 py-3 font-medium text-[#0b1a14] transition hover:brightness-110"
+            >
+              Combined setup readout
+            </Link>
+            <Link
+              href="/gear?tab=rackets"
+              className="inline-block rounded-md px-6 py-3 text-[var(--foreground)] transition hover:bg-white/5"
+              style={{ boxShadow: "0 0 0 1px var(--line)" }}
+            >
+              Browse rackets
+            </Link>
+          </div>
         </section>
       </main>
 

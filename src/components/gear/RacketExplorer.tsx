@@ -6,7 +6,7 @@ import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
-import { LaunchAngleVisual, SwingPathVisual } from "./RacketVisuals";
+import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
 import { PlayerFitBadges } from "./PlayerFitBadges";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
@@ -42,6 +42,7 @@ export function RacketExplorer({
   const setup = useGearStore((s) => s.setup);
   const setupSlug = setup.racketSlug;
   const setRacket = useGearStore((s) => s.setRacket);
+  const setTab = useGearStore((s) => s.setTab);
   const [selectedSlug, setSelectedSlug] = useState(
     setupSlug && initialRackets.some((r) => r.slug === setupSlug)
       ? setupSlug
@@ -220,22 +221,41 @@ export function RacketExplorer({
 
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  const saveRacket = (r: RacketProfile) => {
+    setRacket(r.slug, `${r.brand} ${r.model}`, {
+      idealLaunchAngleDeg: r.idealLaunchAngleDeg,
+      idealSwingPathDeg: r.idealSwingPathDeg,
+      power: r.power,
+      spin: r.spin,
+      control: r.control,
+      comfort: r.comfort,
+      weightG: r.weightG,
+      swingweight: r.swingweight,
+      balanceMm: r.balanceMm,
+    });
+  };
+
   return (
-    <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-      <div className="order-2 space-y-4 lg:order-1">
-        <div className="flex flex-col gap-3">
-          <label className="relative flex-1">
+    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
+      {/* List first on phones so search/save is immediate */}
+      <div className="order-1 space-y-3 lg:order-1 lg:space-y-4">
+        <div className="sticky top-[6.5rem] z-20 -mx-1 space-y-2 bg-[var(--background)]/95 px-1 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none lg:top-auto">
+          <label className="relative block flex-1">
             <span className="sr-only">Search rackets</span>
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search cx200, Pure Aero, Blade…"
-              className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2.5 text-sm outline-none transition focus:border-[var(--accent)]"
+              placeholder="Search Prestige Pro, CX 200, Blade…"
+              inputMode="search"
+              enterKeyHint="search"
+              autoCapitalize="off"
+              autoCorrect="off"
+              className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-3 text-base outline-none transition focus:border-[var(--accent)] sm:py-2.5 sm:text-sm"
             />
           </label>
           <button
             type="button"
-            className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-[var(--muted)] lg:hidden"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)] lg:hidden"
             style={{ boxShadow: "0 0 0 1px var(--line)" }}
             onClick={() => setFiltersOpen((o) => !o)}
             aria-expanded={filtersOpen}
@@ -331,16 +351,16 @@ export function RacketExplorer({
           {meta.live ? " · live" : " · offline snapshot"}
         </p>
 
-        <ul className="max-h-[22rem] divide-y divide-[var(--line)] overflow-y-auto border-y border-[var(--line)] md:max-h-[28rem]">
+        <ul className="max-h-[min(70vh,28rem)] divide-y divide-[var(--line)] overflow-y-auto overscroll-contain border-y border-[var(--line)] md:max-h-[32rem]">
           {shown.map((r) => {
             const active = r.slug === selected?.slug;
             const saved = r.slug === setupSlug;
             const fit = derivePlayerFit(r);
             const inCompare = compareIds.includes(r.slug);
             return (
-              <li key={r.slug} className="flex items-stretch gap-1">
+              <li key={r.slug} className="flex items-stretch gap-0.5">
                 <label
-                  className="flex shrink-0 items-center px-2"
+                  className="hidden shrink-0 items-center px-2 sm:flex"
                   title={inCompare ? "Remove from compare" : "Add to compare"}
                 >
                   <span className="sr-only">
@@ -357,7 +377,7 @@ export function RacketExplorer({
                   type="button"
                   onClick={() => setSelectedSlug(r.slug)}
                   aria-pressed={active}
-                  className={`flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left transition ${
+                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-3 text-left transition sm:gap-3 ${
                     active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
                   }`}
                 >
@@ -367,7 +387,7 @@ export function RacketExplorer({
                     size="sm"
                   />
                   <span className="flex min-w-0 flex-col gap-1">
-                    <span className="flex items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
+                    <span className="flex flex-wrap items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
                       {r.brand} {r.model}
                       {saved ? (
                         <span className="rounded bg-[var(--accent)]/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-[var(--accent)]">
@@ -376,22 +396,43 @@ export function RacketExplorer({
                       ) : null}
                     </span>
                     <span className="text-xs text-[var(--muted)]">
-                      {r.year} · {r.headSizeSqIn}&quot; · {r.stringPattern} · {r.style}
+                      {r.year} · {r.headSizeSqIn}&quot; · {r.stringPattern}
+                      <span className="hidden sm:inline"> · {r.style}</span>
                     </span>
-                    <span className="flex flex-wrap gap-1.5 pt-0.5">
+                    <span className="hidden flex-wrap gap-1.5 pt-0.5 sm:flex">
                       <MiniTag label={fit.skill} color="#c8f560" />
                       <MiniTag label={fit.courtRole} color="#7dd3fc" />
                       <MiniTag label={fit.feelAxis} color="#f4a261" />
                     </span>
                   </span>
                 </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    saveRacket(r);
+                  }}
+                  className="m-1.5 shrink-0 self-center rounded-md px-2.5 py-2 text-[11px] font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:px-3"
+                  style={{
+                    background: saved ? "var(--accent-dim)" : "var(--accent)",
+                    color: saved ? "var(--accent)" : "#0b1a14",
+                    boxShadow: saved ? "0 0 0 1px var(--accent)" : "none",
+                  }}
+                  aria-label={
+                    saved
+                      ? `${r.brand} ${r.model} already in setup`
+                      : `Save ${r.brand} ${r.model} to my setup`
+                  }
+                >
+                  {saved ? "Saved" : "Save"}
+                </button>
               </li>
             );
           })}
           {filtered.length === 0 && (
             <li className="px-2 py-8 text-sm text-[var(--muted)]">
-              No rackets match those filters. Try &quot;cx 200&quot;, &quot;cx200&quot;, or clear weight /
-              head size.
+              No rackets match those filters. Try &quot;prestige pro&quot;, &quot;cx 200&quot;, or clear
+              weight / head size.
             </li>
           )}
         </ul>
@@ -409,7 +450,7 @@ export function RacketExplorer({
 
       {selected && (
         <div
-          className="order-1 space-y-6 lg:order-2 lg:space-y-8"
+          className="order-2 space-y-6 lg:order-2 lg:space-y-8"
           key={selected.slug}
           style={{ animation: "rise 0.45s ease-out both" }}
         >
@@ -440,19 +481,8 @@ export function RacketExplorer({
               )}
               <button
                 type="button"
-                onClick={() =>
-                  setRacket(selected.slug, `${selected.brand} ${selected.model}`, {
-                    idealLaunchAngleDeg: selected.idealLaunchAngleDeg,
-                    idealSwingPathDeg: selected.idealSwingPathDeg,
-                    power: selected.power,
-                    spin: selected.spin,
-                    control: selected.control,
-                    comfort: selected.comfort,
-                    weightG: selected.weightG,
-                    swingweight: selected.swingweight,
-                  })
-                }
-                className="mt-4 rounded-md px-4 py-2 text-sm font-medium transition hover:brightness-110"
+                onClick={() => saveRacket(selected)}
+                className="mt-4 min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
                 style={{
                   background: inSetup ? "var(--accent-dim)" : "var(--accent)",
                   color: inSetup ? "var(--accent)" : "#0b1a14",
@@ -461,15 +491,50 @@ export function RacketExplorer({
               >
                 {inSetup ? "Saved in my setup" : "Save to my setup"}
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTab("lead-tape");
+                  const url = new URL(window.location.href);
+                  url.searchParams.set("tab", "lead-tape");
+                  url.searchParams.set("mold", selected.slug);
+                  window.history.replaceState(
+                    null,
+                    "",
+                    `${url.pathname}?${url.searchParams.toString()}`,
+                  );
+                }}
+                className="mt-2 w-full rounded-md px-4 py-2 text-xs text-[var(--muted)] transition hover:bg-white/5 hover:text-[var(--foreground)] sm:w-auto"
+                style={{ boxShadow: "0 0 0 1px var(--line)" }}
+              >
+                Mold my frame toward this →
+              </button>
             </div>
           </header>
 
           <PlayerFitBadges racket={selected} />
 
           <div className="grid gap-8 md:grid-cols-2">
-            <LaunchAngleVisual degrees={selected.idealLaunchAngleDeg} />
-            <SwingPathVisual degrees={selected.idealSwingPathDeg} />
+            <LaunchAngleVisual
+              degrees={selected.idealLaunchAngleDeg}
+              pathDeg={selected.idealSwingPathDeg}
+              label="Strike launch vs net"
+            />
+            <SwingPathVisual
+              degrees={selected.idealSwingPathDeg}
+              zone={strikeZoneForFrame(selected)}
+              label="Where to strike on this frame"
+            />
           </div>
+          <StrikeCoachingBullets
+            launchDeg={selected.idealLaunchAngleDeg}
+            pathDeg={selected.idealSwingPathDeg}
+            spin={selected.spin}
+            control={selected.control}
+            power={selected.power}
+            headSizeSqIn={selected.headSizeSqIn}
+            zone={strikeZoneForFrame(selected)}
+          />
 
           <ScoreGrid
             scores={[
