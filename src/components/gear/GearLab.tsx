@@ -89,7 +89,7 @@ export function GearLab({
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:px-10 md:py-14">
       <MySetupBar onSelectTab={selectTab} />
       <div className="mb-5">
-        <SetupDials strings={strings} compact />
+        <SetupDials strings={strings} compact hideStringDials={tab === "strings"} />
       </div>
 
       <div
@@ -140,46 +140,39 @@ export function GearLab({
       </p>
 
       <div className="relative z-10 mt-8">
-        <div
-          id="gear-panel-overview"
-          role="tabpanel"
-          aria-labelledby="gear-tab-overview"
-          hidden={tab !== "overview"}
-        >
-          <CombinedSetupPanel rackets={rackets} strings={strings} grips={grips} />
-        </div>
-        <div
-          id="gear-panel-rackets"
-          role="tabpanel"
-          aria-labelledby="gear-tab-rackets"
-          hidden={tab !== "rackets"}
-        >
-          <RacketExplorer initialRackets={rackets} meta={racketMeta} />
-        </div>
-        <div
-          id="gear-panel-strings"
-          role="tabpanel"
-          aria-labelledby="gear-tab-strings"
-          hidden={tab !== "strings"}
-        >
-          <StringExplorer strings={strings} />
-        </div>
-        <div
-          id="gear-panel-grips"
-          role="tabpanel"
-          aria-labelledby="gear-tab-grips"
-          hidden={tab !== "grips"}
-        >
-          <GripExplorer grips={grips} />
-        </div>
-        <div
-          id="gear-panel-lead-tape"
-          role="tabpanel"
-          aria-labelledby="gear-tab-lead-tape"
-          hidden={tab !== "lead-tape"}
-        >
-          <LeadTapeLab rackets={rackets} />
-        </div>
+        {tab === "overview" ? (
+          <div
+            id="gear-panel-overview"
+            role="tabpanel"
+            aria-labelledby="gear-tab-overview"
+          >
+            <CombinedSetupPanel rackets={rackets} strings={strings} grips={grips} />
+          </div>
+        ) : null}
+        {tab === "rackets" ? (
+          <div id="gear-panel-rackets" role="tabpanel" aria-labelledby="gear-tab-rackets">
+            <RacketExplorer initialRackets={rackets} meta={racketMeta} />
+          </div>
+        ) : null}
+        {tab === "strings" ? (
+          <div id="gear-panel-strings" role="tabpanel" aria-labelledby="gear-tab-strings">
+            <StringExplorer strings={strings} />
+          </div>
+        ) : null}
+        {tab === "grips" ? (
+          <div id="gear-panel-grips" role="tabpanel" aria-labelledby="gear-tab-grips">
+            <GripExplorer grips={grips} />
+          </div>
+        ) : null}
+        {tab === "lead-tape" ? (
+          <div
+            id="gear-panel-lead-tape"
+            role="tabpanel"
+            aria-labelledby="gear-tab-lead-tape"
+          >
+            <LeadTapeLab rackets={rackets} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

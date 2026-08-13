@@ -14,9 +14,12 @@ import { useGearStore } from "@/store/gearStore";
 export function SetupDials({
   strings,
   compact = false,
+  /** When true, hide string tension/gauge (Strings tab owns those dials). */
+  hideStringDials = false,
 }: {
   strings: StringProfile[];
   compact?: boolean;
+  hideStringDials?: boolean;
 }) {
   const setup = useGearStore((s) => s.setup);
   const setTension = useGearStore((s) => s.setTension);
@@ -28,7 +31,7 @@ export function SetupDials({
     [strings, setup.stringId],
   );
 
-  const hasString = Boolean(setup.stringId);
+  const hasString = Boolean(setup.stringId) && !hideStringDials;
   const hasGrip =
     (setup.gripLayers?.length ?? 0) > 0 || Boolean(setup.gripId);
   const overgripCount =
@@ -91,7 +94,22 @@ export function SetupDials({
             <label className="block min-w-0">
               <span className="mb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
                 Tension
-                <span className="tabular-nums text-[var(--accent)]">{tension} lbs</span>
+                <span className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min={Math.min(lo, tension) - 2}
+                    max={Math.max(hi, tension) + 2}
+                    step={0.5}
+                    value={tension}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      if (Number.isFinite(v)) setTension(v);
+                    }}
+                    className="w-16 rounded border border-[var(--line)] bg-black/30 px-1.5 py-0.5 text-right text-xs tabular-nums text-[var(--accent)] outline-none focus:border-[var(--accent)]"
+                    aria-label="String tension in pounds (number)"
+                  />
+                  <span className="text-[var(--muted)]">lbs</span>
+                </span>
               </span>
               <input
                 type="range"
