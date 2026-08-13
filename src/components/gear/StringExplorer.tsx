@@ -403,7 +403,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                     e.stopPropagation();
                     saveStringRow(s);
                   }}
-                  className="m-1.5 shrink-0 self-center rounded-md px-2.5 py-2 text-[11px] font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:px-3"
+                  className="m-1.5 min-h-11 shrink-0 self-center rounded-md px-3 py-2.5 text-xs font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:min-h-10 sm:px-3.5"
                   style={{
                     background: saved ? "rgba(125,211,252,0.12)" : "var(--accent)",
                     color: saved ? "#7dd3fc" : "#0b1a14",
@@ -593,8 +593,8 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
           )}
 
           <div>
-            <div className="mb-3 flex items-end justify-between gap-4">
-              <label className="flex-1">
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+              <label className="min-w-0 flex-1">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Tension ({lo}–{hi} lbs) · recommended {selected.recommendedTensionLbs}
                 </span>
@@ -612,13 +612,32 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                     }));
                     if (inSetup) setTensionStore(v);
                   }}
-                  className="mt-3 w-full"
+                  className="mt-3 w-full accent-[var(--accent)]"
+                  aria-label="String tension slider"
                 />
               </label>
-              <p className="font-[family-name:var(--font-display)] text-2xl tabular-nums">
-                {tension}
-                <span className="ml-1 text-sm text-[var(--muted)]">lbs</span>
-              </p>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min={lo}
+                  max={hi}
+                  step={0.5}
+                  value={tension}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isFinite(v)) return;
+                    const clamped = Math.max(lo, Math.min(hi, v));
+                    setTensionById((prev) => ({
+                      ...prev,
+                      [selected.id]: clamped,
+                    }));
+                    if (inSetup) setTensionStore(clamped);
+                  }}
+                  className="w-20 rounded-md border border-[var(--line)] bg-black/30 px-2 py-2 text-right font-[family-name:var(--font-display)] text-xl tabular-nums outline-none focus:border-[var(--accent)]"
+                  aria-label="String tension in pounds"
+                />
+                <span className="text-sm text-[var(--muted)]">lbs</span>
+              </div>
             </div>
             <TensionCurve string={selected} tension={tension} gaugeMm={gauge} />
           </div>

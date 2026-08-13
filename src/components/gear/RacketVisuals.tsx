@@ -234,40 +234,26 @@ export function LaunchAngleVisual({
           cy={faceCy}
           rx="16"
           ry="11"
-          fill="rgba(200,245,96,0.12)"
+          fill="rgba(200,245,96,0.22)"
           stroke="#c8f560"
           strokeWidth="1.8"
         />
-        <line
-          x1={faceCx - 10}
-          y1={faceCy - 4}
-          x2={faceCx + 10}
-          y2={faceCy - 4}
-          stroke="rgba(200,245,96,0.35)"
-          strokeWidth="0.8"
+        <ellipse
+          cx={faceCx + 3}
+          cy={faceCy}
+          rx="14"
+          ry="10"
+          fill="none"
+          stroke="#f4a261"
+          strokeWidth="1.2"
+          opacity="0.55"
         />
-        <line
-          x1={faceCx - 10}
-          y1={faceCy}
-          x2={faceCx + 10}
-          y2={faceCy}
-          stroke="rgba(200,245,96,0.35)"
-          strokeWidth="0.8"
-        />
-        <line
-          x1={faceCx - 10}
-          y1={faceCy + 4}
-          x2={faceCx + 10}
-          y2={faceCy + 4}
-          stroke="rgba(200,245,96,0.35)"
-          strokeWidth="0.8"
-        />
-        <circle cx={faceCx} cy={faceCy} r="3.4" fill="#c8f560">
+        <text x={faceCx - 22} y={faceCy + 22} fill="#c8f560" fontSize="7">
+          strings front
+        </text>
+        <circle cx={faceCx} cy={faceCy} r="3.2" fill="#c8f560">
           <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" />
         </circle>
-        <text x={faceCx - 18} y={faceCy + 22} fill="#8aa396" fontSize="8">
-          face center
-        </text>
         <line x1={netX} y1={netTop} x2={netX} y2={netBot} stroke="#e8efe9" strokeWidth="2.4" />
         <line
           x1={netX - 11}
@@ -703,7 +689,7 @@ export function ForehandGripBevelVisual({
 }
 
 /**
- * Side view of the racket face at contact — shows how closed past vertical.
+ * Side view of the racket at contact — oval hoop with stringbed (front) vs frame back.
  */
 export function FaceAngleAtContactVisual({
   advice,
@@ -712,32 +698,33 @@ export function FaceAngleAtContactVisual({
 }) {
   const uid = useId().replace(/:/g, "");
   const closed = advice.face.closedDeg;
-  // Rotate face: 0° = vertical stringbed; positive closed tips top toward +x (flight)
+  // 0° = vertical stringbed; positive closed tips top toward +x (flight / opponent)
   const rad = (closed * Math.PI) / 180;
-  const faceH = 52;
-  const faceW = 34;
   const cx = 88;
-  const cy = 78;
-  // Face rectangle corners relative to center, then rotated
-  const corners = [
-    [-faceW / 2, -faceH / 2],
-    [faceW / 2, -faceH / 2],
-    [faceW / 2, faceH / 2],
-    [-faceW / 2, faceH / 2],
-  ].map(([x, y]) => {
-    const rx = x * Math.cos(rad) - y * Math.sin(rad);
-    const ry = x * Math.sin(rad) + y * Math.cos(rad);
-    return [cx + rx, cy + ry] as const;
-  });
-  const poly = corners.map(([x, y]) => `${x},${y}`).join(" ");
-  // Normal (outward from strings toward ball / flight)
+  const cy = 72;
+  const rx = 15;
+  const ry = 26;
+  // Normal from stringbed toward ball
   const nx = Math.sin(rad);
   const ny = -Math.cos(rad);
-  const ballX = cx + nx * 48;
-  const ballY = cy + ny * 48;
-  // Vertical reference
-  const refTop = cy - faceH / 2 - 6;
-  const refBot = cy + faceH / 2 + 6;
+  // Back of hoop (opposite)
+  const bx = -nx;
+  const by = -ny;
+  const ballX = cx + nx * 50;
+  const ballY = cy + ny * 50;
+  // Throat stub toward bottom of hoop in local face coords
+  const throatLocal = [0, ry + 10] as const;
+  const throatX = cx + (throatLocal[0] * Math.cos(rad) - throatLocal[1] * Math.sin(rad));
+  const throatY = cy + (throatLocal[0] * Math.sin(rad) + throatLocal[1] * Math.cos(rad));
+  const buttX = cx + (0 * Math.cos(rad) - (ry + 28) * Math.sin(rad));
+  const buttY = cy + (0 * Math.sin(rad) + (ry + 28) * Math.cos(rad));
+
+  // Transform helper for ellipse outline points
+  const xf = (lx: number, ly: number) => {
+    const x = cx + (lx * Math.cos(rad) - ly * Math.sin(rad));
+    const y = cy + (lx * Math.sin(rad) + ly * Math.cos(rad));
+    return `${x},${y}`;
+  };
 
   return (
     <div className="relative">
@@ -746,12 +733,15 @@ export function FaceAngleAtContactVisual({
       </p>
       <svg viewBox="0 0 220 160" className="h-auto w-full max-w-md" aria-hidden>
         <defs>
-          <linearGradient id={`faceBed-${uid}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="rgba(200,245,96,0.15)" />
-            <stop offset="100%" stopColor="rgba(125,211,252,0.12)" />
+          <linearGradient id={`stringsFront-${uid}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="rgba(200,245,96,0.55)" />
+            <stop offset="100%" stopColor="rgba(200,245,96,0.2)" />
+          </linearGradient>
+          <linearGradient id={`frameBack-${uid}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="rgba(244,162,97,0.15)" />
+            <stop offset="100%" stopColor="rgba(244,162,97,0.45)" />
           </linearGradient>
         </defs>
-        {/* Ground / flight direction */}
         <line
           x1="20"
           y1="148"
@@ -761,93 +751,102 @@ export function FaceAngleAtContactVisual({
           strokeWidth="1.2"
         />
         <text x="168" y="144" fill="#8aa396" fontSize="8">
-          flight →
+          toward opponent →
         </text>
-        {/* Vertical reference */}
         <line
           x1={cx}
-          y1={refTop}
+          y1={cy - 40}
           x2={cx}
-          y2={refBot}
-          stroke="rgba(232,239,233,0.35)"
+          y2={cy + 34}
+          stroke="rgba(232,239,233,0.3)"
           strokeWidth="1.2"
           strokeDasharray="3 3"
         />
-        <text x={cx - 28} y={refTop - 4} fill="#8aa396" fontSize="8">
+        <text x={cx - 26} y={cy - 44} fill="#8aa396" fontSize="8">
           vertical
         </text>
-        {/* Angle arc */}
         <path
-          d={`M ${cx} ${cy - 36} A 36 36 0 0 1 ${cx + Math.sin(rad) * 36} ${cy - Math.cos(rad) * 36}`}
+          d={`M ${cx} ${cy - 34} A 34 34 0 0 1 ${cx + Math.sin(rad) * 34} ${cy - Math.cos(rad) * 34}`}
           fill="none"
           stroke="#7dd3fc"
           strokeWidth="1.6"
         />
-        <text
-          x={cx + 10 + closed * 0.4}
-          y={cy - 42}
-          fill="#7dd3fc"
-          fontSize="9"
-        >
+        <text x={cx + 8 + closed * 0.35} y={cy - 40} fill="#7dd3fc" fontSize="9">
           {closed.toFixed(1)}° closed
         </text>
-        {/* Face */}
-        <polygon
-          points={poly}
-          fill={`url(#faceBed-${uid})`}
-          stroke="#c8f560"
-          strokeWidth="2"
+
+        {/* Frame back (amber) — slight offset away from ball */}
+        <ellipse
+          cx={cx + bx * 3}
+          cy={cy + by * 3}
+          rx={rx + 1}
+          ry={ry + 1}
+          transform={`rotate(${closed} ${cx + bx * 3} ${cy + by * 3})`}
+          fill={`url(#frameBack-${uid})`}
+          stroke="#f4a261"
+          strokeWidth="2.2"
         />
-        {/* String lines */}
-        {[-12, -4, 4, 12].map((oy) => {
-          const x0 = -faceW / 2 + 4;
-          const x1 = faceW / 2 - 4;
-          const p0x = cx + (x0 * Math.cos(rad) - oy * Math.sin(rad));
-          const p0y = cy + (x0 * Math.sin(rad) + oy * Math.cos(rad));
-          const p1x = cx + (x1 * Math.cos(rad) - oy * Math.sin(rad));
-          const p1y = cy + (x1 * Math.sin(rad) + oy * Math.cos(rad));
-          return (
-            <line
-              key={oy}
-              x1={p0x}
-              y1={p0y}
-              x2={p1x}
-              y2={p1y}
-              stroke="rgba(200,245,96,0.35)"
-              strokeWidth="0.8"
-            />
-          );
-        })}
-        {/* Contact center */}
-        <circle cx={cx} cy={cy} r="3.2" fill="#c8f560">
+        {/* Stringbed front (lime) */}
+        <ellipse
+          cx={cx + nx * 1.5}
+          cy={cy + ny * 1.5}
+          rx={rx}
+          ry={ry}
+          transform={`rotate(${closed} ${cx + nx * 1.5} ${cy + ny * 1.5})`}
+          fill={`url(#stringsFront-${uid})`}
+          stroke="#c8f560"
+          strokeWidth="1.8"
+        />
+        {/* Cross strings */}
+        {[-16, -8, 0, 8, 16].map((oy) => (
+          <line
+            key={`h-${oy}`}
+            x1={parseFloat(xf(-rx + 3, oy).split(",")[0])}
+            y1={parseFloat(xf(-rx + 3, oy).split(",")[1])}
+            x2={parseFloat(xf(rx - 3, oy).split(",")[0])}
+            y2={parseFloat(xf(rx - 3, oy).split(",")[1])}
+            stroke="rgba(200,245,96,0.45)"
+            strokeWidth="0.7"
+          />
+        ))}
+        {/* Throat + handle stub */}
+        <line
+          x1={throatX}
+          y1={throatY}
+          x2={buttX}
+          y2={buttY}
+          stroke="rgba(232,239,233,0.55)"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <circle cx={cx} cy={cy} r="3" fill="#c8f560">
           <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" />
         </circle>
-        {/* Ball leaving */}
-        <circle cx={ballX} cy={ballY} r="7" fill="rgba(244,162,97,0.85)" />
+        <circle cx={ballX} cy={ballY} r="7" fill="rgba(244,162,97,0.9)" />
         <line
-          x1={cx + nx * 8}
-          y1={cy + ny * 8}
+          x1={cx + nx * 10}
+          y1={cy + ny * 10}
           x2={ballX - nx * 8}
           y2={ballY - ny * 8}
           stroke="#f4a261"
           strokeWidth="1.4"
           strokeDasharray="3 2"
         />
-        <text x={Math.min(190, ballX + 8)} y={ballY + 4} fill="#f4a261" fontSize="8">
-          leave
+
+        {/* Front / back legend */}
+        <rect x="14" y="18" width="10" height="10" rx="2" fill="rgba(200,245,96,0.45)" stroke="#c8f560" />
+        <text x="28" y="27" fill="#c8f560" fontSize="8">
+          Strings · front (hits ball)
         </text>
-        {/* Open vs closed cues */}
-        <text x="14" y="24" fill="#8aa396" fontSize="8">
-          less closed ←
-        </text>
-        <text x="150" y="24" fill="#8aa396" fontSize="8">
-          → more closed
+        <rect x="14" y="34" width="10" height="10" rx="2" fill="rgba(244,162,97,0.35)" stroke="#f4a261" />
+        <text x="28" y="43" fill="#f4a261" fontSize="8">
+          Frame · back
         </text>
       </svg>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
         {advice.face.label}
         <span className="ml-2 text-base text-[var(--muted)]">
-          · {advice.face.closedDeg.toFixed(1)}° past vertical
+          · ~{advice.face.closedDeg.toFixed(1)}° past vertical
         </span>
       </p>
       <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{advice.face.detail}</p>
@@ -875,21 +874,8 @@ export function ContactGeometryVisual({
   ];
   const primary = bands.find((b) => b.id === advice.prefersHeight) ?? bands[1];
   const closed = advice.face.closedDeg;
-  const rad = (closed * Math.PI) / 180;
   const hx = 118;
   const hy = primary.y + primary.h * 0.55;
-  const faceH = 22;
-  const faceW = 14;
-  const corners = [
-    [-faceW / 2, -faceH / 2],
-    [faceW / 2, -faceH / 2],
-    [faceW / 2, faceH / 2],
-    [-faceW / 2, faceH / 2],
-  ].map(([x, y]) => {
-    const rx = x * Math.cos(rad) - y * Math.sin(rad);
-    const ry = x * Math.sin(rad) + y * Math.cos(rad);
-    return `${hx + rx},${hy + ry}`;
-  });
 
   return (
     <div className="relative">
@@ -941,29 +927,47 @@ export function ContactGeometryVisual({
         <line
           x1="78"
           y1={hy}
-          x2={hx - 10}
+          x2={hx - 14}
           y2={hy}
           stroke="rgba(125,211,252,0.5)"
           strokeWidth="1.2"
           strokeDasharray="3 2"
         />
-        <polygon
-          points={corners.join(" ")}
-          fill="rgba(200,245,96,0.15)"
-          stroke="#c8f560"
-          strokeWidth="1.6"
+        {/* Oval hoop — lime = strings front */}
+        <ellipse
+          cx={hx + 2}
+          cy={hy}
+          rx="9"
+          ry="14"
+          transform={`rotate(${closed} ${hx + 2} ${hy})`}
+          fill="rgba(244,162,97,0.25)"
+          stroke="#f4a261"
+          strokeWidth="1.4"
         />
-        <circle cx={hx} cy={hy} r="2.6" fill="#c8f560" />
+        <ellipse
+          cx={hx}
+          cy={hy}
+          rx="8"
+          ry="13"
+          transform={`rotate(${closed} ${hx} ${hy})`}
+          fill="rgba(200,245,96,0.3)"
+          stroke="#c8f560"
+          strokeWidth="1.5"
+        />
+        <circle cx={hx} cy={hy} r="2.4" fill="#c8f560" />
         <text x={hx + 16} y={hy - 8} fill="#7dd3fc" fontSize="8">
-          face {closed.toFixed(0)}° closed
+          face ~{closed.toFixed(0)}° closed
         </text>
-        <text x={hx + 16} y={hy + 6} fill="#8aa396" fontSize="8">
-          {advice.gripLabel}
+        <text x={hx + 16} y={hy + 6} fill="#c8f560" fontSize="7">
+          lime = strings front
+        </text>
+        <text x={hx + 16} y={hy + 16} fill="#f4a261" fontSize="7">
+          amber = frame back
         </text>
       </svg>
       <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
         Best geometry: {advice.prefersHeight}-high ball, bevel {advice.bevel}, face ~
-        {advice.face.closedDeg.toFixed(1)}° closed through the hit — not an open slap.
+        {advice.face.closedDeg.toFixed(1)}° closed — coaching estimate, not a video measurement.
       </p>
     </div>
   );

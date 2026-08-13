@@ -7,7 +7,9 @@ import { setupSummary, useGearStore } from "@/store/gearStore";
 export function LabSetupStrip() {
   const setup = useGearStore((s) => s.setup);
   const tapeG = setup.leadTape?.pieces?.reduce((n, p) => n + p.massG, 0) ?? 0;
-  const hasAny = Boolean(setup.racketSlug || setup.stringId || setup.gripId || tapeG > 0);
+  const hasGrip =
+    (setup.gripLayers?.length ?? 0) > 0 || Boolean(setup.gripId);
+  const hasAny = Boolean(setup.racketSlug || setup.stringId || hasGrip || tapeG > 0);
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--panel)] px-4 py-2.5 md:px-5">

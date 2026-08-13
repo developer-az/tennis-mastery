@@ -267,27 +267,29 @@ export function BiomechanicalSkeleton({
     if (m.trailAnkle) m.trailAnkle.scale.setScalar(0.038);
 
     if (m.leadFoot) {
-      // Foot points along shank projection on the court
-      _dir.set(p.leadAnkle.x - p.leadKnee.x, 0, p.leadAnkle.z - p.leadKnee.z);
+      // Toes along hip→ankle on the court (stance line), so feet stand under the hips
+      _dir.set(p.leadAnkle.x - p.leadHip.x, 0, p.leadAnkle.z - p.leadHip.z);
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.leadFoot.position.set(
-        p.leadAnkle.x + _dir.x * 0.06,
-        0.028,
-        p.leadAnkle.z + _dir.z * 0.06,
+        p.leadAnkle.x + _dir.x * 0.07,
+        0.022,
+        p.leadAnkle.z + _dir.z * 0.07,
       );
       m.leadFoot.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
+      m.leadFoot.scale.set(1.15, 0.55, 1.85);
     }
     if (m.trailFoot) {
-      _dir.set(p.trailAnkle.x - p.trailKnee.x, 0, p.trailAnkle.z - p.trailKnee.z);
+      _dir.set(p.trailAnkle.x - p.trailHip.x, 0, p.trailAnkle.z - p.trailHip.z);
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.trailFoot.position.set(
-        p.trailAnkle.x + _dir.x * 0.05,
-        0.028,
-        p.trailAnkle.z + _dir.z * 0.05,
+        p.trailAnkle.x + _dir.x * 0.06,
+        0.022,
+        p.trailAnkle.z + _dir.z * 0.06,
       );
       m.trailFoot.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
+      m.trailFoot.scale.set(1.1, 0.55, 1.75);
     }
 
     // Arms inset at elbows so the fold reads as a joint, not a sharp V

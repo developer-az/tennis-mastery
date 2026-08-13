@@ -340,7 +340,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                       addLayer(g);
                     }}
                     disabled={!canAdd && layers.length > 0}
-                    className="rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition active:scale-[0.98] disabled:opacity-40 sm:px-3"
+                    className="rounded-md px-2.5 py-2 text-[11px] font-semibold uppercase tracking-wide transition active:scale-[0.98] disabled:opacity-40 sm:min-h-10 sm:px-3 sm:py-2.5 sm:text-xs"
                     style={{
                       background: "var(--accent)",
                       color: "#0b1a14",
