@@ -433,7 +433,7 @@ export function RacketExplorer({
                     e.stopPropagation();
                     saveRacket(r);
                   }}
-                  className="m-1.5 shrink-0 self-center rounded-md px-2.5 py-2 text-[11px] font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:px-3"
+                  className="m-1.5 min-h-11 shrink-0 self-center rounded-md px-3 py-2.5 text-xs font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:min-h-10 sm:px-3.5"
                   style={{
                     background: saved ? "var(--accent-dim)" : "var(--accent)",
                     color: saved ? "var(--accent)" : "#0b1a14",

@@ -1310,13 +1310,13 @@ function buildScienceNotes(input: {
       path >= 28 ? "steep spin path" : path >= 20 ? "modern low→high path" : "flatter drive path";
 
     notes.push(
-      `Flight: ${leave.toFixed(1)}° leave (${leaveBand}${clear != null ? `, ~+${clear}" over the net` : ""}). ${
+      `Flight model: ${leave.toFixed(1)}° leave (${leaveBand}${clear != null ? `, ~+${clear}" over the net on a clean center hit` : ""}). ${
         leaveBand === "low net margin"
           ? "Balls leave the strings on a low path — late or low contact often goes into the net."
           : leaveBand === "high net margin"
             ? "Lots of room over the net — open faces or over-brushing often float long."
             : "Enough room over the net on clean hits; keep face honest through contact."
-      }`,
+      } Clearance is a coaching estimate from leave/path — not a lab trajectory.`,
     );
     notes.push(
       `Spin path: ~${path.toFixed(0)}° (${pathBand}). ${
@@ -1339,8 +1339,39 @@ function buildScienceNotes(input: {
   if (input.forehand) {
     const fh = input.forehand;
     notes.push(
-      `Forehand for this mold: ${fh.gripLabel.toLowerCase()} (bevel ${fh.bevel}) with a ${fh.face.label.toLowerCase()} (~${fh.face.closedDeg}° past vertical) at ${fh.prefersHeight}-high contact.`,
+      `Forehand for this mold: ${fh.gripLabel.toLowerCase()} (bevel ${fh.bevel}) with a ${fh.face.label.toLowerCase()} (~${fh.face.closedDeg}° past vertical — coaching estimate) at ${fh.prefersHeight}-high contact.`,
     );
+  }
+
+  // Concise need / don't-need judgments
+  const need: string[] = [];
+  const skip: string[] = [];
+  if (input.launchAngleDeg != null && input.launchAngleDeg <= 6) {
+    need.push("More net clearance (−1–2 lbs or light tip mass) if clean hits dump short");
+  } else if (input.launchAngleDeg != null && input.launchAngleDeg >= 10) {
+    need.push("Tighter depth control (+1–2 lbs or less tip mass) if center hits sail");
+  } else {
+    skip.push("Big leave changes — window is already balanced");
+  }
+  if (input.racket?.stiffnessRa != null && input.racket.stiffnessRa >= 68) {
+    need.push("Softer bed before stacking tip tape (stiff RA)");
+  }
+  if (
+    input.scores.comfort != null &&
+    input.scores.comfort <= 45
+  ) {
+    need.push("Comfort lever (−2 lbs / thicker gauge / handle mass over tip)");
+  } else if (input.scores.comfort != null && input.scores.comfort >= 75) {
+    skip.push("Extra cushion layers — comfort is already high");
+  }
+  if (input.swingPathDeg != null && input.swingPathDeg >= 26 && (input.scores.spin ?? 0) < 65) {
+    need.push("Spin bed help (shaped poly / thinner gauge) to match the steep path");
+  }
+  if (need.length || skip.length) {
+    const parts: string[] = [];
+    if (need.length) parts.push(`Focus on: ${need.join("; ")}.`);
+    if (skip.length) parts.push(`Skip for now: ${skip.join("; ")}.`);
+    notes.push(parts.join(" "));
   }
 
   if (input.scores.power != null && input.stockScores.power != null) {
