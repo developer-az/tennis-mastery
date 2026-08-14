@@ -186,6 +186,8 @@ export function PlayerProfileLab() {
   }
 
   const lockMsg = pendingLockMessage();
+  const hasPendingDecision = profile.decisions.some((d) => d.result === "pending");
+  const canClearPendingWorkflow = Boolean(profile.pendingLever && !hasPendingDecision);
 
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-6 px-6 py-10 md:px-10">
@@ -477,13 +479,13 @@ export function PlayerProfileLab() {
           >
             Rank levers
           </button>
-          {profile.pendingLever && (
+          {canClearPendingWorkflow && (
             <button
               type="button"
               onClick={() => clearPendingLever()}
               className="rounded-md px-3 py-2 text-xs text-[var(--muted)]"
             >
-              Clear lock
+              Clear workflow
             </button>
           )}
         </div>
@@ -769,7 +771,7 @@ export function PlayerProfileLab() {
           type="button"
           className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1a14]"
           onClick={() => {
-            const h = Number.parseFloat(hours) || 0;
+            const h = Math.max(0, Number.parseFloat(hours) || 0);
             logSession({
               setupSummary: gearSummary,
               racketSlug: gear.racketSlug,

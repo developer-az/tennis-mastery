@@ -51,7 +51,7 @@ export function checkRecommendation(
   ) {
     flags.push({
       id: "stiff-frame-elbow",
-      severity: elbow?.severity === "hard" ? "block" : "hard",
+      severity: elbow?.severity === "hard" ? "block" : "soft",
       title: "Stiff / low-comfort frame vs elbow constraint",
       detail:
         elbow?.detail ??

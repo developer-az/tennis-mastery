@@ -131,17 +131,23 @@ export const usePlayerStore = create<PlayerState>()(
         })),
       startLeverWorkflow: (problem) => {
         const ranked = rankedLeversFor(problem);
-        const pending: PendingLeverChange = {
-          problem,
-          offeredLevers: ranked.map((r) => ({
-            lever: r.lever,
-            action: r.action,
-            why: r.why,
-          })),
-          chosenLever: null,
-          lockedUntilLogged: false,
-        };
-        set((s) => ({ profile: touch({ ...s.profile, pendingLever: pending }) }));
+        set((s) => {
+          const openDecision = s.profile.decisions.find((d) => d.result === "pending");
+          const lockedLever = s.profile.pendingLever?.chosenLever ?? openDecision?.lever ?? null;
+          const pending: PendingLeverChange = {
+            problem,
+            offeredLevers: ranked.map((r) => ({
+              lever: r.lever,
+              action: r.action,
+              why: r.why,
+            })),
+            chosenLever: lockedLever,
+            lockedUntilLogged:
+              (s.profile.pendingLever?.lockedUntilLogged && Boolean(s.profile.pendingLever?.chosenLever)) ||
+              Boolean(openDecision),
+          };
+          return { profile: touch({ ...s.profile, pendingLever: pending }) };
+        });
       },
       chooseLever: (lever) =>
         set((s) => {
@@ -158,7 +164,23 @@ export const usePlayerStore = create<PlayerState>()(
           };
         }),
       clearPendingLever: () =>
-        set((s) => ({ profile: touch({ ...s.profile, pendingLever: null }) })),
+        set((s) => {
+          const openDecision = s.profile.decisions.find((d) => d.result === "pending");
+          if (!openDecision) {
+            return { profile: touch({ ...s.profile, pendingLever: null }) };
+          }
+          return {
+            profile: touch({
+              ...s.profile,
+              pendingLever: {
+                problem: s.profile.pendingLever?.problem ?? "manual",
+                offeredLevers: s.profile.pendingLever?.offeredLevers ?? [],
+                chosenLever: openDecision.lever,
+                lockedUntilLogged: true,
+              },
+            }),
+          };
+        }),
       logDecision: (input) => {
         const reason = input.reason.trim();
         const prediction = input.prediction.trim();
@@ -336,16 +358,14 @@ export const usePlayerStore = create<PlayerState>()(
           }),
         })),
       isLeverLocked: (attempting) => {
-        const pending = get().profile.pendingLever;
-        if (!pending?.lockedUntilLogged || !pending.chosenLever) return false;
-        const hasOpen = get().profile.decisions.some((d) => d.result === "pending");
-        if (!hasOpen) return false;
+        const profile = get().profile;
+        const openDecision = profile.decisions.find((d) => d.result === "pending");
+        const chosenLever = profile.pendingLever?.chosenLever ?? openDecision?.lever;
+        if (!openDecision || !chosenLever) return false;
         if (!attempting) return true;
-        return attempting !== pending.chosenLever;
+        return attempting !== chosenLever;
       },
       pendingLockMessage: () => {
-        const pending = get().profile.pendingLever;
-        if (!pending?.lockedUntilLogged || !pending.chosenLever) return null;
         const open = get().profile.decisions.find((d) => d.result === "pending");
         if (!open) return null;
         return `One lever locked: resolve “${open.changeSummary}” (prediction vs result + body read) before the next change.`;
