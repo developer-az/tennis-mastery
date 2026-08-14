@@ -14,19 +14,7 @@ import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { InBandImproveSection } from "./InBandImproveSection";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
-import dynamic from "next/dynamic";
-
-const LeadTapeRacketCanvas = dynamic(
-  () => import("./LeadTapeRacketCanvas").then((m) => m.LeadTapeRacketCanvas),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-56 w-full items-center justify-center rounded-md bg-[#07140f] text-xs text-[var(--muted)]">
-        Loading frame…
-      </div>
-    ),
-  },
-);
+import { LeadTapeRacketDiagram } from "./LeadTapeRacketDiagram";
 
 export function CombinedSetupPanel({
   rackets,
@@ -695,7 +683,7 @@ export function CombinedSetupPanel({
             Lead tape map
           </p>
           <div className="mt-4 grid items-start gap-6 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <LeadTapeRacketCanvas pieces={setup.leadTape?.pieces ?? []} interactive={false} />
+            <LeadTapeRacketDiagram pieces={setup.leadTape?.pieces ?? []} interactive={false} />
             <ul className="min-w-0 space-y-2 text-sm">
               {Object.entries(tapeByZone).map(([zone, g]) => (
                 <li key={zone} className="flex justify-between gap-3 border-b border-[var(--line)] pb-1.5">

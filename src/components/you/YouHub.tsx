@@ -17,6 +17,7 @@ import { SetupStatsChart } from "./SetupStatsChart";
 import { BagTab } from "./BagTab";
 import { AfterPlayTab } from "./AfterPlayTab";
 import { HistoryTab } from "./HistoryTab";
+import { LeadTapeRacketDiagram } from "@/components/gear/LeadTapeRacketDiagram";
 
 const SetupFlightCanvas = dynamic(
   () => import("./SetupFlightCanvas").then((m) => m.SetupFlightCanvas),
@@ -25,18 +26,6 @@ const SetupFlightCanvas = dynamic(
     loading: () => (
       <div className="flex h-[280px] items-center justify-center rounded-md bg-[#07140f] text-xs text-[var(--muted)] md:h-[340px]">
         Loading flight…
-      </div>
-    ),
-  },
-);
-
-const LeadTapeRacketCanvas = dynamic(
-  () => import("@/components/gear/LeadTapeRacketCanvas").then((m) => m.LeadTapeRacketCanvas),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex aspect-[4/5] items-center justify-center rounded-md bg-[#07140f] text-xs text-[var(--muted)]">
-        Loading frame…
       </div>
     ),
   },
@@ -89,6 +78,18 @@ export function YouHub({
         armFriendly,
       }),
     [setup, racket, string, grip, grips, profile.grips.forehand, armFriendly],
+  );
+  const strikeZone = useMemo(
+    () =>
+      strikeZoneForFrame({
+        ...(racket ?? {}),
+        idealLaunchAngleDeg: insight.launchAngleDeg,
+        idealSwingPathDeg: insight.swingPathDeg,
+        spin: insight.scores.spin,
+        control: insight.scores.control,
+        power: insight.scores.power,
+      }),
+    [racket, insight.launchAngleDeg, insight.swingPathDeg, insight.scores],
   );
   const patterns = useMemo(() => derivePatterns(profile).slice(0, 3), [profile]);
   const pending = profile.decisions.filter((d) => d.result === "pending");
@@ -217,6 +218,9 @@ export function YouHub({
                     pathDeg={insight.swingPathDeg ?? 22}
                     flight={insight.flight}
                     pieces={setup.leadTape?.pieces ?? []}
+                    contactHeightM={strikeZone.heightM}
+                    outFrontM={strikeZone.outFrontM}
+                    faceClosedDeg={insight.forehand?.face.closedDeg ?? 8}
                   />
                 ) : null}
 
@@ -230,15 +234,7 @@ export function YouHub({
                         power={insight.scores.power}
                         control={insight.scores.control}
                         flight={insight.flight}
-                        zone={
-                          racket
-                            ? strikeZoneForFrame({
-                                ...racket,
-                                idealLaunchAngleDeg: insight.launchAngleDeg,
-                                idealSwingPathDeg: insight.swingPathDeg,
-                              })
-                            : undefined
-                        }
+                        zone={strikeZone}
                         label="Flight vs net — this setup"
                       />
                     </div>
@@ -248,22 +244,14 @@ export function YouHub({
                       <div className="border border-[var(--line)] bg-[var(--panel)]/80 p-4 md:p-5">
                         <SwingPathVisual
                           degrees={insight.swingPathDeg}
-                          zone={
-                            racket
-                              ? strikeZoneForFrame({
-                                  ...racket,
-                                  idealLaunchAngleDeg: insight.launchAngleDeg,
-                                  idealSwingPathDeg: insight.swingPathDeg,
-                                })
-                              : undefined
-                          }
+                          zone={strikeZone}
                           label="Where to strike"
                         />
                       </div>
                     ) : null}
                     {insight.hasRacket ? (
                       <div className="border border-[var(--line)] bg-[var(--panel)]/80 p-3">
-                        <LeadTapeRacketCanvas
+                        <LeadTapeRacketDiagram
                           pieces={setup.leadTape?.pieces ?? []}
                           interactive={false}
                         />

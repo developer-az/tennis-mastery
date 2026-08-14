@@ -27,6 +27,16 @@ function poly(cx: number, cy: number, rs: number[], n: number) {
     .join(" ");
 }
 
+function ringPath(cx: number, cy: number, rs: number[], n: number) {
+  const pts = rs.map((r, i) => polar(cx, cy, r, i, n));
+  const start = pts[0];
+  const rest = pts
+    .slice(1)
+    .map((p) => `L ${p.x} ${p.y}`)
+    .join(" ");
+  return `M ${start.x} ${start.y} ${rest} Z`;
+}
+
 export function SetupStatsChart({
   scores,
   stock,
@@ -61,13 +71,14 @@ export function SetupStatsChart({
         Your numbers
       </h2>
       <p className="mt-1 max-w-xl text-xs text-[var(--muted)]">
-        Solid = this bag. Dashed = stock frame. Ring = healthy band for {role || "this mold"}.
+        Colors, not dashes: sky = stock frame, violet = healthy band for {role || "this mold"}, lime = this bag.
       </p>
 
       {!hasScores ? (
         <p className="mt-6 text-sm text-[var(--muted)]">Save a racket to plot power, spin, control, and comfort.</p>
       ) : (
         <div className="mt-4 grid items-center gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+          <div>
           <svg viewBox="0 0 240 250" className="h-auto w-full max-w-sm justify-self-center" role="img" aria-label="Setup radar">
             <defs>
               <radialGradient id={`radarFill-${uid}`} cx="50%" cy="50%" r="50%">
@@ -97,32 +108,26 @@ export function SetupStatsChart({
                 />
               );
             })}
-            <polygon
-              points={poly(cx, cy, highR, n)}
-              fill="rgba(200,245,96,0.06)"
-              stroke="rgba(200,245,96,0.28)"
-              strokeWidth="1"
-            />
-            <polygon
-              points={poly(cx, cy, lowR, n)}
-              fill="#07140f"
-              stroke="rgba(232,239,233,0.16)"
-              strokeDasharray="3 3"
+            <path
+              d={`${ringPath(cx, cy, highR, n)} ${ringPath(cx, cy, lowR, n)}`}
+              fill="rgba(167,139,250,0.22)"
+              fillRule="evenodd"
+              stroke="#a78bfa"
+              strokeWidth="1.6"
             />
             {AXES.some((a) => stock[a.key] != null) ? (
               <polygon
                 points={poly(cx, cy, stockR, n)}
-                fill="none"
-                stroke="rgba(232,239,233,0.35)"
-                strokeWidth="1.2"
-                strokeDasharray="4 3"
+                fill="rgba(125,211,252,0.16)"
+                stroke="#7dd3fc"
+                strokeWidth="2"
               />
             ) : null}
             <polygon
               points={poly(cx, cy, moldedR, n)}
               fill={`url(#radarFill-${uid})`}
               stroke="#c8f560"
-              strokeWidth="2"
+              strokeWidth="2.2"
             />
             {AXES.map((a, i) => {
               const p = polar(cx, cy, maxR + 16, i, n);
@@ -144,6 +149,21 @@ export function SetupStatsChart({
               );
             })}
           </svg>
+          <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10px] uppercase tracking-[0.12em]">
+            <span className="inline-flex items-center gap-1.5 text-sky-300">
+              <span className="inline-block h-2 w-2 rounded-sm bg-[#7dd3fc]" />
+              Stock frame
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-violet-300">
+              <span className="inline-block h-2 w-2 rounded-sm bg-[#a78bfa]" />
+              Healthy band
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-[var(--accent)]">
+              <span className="inline-block h-2 w-2 rounded-sm bg-[#c8f560]" />
+              This bag
+            </span>
+          </div>
+          </div>
 
           <div className="space-y-3">
             {AXES.map((a) => {

@@ -16,19 +16,7 @@ import {
 import { useGearStore } from "@/store/gearStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
 import { MoldTowardPanel } from "./MoldTowardPanel";
-import dynamic from "next/dynamic";
-
-const LeadTapeRacketCanvas = dynamic(
-  () => import("./LeadTapeRacketCanvas").then((m) => m.LeadTapeRacketCanvas),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex aspect-[4/5] items-center justify-center rounded-md bg-[#07140f] text-xs text-[var(--muted)]">
-        Loading frame…
-      </div>
-    ),
-  },
-);
+import { LeadTapeRacketDiagram } from "./LeadTapeRacketDiagram";
 
 const ZONE_ORDER: LeadTapeZone[] = ["tip", "twelve", "three", "nine", "throat", "handle"];
 
@@ -200,15 +188,12 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
         </div>
 
         <div className="relative mx-auto w-full max-w-md">
-          <LeadTapeRacketCanvas
+          <LeadTapeRacketDiagram
             pieces={pieces}
             selectedZone={selectedZone}
             interactive
             onZoneClick={addAtZone}
           />
-          <p className="mt-2 text-center text-xs text-[var(--muted)]">
-            Orbit the frame. Tap a glowing zone — or the buttons above — to place the selected strip. Move or remove strips in the list below.
-          </p>
         </div>
 
         {hasTape ? (

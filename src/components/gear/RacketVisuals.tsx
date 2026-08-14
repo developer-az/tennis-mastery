@@ -8,8 +8,16 @@
 import { useId } from "react";
 import type { ForehandMoldAdvice } from "@/lib/equipment/forehandMold";
 import type { FlightMetrics } from "@/lib/equipment/setupSynthesis";
+import {
+  computeBallTrajectory,
+  contactHeightWindowM,
+  contactOutFrontM,
+  BALL_RADIUS_M,
+  NET_HEIGHT_M,
+  type StrikeBand,
+} from "@/lib/equipment/ballFlight";
 
-export type StrikeBand = "neck" | "chest" | "waist";
+export type { StrikeBand };
 
 export interface StrikeZoneHint {
   /** Primary comfortable height band */
@@ -18,6 +26,25 @@ export interface StrikeZoneHint {
   bands: StrikeBand[];
   label: string;
   detail: string;
+  heightM: number;
+  heightLoM: number;
+  heightHiM: number;
+  outFrontM: number;
+  outFrontLoM: number;
+  outFrontHiM: number;
+}
+
+function measuresFor(primary: StrikeBand, pathDeg: number) {
+  const h = contactHeightWindowM(primary);
+  const f = contactOutFrontM(pathDeg);
+  return {
+    heightM: h.mid,
+    heightLoM: h.lo,
+    heightHiM: h.hi,
+    outFrontM: f.mid,
+    outFrontLoM: f.lo,
+    outFrontHiM: f.hi,
+  };
 }
 
 /** Map frame traits → most consistent strike heights. */
@@ -44,6 +71,7 @@ export function strikeZoneForFrame(input: {
       label: "Chest (spin window)",
       detail:
         "Most consistent on chest-high balls — brush up through the strike zone. Neck-high sits are playable; avoid scooping waist-low with this path.",
+      ...measuresFor("chest", path),
     };
   }
   if (hs < 98 || control >= 74 || /precision|player|control/.test(style)) {
@@ -53,6 +81,7 @@ export function strikeZoneForFrame(input: {
       label: "Waist–chest (precision)",
       detail:
         "Tight sweet spot — take balls at waist to low-chest, out in front. Neck-high contact gets late and sprays; step in rather than reach up.",
+      ...measuresFor("waist", path),
     };
   }
   if (hs > 100 || (input.power ?? 50) >= 74) {
@@ -62,6 +91,7 @@ export function strikeZoneForFrame(input: {
       label: "Waist to chest (forgiving)",
       detail:
         "Larger bed forgives height variance — still prefer waist–chest out front for depth. Neck-high is usable; don’t wait on waist-low floaters.",
+      ...measuresFor("chest", path),
     };
   }
   return {
@@ -70,6 +100,7 @@ export function strikeZoneForFrame(input: {
     label: "Waist–chest (drive window)",
     detail:
       "Strike most balls between waist and chest, contact out front. Match path steepness — flatter frames hate late low contact; steeper frames hate blocked chest drives.",
+    ...measuresFor("chest", path),
   };
 }
 
@@ -81,7 +112,7 @@ function pathTypeLabel(degrees: number): string {
 }
 
 function strikeWindowCopy(launchDeg: number, pathDeg: number, zone: StrikeZoneHint): string {
-  return `${zone.label} · ${launchDeg.toFixed(1)}° leave · path ~${pathDeg.toFixed(0)}°.`;
+  return `${zone.label} · ${zone.heightM.toFixed(2)} m high · ${zone.outFrontM.toFixed(2)} m in front · ${launchDeg.toFixed(1)}° leave · path ~${pathDeg.toFixed(0)}°.`;
 }
 
 /**
@@ -120,48 +151,46 @@ export function LaunchAngleVisual({
       power,
     });
 
-  const bandY: Record<StrikeBand, { y: number; h: number; title: string }> = {
-    neck: { y: 18, h: 20, title: "Neck" },
-    chest: { y: 40, h: 26, title: "Chest" },
-    waist: { y: 68, h: 24, title: "Waist" },
-  };
-
-  const primary = bandY[z.primary];
-  const faceCx = 78;
-  const faceCy = primary.y + primary.h * 0.55;
-  const floorY = 148;
-  const netX = 132;
-  const netTop = 58;
-  const netBot = 138;
-
   const plow = flight?.plow ?? Math.round((power ?? 55) * 0.55 + 20);
   const topspin = flight?.topspin ?? Math.round((spin ?? 55) * 0.55 + path * 1.1);
   const depth = flight?.depth ?? 55;
   const flyRisk = flight?.flyRisk ?? 40;
   const netClearIn = flight?.netClearIn ?? roundClear(launch, path);
 
-  // Geometry from setup leave + topspin + plow (deeper plow → lands farther)
-  const clearancePx = 10 + netClearIn * 1.15;
-  const overNetY = netTop - clearancePx;
-  const apexX = netX + 18 + launch * 1.2 + plow * 0.08;
-  const apexY = overNetY - (6 + launch * 1.4);
-  const spinDrop = 0.25 + (topspin / 100) * 0.85;
-  const landX = clampNum(168 + depth * 0.42 + plow * 0.12 - topspin * 0.08, 175, 212);
-  const landY = Math.min(floorY - 4, apexY + 28 + spinDrop * 36 - launch * 1.0);
-  const midPreX = (faceCx + netX) / 2;
-  const midPreY = faceCy + (overNetY - faceCy) * 0.5 - 8;
-  const flightPath = `M ${faceCx} ${faceCy} Q ${midPreX} ${midPreY}, ${netX} ${overNetY} Q ${apexX} ${apexY}, ${landX} ${landY}`;
+  const traj = computeBallTrajectory({
+    launchDeg: launch,
+    netClearIn,
+    contactHeightM: z.heightM,
+    outFrontM: z.outFrontM,
+    topspin,
+  });
+
+  const xMax = Math.max(traj.landX, traj.netX + 2.5, 16);
+  const yMax = Math.max(2.2, traj.apex.y * 1.12, z.heightM + 0.55);
+  const plot = { left: 36, right: 268, top: 16, ground: 152 };
+  const sx = (x: number) => plot.left + (x / xMax) * (plot.right - plot.left);
+  const sy = (y: number) => plot.ground - (y / yMax) * (plot.ground - plot.top);
+  const poly = traj.points
+    .filter((p) => p.x <= xMax)
+    .map((p) => `${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`)
+    .join(" ");
+  const netPx = sx(traj.netX);
+  const tapeY = sy(NET_HEIGHT_M);
+  const ballAtNetY = sy(traj.heightAtNet);
+  const leaveRad = (launch * Math.PI) / 180;
+  const faceCx = sx(0);
+  const faceCy = sy(z.heightM);
 
   return (
     <div className="relative">
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
         {label}
       </p>
-      <svg viewBox="0 0 220 168" className="h-auto w-full max-w-md" aria-hidden>
+      <svg viewBox="0 0 280 168" className="h-auto w-full max-w-lg" aria-hidden>
         <defs>
           <linearGradient id={`ballArc-${uid}`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#c8f560" stopOpacity="0.35" />
-            <stop offset="45%" stopColor="#c8f560" stopOpacity="1" />
+            <stop offset="0%" stopColor="#c8f560" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="#c8f560" stopOpacity="1" />
             <stop offset="100%" stopColor="#f4a261" stopOpacity="0.95" />
           </linearGradient>
           <linearGradient id={`court-${uid}`} x1="0" y1="0" x2="0" y2="1">
@@ -173,159 +202,115 @@ export function LaunchAngleVisual({
             <stop offset="45%" stopColor="#141414" />
             <stop offset="100%" stopColor="#2c2c2c" />
           </linearGradient>
-          <filter id={`glow-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="1.4" result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
-        <polygon
-          points="18,148 202,148 188,92 32,92"
-          fill={`url(#court-${uid})`}
-          opacity="0.55"
-        />
-        <polygon
-          points="40,146 180,146 172,108 48,108"
-          fill="none"
-          stroke="rgba(247,245,238,0.28)"
-          strokeWidth="0.8"
-        />
-        <line x1="110" y1="108" x2="110" y2="146" stroke="rgba(247,245,238,0.2)" strokeWidth="0.7" />
-        <ellipse cx="110" cy="148" rx="96" ry="6" fill="#000" opacity="0.28" />
+        <rect x="8" y={plot.ground} width="264" height="12" fill={`url(#court-${uid})`} opacity="0.7" />
+        <line x1="12" y1={plot.ground} x2="272" y2={plot.ground} stroke="rgba(247,245,238,0.35)" strokeWidth="1.2" />
 
-        {(Object.keys(bandY) as StrikeBand[]).map((band) => {
-          const b = bandY[band];
-          const active = z.bands.includes(band);
-          const isPrimary = z.primary === band;
-          return (
-            <g key={band}>
-              <rect
-                x="8"
-                y={b.y}
-                width="18"
-                height={b.h}
-                rx="1"
-                fill={
-                  isPrimary
-                    ? "rgba(200,245,96,0.22)"
-                    : active
-                      ? "rgba(200,245,96,0.08)"
-                      : "rgba(232,239,233,0.03)"
-                }
-                stroke={isPrimary ? "#c8f560" : "rgba(232,239,233,0.14)"}
-                strokeWidth={isPrimary ? 1.2 : 0.7}
-              />
-              <text x="28" y={b.y + b.h / 2 + 3} fill={isPrimary ? "#c8f560" : "#8aa396"} fontSize="7">
-                {b.title}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Racket face — graphite hoop + stringbed, slight 3D offset */}
-        <ellipse cx={faceCx + 2.5} cy={faceCy + 1.5} rx="15" ry="11" fill="#000" opacity="0.35" />
-        <ellipse
-          cx={faceCx}
-          cy={faceCy}
-          rx="15.5"
-          ry="11.2"
-          fill="#0e0e0e"
-          stroke={`url(#frame3d-${uid})`}
-          strokeWidth="3.2"
-        />
-        {[ -8, -4, 0, 4, 8 ].map((dx) => (
-          <line
-            key={`m${dx}`}
-            x1={faceCx + dx * 0.7}
-            y1={faceCy - 8}
-            x2={faceCx + dx * 0.7}
-            y2={faceCy + 8}
-            stroke="rgba(210,210,200,0.45)"
-            strokeWidth="0.45"
-          />
-        ))}
-        {[ -6, -2, 2, 6 ].map((dy) => (
-          <line
-            key={`c${dy}`}
-            x1={faceCx - 11}
-            y1={faceCy + dy}
-            x2={faceCx + 11}
-            y2={faceCy + dy}
-            stroke="rgba(210,210,200,0.4)"
-            strokeWidth="0.45"
-          />
-        ))}
-        <circle cx={faceCx} cy={faceCy} r="2.4" fill="#c8f560" filter={`url(#glow-${uid})`}>
-          <animate attributeName="opacity" values="0.55;1;0.55" dur="2.4s" repeatCount="indefinite" />
-        </circle>
-
-        {/* Net mesh */}
-        <g>
-          {Array.from({ length: 9 }).map((_, i) => (
+        {[0, 0.5, NET_HEIGHT_M, 1.5, 2].map((m) => (
+          <g key={m}>
             <line
-              key={i}
-              x1={netX - 8 + i * 2}
-              y1={netTop}
-              x2={netX - 8 + i * 2}
-              y2={netBot - 6}
-              stroke="rgba(232,239,233,0.28)"
-              strokeWidth="0.5"
+              x1="12"
+              y1={sy(m)}
+              x2="272"
+              y2={sy(m)}
+              stroke="rgba(232,239,233,0.08)"
+              strokeWidth="0.6"
             />
-          ))}
-          <line x1={netX} y1={netTop} x2={netX} y2={netBot} stroke="#d8d6cf" strokeWidth="1.6" />
-          <line x1={netX - 12} y1={netTop} x2={netX + 12} y2={netTop} stroke="#f3f1ea" strokeWidth="2" />
-        </g>
+            <text x="10" y={sy(m) + 3} textAnchor="end" fill="#8aa396" fontSize="6.5">
+              {m === NET_HEIGHT_M ? "net" : `${m.toFixed(1)}m`}
+            </text>
+          </g>
+        ))}
 
-        <path
-          d={flightPath}
+        {/* Net — ITF 0.914 m tape */}
+        <rect x={netPx - 3} y={tapeY} width="6" height={plot.ground - tapeY} fill="rgba(232,239,233,0.08)" />
+        {Array.from({ length: 7 }).map((_, i) => (
+          <line
+            key={i}
+            x1={netPx - 5 + i * 1.6}
+            y1={tapeY}
+            x2={netPx - 5 + i * 1.6}
+            y2={plot.ground - 2}
+            stroke="rgba(232,239,233,0.28)"
+            strokeWidth="0.45"
+          />
+        ))}
+        <line x1={netPx} y1={tapeY} x2={netPx} y2={plot.ground} stroke="#d8d6cf" strokeWidth="1.5" />
+        <line x1={netPx - 10} y1={tapeY} x2={netPx + 10} y2={tapeY} stroke="#f3f1ea" strokeWidth="2" />
+
+        <polyline
+          points={poly}
           fill="none"
           stroke={`url(#ballArc-${uid})`}
-          strokeWidth="2.3"
+          strokeWidth="2.2"
           strokeLinecap="round"
-          filter={`url(#glow-${uid})`}
+          strokeLinejoin="round"
         />
-        <circle cx={landX} cy={landY} r="3.4" fill="none" stroke="#f4a261" strokeWidth="0.8" opacity="0.7" />
-        <circle cx={apexX} cy={apexY} r="2.4" fill="#f4a261" />
+
+        {/* Groundstroke hoop — strings face the net, ball leaves the bed */}
+        <g transform={`rotate(${-launch} ${faceCx} ${faceCy})`}>
+          <line
+            x1={faceCx - 11}
+            y1={faceCy + 2}
+            x2={faceCx - 22}
+            y2={faceCy + 16}
+            stroke="#2a2a2a"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+          <ellipse
+            cx={faceCx}
+            cy={faceCy}
+            rx="5.5"
+            ry="11"
+            fill="#0e0e0e"
+            stroke={`url(#frame3d-${uid})`}
+            strokeWidth="2.4"
+          />
+          {[-6, -2, 2, 6].map((dy) => (
+            <line
+              key={dy}
+              x1={faceCx - 3.2}
+              y1={faceCy + dy}
+              x2={faceCx + 3.2}
+              y2={faceCy + dy}
+              stroke="rgba(210,210,200,0.5)"
+              strokeWidth="0.4"
+            />
+          ))}
+        </g>
+        <circle cx={faceCx + Math.cos(leaveRad) * 7} cy={faceCy - Math.sin(leaveRad) * 7} r="3.1" fill="#d4e054" />
+
         <line
-          x1={netX + 6}
-          y1={overNetY}
-          x2={netX + 6}
-          y2={netTop}
+          x1={netPx + 8}
+          y1={ballAtNetY}
+          x2={netPx + 8}
+          y2={tapeY}
           stroke="#7dd3fc"
-          strokeWidth="1.2"
-          strokeDasharray="2 2"
+          strokeWidth="1.4"
         />
-        <text x={netX + 10} y={(overNetY + netTop) / 2 + 3} fill="#7dd3fc" fontSize="7">
-          +{netClearIn.toFixed(0)}″
+        <text x={netPx + 12} y={(ballAtNetY + tapeY) / 2 + 3} fill="#7dd3fc" fontSize="7">
+          +{traj.netClearIn.toFixed(1)}″
         </text>
-        <path
-          d={`M ${apexX + 3} ${apexY + 2} q ${16 + spinDrop * 8} ${10 + spinDrop * 12}, ${30 + spinDrop * 8} ${20 + spinDrop * 16}`}
-          fill="none"
-          stroke="#f4a261"
-          strokeWidth="1.2"
-          strokeDasharray="3 2"
-          opacity="0.85"
-        />
-        <text
-          x={Math.min(168, landX - 38)}
-          y={Math.min(apexY + 32, landY - 6)}
-          fill="#f4a261"
-          fontSize="7"
-        >
-          topspin drop
+        <circle cx={sx(traj.apex.x)} cy={sy(traj.apex.y)} r="2.2" fill="#f4a261" />
+        {traj.landX <= xMax ? (
+          <circle cx={sx(traj.landX)} cy={sy(BALL_RADIUS_M)} r="3.2" fill="none" stroke="#f4a261" strokeWidth="0.8" />
+        ) : null}
+        <text x={sx(traj.netX)} y={plot.ground + 11} textAnchor="middle" fill="#8aa396" fontSize="6.5">
+          net {traj.netX.toFixed(1)} m
         </text>
       </svg>
 
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
         {launch.toFixed(1)}° leave
         <span className="ml-2 text-base text-[var(--muted)]">
-          · path {path.toFixed(0)}° · +{netClearIn.toFixed(0)}″ clear
+          · +{traj.netClearIn.toFixed(1)}″ over 0.914 m tape
         </span>
       </p>
       <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-        {z.label}. Face-center hit — numbers match this setup’s string, grip, and tape.
+        Ball center at the net is {traj.heightAtNet.toFixed(2)} m (
+        {(traj.heightAtNet - NET_HEIGHT_M - BALL_RADIUS_M).toFixed(2)} m / {traj.netClearIn.toFixed(1)}″ of air
+        over the tape). Path from the strings at {z.heightM.toFixed(2)} m, {launch.toFixed(1)}° leave — not a sketch.
       </p>
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -382,7 +367,7 @@ function FlightGauge({
 }
 
 /**
- * Body height bands (neck / chest / waist) with the frame's preferred strike zone highlighted.
+ * Side view: optimal contact as a radius in front of the player and a height window.
  */
 export function SwingPathVisual({
   degrees,
@@ -396,24 +381,31 @@ export function SwingPathVisual({
   const uid = useId().replace(/:/g, "");
   const deg = Math.max(5, Math.min(40, degrees));
   const z = zone ?? strikeZoneForFrame({ idealSwingPathDeg: deg });
-  const steep = deg / 40;
   const type = pathTypeLabel(deg);
+  const steep = deg / 40;
 
-  const bandY: Record<StrikeBand, { y: number; h: number; title: string }> = {
-    neck: { y: 22, h: 22, title: "Neck" },
-    chest: { y: 46, h: 28, title: "Chest" },
-    waist: { y: 76, h: 26, title: "Waist" },
-  };
+  const ground = 168;
+  const pxPerM = 92;
+  const torsoX = 48;
+  const sx = (m: number) => torsoX + m * 155;
+  const sy = (m: number) => ground - m * pxPerM;
+  const cx = sx(z.outFrontM);
+  const cy = sy(z.heightM);
+  const rx = Math.max(10, ((z.outFrontHiM - z.outFrontLoM) / 2) * 155);
+  const ry = Math.max(12, ((z.heightHiM - z.heightLoM) / 2) * pxPerM);
+  const pathStartY = sy(Math.max(0.35, z.heightLoM - 0.18));
+  const pathEndX = sx(z.outFrontM + 0.42);
+  const pathEndY = sy(z.heightHiM + 0.12 + steep * 0.12);
 
   return (
     <div className="relative">
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
         {label}
       </p>
-      <svg viewBox="0 0 220 150" className="h-auto w-full max-w-sm" aria-hidden>
+      <svg viewBox="0 0 240 190" className="h-auto w-full max-w-sm" aria-hidden>
         <defs>
           <linearGradient id={`pathStroke-${uid}`} x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0%" stopColor="#f4a261" stopOpacity="0.2" />
+            <stop offset="0%" stopColor="#f4a261" stopOpacity="0.25" />
             <stop offset="55%" stopColor="#f4a261" stopOpacity="1" />
             <stop offset="100%" stopColor="#c8f560" stopOpacity="0.95" />
           </linearGradient>
@@ -422,77 +414,109 @@ export function SwingPathVisual({
             <stop offset="100%" stopColor="#152820" />
           </linearGradient>
         </defs>
-        <ellipse cx="110" cy="142" rx="70" ry="5" fill="#000" opacity="0.25" />
-        <ellipse cx="48" cy="78" rx="22" ry="48" fill={`url(#torso-${uid})`} opacity="0.85" />
-        <ellipse cx="48" cy="28" rx="11" ry="13" fill="#1e3329" stroke="rgba(232,239,233,0.18)" strokeWidth="0.8" />
-        {(Object.keys(bandY) as StrikeBand[]).map((band) => {
-          const b = bandY[band];
-          const active = z.bands.includes(band);
-          const primary = z.primary === band;
-          return (
-            <g key={band}>
-              <rect
-                x="72"
-                y={b.y}
-                width="118"
-                height={b.h}
-                fill={
-                  primary
-                    ? "rgba(200,245,96,0.1)"
-                    : active
-                      ? "rgba(200,245,96,0.04)"
-                      : "transparent"
-                }
-                stroke={primary ? "rgba(200,245,96,0.35)" : "rgba(232,239,233,0.08)"}
-                strokeDasharray={primary ? undefined : "3 3"}
-              />
-              <text
-                x="78"
-                y={b.y + 11}
-                fill={primary ? "#c8f560" : "#8aa396"}
-                fontSize="8"
-              >
-                {b.title}
-                {primary ? " · strike" : active ? " · ok" : ""}
-              </text>
-            </g>
-          );
-        })}
+        <line x1="18" y1={ground} x2="226" y2={ground} stroke="rgba(232,239,233,0.28)" strokeWidth="1.2" />
+        <text x="20" y={ground + 12} fill="#8aa396" fontSize="7">
+          0 m
+        </text>
+
+        {/* Height ticks */}
+        {[0.5, 1, 1.5].map((m) => (
+          <g key={m}>
+            <line
+              x1="18"
+              y1={sy(m)}
+              x2="226"
+              y2={sy(m)}
+              stroke="rgba(232,239,233,0.08)"
+            />
+            <text x="16" y={sy(m) + 3} textAnchor="end" fill="#8aa396" fontSize="6.5">
+              {m.toFixed(1)}
+            </text>
+          </g>
+        ))}
+
+        {/* Player */}
+        <ellipse cx={torsoX} cy={sy(0.95)} rx="11" ry="28" fill={`url(#torso-${uid})`} />
+        <circle cx={torsoX} cy={sy(1.55)} r="8" fill="#1e3329" stroke="rgba(232,239,233,0.2)" strokeWidth="0.8" />
+        <text x={torsoX} y={sy(1.78)} textAnchor="middle" fill="#8aa396" fontSize="7">
+          you
+        </text>
+
+        {/* Out-front radius */}
         <path
-          d={`M 58 ${bandY[z.primary].y + bandY[z.primary].h * 0.55 + 6 * (1 - steep)}
-              Q 108 ${bandY[z.primary].y + 8 - steep * 14}, 158 ${bandY[z.primary].y - 6 - steep * 10}
-              T 208 ${bandY[z.primary].y - 12 - steep * 16}`}
+          d={`M ${torsoX + 14} ${ground - 4} A ${sx(z.outFrontM) - torsoX} ${sx(z.outFrontM) - torsoX} 0 0 1 ${sx(z.outFrontHiM)} ${ground - 4}`}
+          fill="none"
+          stroke="#7dd3fc"
+          strokeWidth="1.3"
+        />
+        <line
+          x1={torsoX + 12}
+          y1={ground + 6}
+          x2={cx}
+          y2={ground + 6}
+          stroke="#7dd3fc"
+          strokeWidth="1"
+        />
+        <text x={(torsoX + cx) / 2} y={ground + 16} textAnchor="middle" fill="#7dd3fc" fontSize="7">
+          {z.outFrontM.toFixed(2)} m in front
+        </text>
+
+        {/* Height dimension */}
+        <line x1={cx + rx + 10} y1={ground} x2={cx + rx + 10} y2={cy} stroke="#c8f560" strokeWidth="1" />
+        <text
+          x={cx + rx + 14}
+          y={(ground + cy) / 2}
+          fill="#c8f560"
+          fontSize="7"
+        >
+          {z.heightM.toFixed(2)} m
+        </text>
+
+        <ellipse
+          cx={cx}
+          cy={cy}
+          rx={rx}
+          ry={ry}
+          fill="rgba(200,245,96,0.14)"
+          stroke="#c8f560"
+          strokeWidth="1.8"
+        />
+        <text x={cx} y={cy - ry - 6} textAnchor="middle" fill="#c8f560" fontSize="8" fontWeight="600">
+          {z.primary} window
+        </text>
+
+        <path
+          d={`M ${torsoX + 8} ${pathStartY}
+              Q ${sx(z.outFrontM * 0.45)} ${sy(z.heightLoM)}, ${cx} ${cy}
+              T ${pathEndX} ${pathEndY}`}
           fill="none"
           stroke={`url(#pathStroke-${uid})`}
-          strokeWidth="3.2"
-          strokeLinecap="round"
-        />
-        <path
-          d={`M 58 ${bandY[z.primary].y + bandY[z.primary].h * 0.55 + 10 * (1 - steep)}
-              Q 108 ${bandY[z.primary].y + 14 - steep * 10}, 158 ${bandY[z.primary].y + 2 - steep * 6}`}
-          fill="none"
-          stroke="rgba(244,162,97,0.35)"
-          strokeWidth="8"
+          strokeWidth="2.6"
           strokeLinecap="round"
         />
         <ellipse
-          cx="158"
-          cy={bandY[z.primary].y + 6}
-          rx="11"
-          ry="8"
+          cx={cx + 10}
+          cy={cy}
+          rx="8"
+          ry="12"
           fill="#111"
           stroke="#3a3a3a"
-          strokeWidth="2.2"
-          transform={`rotate(${-18 - steep * 22} 158 ${bandY[z.primary].y + 6})`}
+          strokeWidth="2"
+          transform={`rotate(${-16 - steep * 18} ${cx + 10} ${cy})`}
         />
+        <circle cx={cx} cy={cy} r="3.2" fill="#d4e054" />
       </svg>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
-        {z.label}
+        {z.heightM.toFixed(2)} m · {z.outFrontM.toFixed(2)} m out
       </p>
       <p className="mt-1 text-sm text-[var(--foreground)]/85">
-        Path ~{deg.toFixed(0)}° · {type}
+        {z.label} · path ~{deg.toFixed(0)}° · {type}
       </p>
-      <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{z.detail}</p>
+      <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+        Hit in a {((z.heightHiM - z.heightLoM) * 100).toFixed(0)} cm height band (
+        {z.heightLoM.toFixed(2)}–{z.heightHiM.toFixed(2)} m) and {z.outFrontLoM.toFixed(2)}–
+        {z.outFrontHiM.toFixed(2)} m in front of the torso. {z.detail}
+      </p>
     </div>
   );
 }
@@ -532,10 +556,10 @@ export function StrikeCoachingBullets({
 
   bullets.push(strikeWindowCopy(launch, path, z));
   bullets.push(
-    `Path ~${path.toFixed(0)}° (${pathTypeLabel(path).toLowerCase()}) through the ${z.primary} band.`,
+    `Take it ${z.outFrontM.toFixed(2)} m in front (${z.outFrontLoM.toFixed(2)}–${z.outFrontHiM.toFixed(2)} m) at ${z.heightM.toFixed(2)} m (${z.primary}; ${z.heightLoM.toFixed(2)}–${z.heightHiM.toFixed(2)} m).`,
   );
   bullets.push(
-    `${launch.toFixed(1)}° leave (~how high the ball leaves the strings). Path ~${path.toFixed(0)}° drops it after the net. Into the net = late/low contact. Long = face open or bed soft (+1–2 lbs).`,
+    `${launch.toFixed(1)}° leave off the strings. Path ~${path.toFixed(0)}° is the low-to-high through that window. Into the net = late or low; long = face open or bed soft.`,
   );
 
   if ((spin ?? 0) >= 72 || path >= 28) {
