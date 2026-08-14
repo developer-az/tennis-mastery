@@ -265,7 +265,7 @@ export function RacketExplorer({
     <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
       {/* List first on phones so search/save is immediate */}
       <div className="order-1 space-y-3 lg:order-1 lg:space-y-4">
-        <div className="sticky top-[6.5rem] z-20 -mx-1 space-y-2 bg-[var(--background)]/95 px-1 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none lg:top-auto">
+        <div className="sticky top-0 z-20 -mx-1 space-y-2 bg-[var(--background)]/95 px-1 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
           <label className="relative block flex-1">
             <span className="sr-only">Search rackets</span>
             <input
@@ -281,7 +281,7 @@ export function RacketExplorer({
           </label>
           <button
             type="button"
-            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)] lg:hidden"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)]"
             style={{ boxShadow: "0 0 0 1px var(--line)" }}
             onClick={() => setFiltersOpen((o) => !o)}
             aria-expanded={filtersOpen}
@@ -291,7 +291,7 @@ export function RacketExplorer({
           </button>
           <div
             className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${
-              filtersOpen ? "" : "hidden lg:grid"
+              filtersOpen ? "" : "hidden"
             }`}
           >
             <select

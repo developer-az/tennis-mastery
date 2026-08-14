@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { AppHeader } from "@/components/layout/AppHeader";
 import "./globals.css";
 
 const display = Archivo({
@@ -32,7 +33,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="flex h-dvh flex-col overflow-hidden font-sans">
+        <AppHeader />
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+      </body>
     </html>
   );
 }

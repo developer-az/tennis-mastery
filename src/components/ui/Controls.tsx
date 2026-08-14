@@ -250,7 +250,11 @@ export function ViewToggles() {
   );
 
   return (
-    <div className="space-y-3">
+    <details className="space-y-3">
+      <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+        View
+      </summary>
+      <div className="mt-3 space-y-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
         Visualization
       </p>
@@ -288,7 +292,9 @@ export function ViewToggles() {
           >
             {CAMERA_LABELS[m]}
           </button>
-        ))}      </div>
-    </div>
+        ))}
+      </div>
+      </div>
+    </details>
   );
 }

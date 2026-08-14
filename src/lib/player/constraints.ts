@@ -106,9 +106,15 @@ export function checkRecommendation(
   return flags;
 }
 
+export function prefersArmFriendlySetup(profile: PlayerProfile): boolean {
+  return (
+    profile.preferences.prefersArmFriendly ||
+    activeConstraints(profile).some((c) => c.area === "elbow" || c.area === "wrist")
+  );
+}
+
 export function armFriendlyNudge(profile: PlayerProfile): string | null {
-  const elbow = activeConstraints(profile).find((c) => c.area === "elbow");
-  if (!elbow && !profile.preferences.prefersArmFriendly) return null;
+  if (!prefersArmFriendlySetup(profile)) return null;
   return "Constraint active: prefer arm-friendly frames, moderate poly tension, and never stack stiff frame + high full poly.";
 }
 

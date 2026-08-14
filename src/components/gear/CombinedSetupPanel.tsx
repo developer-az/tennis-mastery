@@ -10,7 +10,9 @@ import { gripSizeLabel } from "@/lib/equipment/gripSize";
 import { summarizeGripLayers } from "@/lib/equipment/gripStack";
 import { useGearStore } from "@/store/gearStore";
 import { usePlayerStore } from "@/store/playerStore";
+import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { EquipmentThumb } from "./EquipmentThumb";
+import { InBandImproveSection } from "./InBandImproveSection";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 
 export function CombinedSetupPanel({
@@ -25,6 +27,7 @@ export function CombinedSetupPanel({
   const setup = useGearStore((s) => s.setup);
   const setTab = useGearStore((s) => s.setTab);
   const playerGrip = usePlayerStore((s) => s.profile.grips.forehand);
+  const armFriendly = usePlayerStore((s) => prefersArmFriendlySetup(s.profile));
 
   const racket = useMemo(
     () => rackets.find((r) => r.slug === setup.racketSlug) ?? null,
@@ -48,8 +51,12 @@ export function CombinedSetupPanel({
   );
 
   const insight = useMemo(
-    () => synthesizeCombinedSetup(setup, racket, string, grip, grips, { playerGrip }),
-    [setup, racket, string, grip, grips, playerGrip],
+    () =>
+      synthesizeCombinedSetup(setup, racket, string, grip, grips, {
+        playerGrip,
+        armFriendly,
+      }),
+    [setup, racket, string, grip, grips, playerGrip, armFriendly],
   );
 
   const stringAlts = useMemo(
@@ -82,10 +89,14 @@ export function CombinedSetupPanel({
           Combined setup
         </p>
         <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl tracking-tight">
-          Build a full bag, then see how it plays
+          Build a bag, then see how it plays
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
-          Save racket, string, grip, and tape — then come back for molded launch, scores, and flight.
+          Fastest path is{" "}
+          <Link href="/you" className="text-[var(--accent)] hover:underline">
+            You → setup
+          </Link>
+          . Or pick pieces here to research.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           {(
@@ -93,7 +104,6 @@ export function CombinedSetupPanel({
               ["rackets", "Pick a racket"],
               ["strings", "Pick a string"],
               ["grips", "Pick a grip"],
-              ["lead-tape", "Add lead tape"],
             ] as const
           ).map(([tab, label]) => (
             <button
@@ -129,12 +139,28 @@ export function CombinedSetupPanel({
               Completeness {insight.completeness}%
             </p>
           </div>
-          <Link
-            href="/lab"
-            className="shrink-0 rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
-          >
-            Test form with this gear
-          </Link>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link
+              href="/lab"
+              className="rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
+            >
+              Lab
+            </Link>
+            <button
+              type="button"
+              onClick={() => go("lead-tape")}
+              className="rounded-md px-4 py-2 text-xs transition hover:bg-white/5"
+              style={{ boxShadow: "0 0 0 1px var(--line)" }}
+            >
+              Tune
+            </button>
+            <Link
+              href="/you"
+              className="rounded-md px-4 py-2 text-xs text-[var(--muted)]"
+            >
+              You
+            </Link>
+          </div>
         </div>
 
         {/* Product strip */}
@@ -224,6 +250,51 @@ export function CombinedSetupPanel({
           />
         </div>
       </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat
+          label="Launch"
+          value={
+            insight.launchAngleDeg != null ? `${insight.launchAngleDeg.toFixed(1)}°` : "—"
+          }
+          hint={
+            insight.baseLaunchDeg != null && insight.launchAngleDeg != null
+              ? `Stock ${insight.baseLaunchDeg.toFixed(1)}° → molded`
+              : "Needs a frame"
+          }
+        />
+        <Stat
+          label="Swing path"
+          value={insight.swingPathDeg != null ? `${insight.swingPathDeg.toFixed(0)}°` : "—"}
+          hint={`String ${fmtDelta(insight.deltas.stringPath)} · tape ${fmtDelta(insight.deltas.tapePath)}`}
+        />
+        <Stat
+          label="Net clear"
+          value={insight.flight ? `+${insight.flight.netClearIn.toFixed(0)}"` : "—"}
+          hint={
+            insight.flight
+              ? `Plow ${insight.flight.plow} · topspin ${insight.flight.topspin}`
+              : "Save a racket"
+          }
+        />
+        <Stat
+          label="Depth / fly"
+          value={
+            insight.flight
+              ? `${insight.flight.depth} / ${insight.flight.flyRisk}`
+              : "—"
+          }
+          hint="Depth score · fly risk"
+        />
+      </div>
+
+      <InBandImproveSection plan={insight.inBand} />
+
+      <details className="group space-y-6">
+        <summary className="cursor-pointer text-sm text-[var(--muted)] hover:text-[var(--foreground)]">
+          How this was calculated
+        </summary>
+        <div className="mt-4 space-y-6">
 
       {/* Launch + path visuals — from ideal strike on the bed */}
       <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
@@ -361,43 +432,7 @@ export function CombinedSetupPanel({
         </div>
       ) : null}
 
-      {/* Delta breakdown */}
-      <div className="grid gap-4 border border-[var(--line)] bg-[var(--panel)]/90 p-5 sm:grid-cols-2 lg:grid-cols-4 md:p-6">
-        <Stat
-          label="Launch"
-          value={
-            insight.launchAngleDeg != null ? `${insight.launchAngleDeg.toFixed(1)}°` : "—"
-          }
-          hint={
-            insight.baseLaunchDeg != null && insight.launchAngleDeg != null
-              ? `Stock ${insight.baseLaunchDeg.toFixed(1)}° → molded`
-              : "Needs a frame"
-          }
-        />
-        <Stat
-          label="Swing path"
-          value={insight.swingPathDeg != null ? `${insight.swingPathDeg.toFixed(0)}°` : "—"}
-          hint={`String ${fmtDelta(insight.deltas.stringPath)} · tape ${fmtDelta(insight.deltas.tapePath)}`}
-        />
-        <Stat
-          label="Net clear"
-          value={insight.flight ? `+${insight.flight.netClearIn.toFixed(0)}"` : "—"}
-          hint={
-            insight.flight
-              ? `Plow ${insight.flight.plow} · topspin ${insight.flight.topspin}`
-              : "Save a racket"
-          }
-        />
-        <Stat
-          label="Depth / fly"
-          value={
-            insight.flight
-              ? `${insight.flight.depth} / ${insight.flight.flyRisk}`
-              : "—"
-          }
-          hint="Depth score · fly risk"
-        />
-      </div>
+      {/* Delta breakdown moved to the compact header */}
 
       {(insight.scores.power != null || insight.scores.comfort != null) && (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
@@ -756,6 +791,9 @@ export function CombinedSetupPanel({
           </ul>
         </div>
       </div>
+
+        </div>
+      </details>
 
       <div className="flex flex-wrap gap-2">
         <Chip active={insight.hasRacket} onClick={() => go("rackets")}>

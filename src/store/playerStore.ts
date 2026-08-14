@@ -20,6 +20,7 @@ import {
   exampleCoachingProfile,
 } from "@/types/playerProfile";
 import { rankedLeversFor, type ProblemId } from "@/lib/player/levers";
+import { profileLooksStarted } from "@/lib/player/onboarding";
 
 function uid(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
@@ -32,7 +33,12 @@ function touch(profile: PlayerProfile): PlayerProfile {
 interface PlayerState {
   profile: PlayerProfile;
   hydrated: boolean;
+  onboardingComplete: boolean;
+  onboardingStep: number;
   setHydrated: (v: boolean) => void;
+  setOnboardingStep: (step: number) => void;
+  completeOnboarding: () => void;
+  restartOnboarding: () => void;
   adoptExampleProfile: () => void;
   resetProfile: () => void;
   setDisplayName: (name: string) => void;
@@ -90,9 +96,24 @@ export const usePlayerStore = create<PlayerState>()(
     (set, get) => ({
       profile: emptyProfile(),
       hydrated: false,
+      onboardingComplete: false,
+      onboardingStep: 0,
       setHydrated: (v) => set({ hydrated: v }),
-      adoptExampleProfile: () => set({ profile: exampleCoachingProfile() }),
-      resetProfile: () => set({ profile: emptyProfile() }),
+      setOnboardingStep: (step) => set({ onboardingStep: Math.max(0, step) }),
+      completeOnboarding: () => set({ onboardingComplete: true, onboardingStep: 0 }),
+      restartOnboarding: () => set({ onboardingComplete: false, onboardingStep: 0 }),
+      adoptExampleProfile: () =>
+        set({
+          profile: exampleCoachingProfile(),
+          onboardingComplete: true,
+          onboardingStep: 0,
+        }),
+      resetProfile: () =>
+        set({
+          profile: emptyProfile(),
+          onboardingComplete: false,
+          onboardingStep: 0,
+        }),
       setDisplayName: (name) =>
         set((s) => ({ profile: touch({ ...s.profile, displayName: name }) })),
       setGrips: (patch) =>
@@ -373,9 +394,17 @@ export const usePlayerStore = create<PlayerState>()(
     }),
     {
       name: "strokeform-player-profile-v1",
-      partialize: (s) => ({ profile: s.profile }),
+      partialize: (s) => ({
+        profile: s.profile,
+        onboardingComplete: s.onboardingComplete,
+        onboardingStep: s.onboardingStep,
+      }),
       onRehydrateStorage: () => (state) => {
-        state?.setHydrated(true);
+        if (!state) return;
+        state.setHydrated(true);
+        if (!state.onboardingComplete && profileLooksStarted(state.profile)) {
+          state.completeOnboarding();
+        }
       },
     },
   ),
