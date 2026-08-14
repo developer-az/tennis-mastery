@@ -169,7 +169,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
   return (
     <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
       <div className="order-1 space-y-3 lg:space-y-4">
-        <div className="sticky top-[6.5rem] z-20 -mx-1 space-y-2 bg-[var(--background)]/95 px-1 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <div className="sticky top-0 z-20 -mx-1 space-y-2 bg-[var(--background)]/95 px-1 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -183,7 +183,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
           />
           <button
             type="button"
-            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)] lg:hidden"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)]"
             style={{ boxShadow: "0 0 0 1px var(--line)" }}
             onClick={() => setFiltersOpen((o) => !o)}
             aria-expanded={filtersOpen}
@@ -191,7 +191,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
             <span>Filters</span>
             <span className="text-xs">{filtersOpen ? "Hide" : "Show"}</span>
           </button>
-          <div className={`grid grid-cols-2 gap-2 ${filtersOpen ? "" : "hidden lg:grid"}`}>
+          <div className={`grid grid-cols-2 gap-2 ${filtersOpen ? "" : "hidden"}`}>
             <select
               value={kind}
               onChange={(e) => setKind(e.target.value as typeof kind)}

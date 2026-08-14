@@ -168,57 +168,24 @@ function SetupBridge({
           <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{setupSummary(setup)}</p>
           {launch != null && path != null ? (
             <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">
-              Molded ~{launch.toFixed(1)}° strike launch / ~{path.toFixed(0)}° path vs {athleteLabel}&apos;s{" "}
+              Molded ~{launch.toFixed(1)}° / ~{path.toFixed(0)}° vs {athleteLabel}&apos;s{" "}
               {athleteLaunch.toFixed(1)}° / {athleteSwingPath.toFixed(0)}°
-              {launch - athleteLaunch > 2
-                ? " — loftier bag off the bed."
-                : athleteLaunch - launch > 2
-                  ? " — flatter bag off the bed."
-                  : " — close match."}
             </p>
-          ) : (
-            <p className="mt-2 text-xs text-[var(--muted)]">
-              Save a racket in Gear lab to unlock molded launch vs this stroke.
-            </p>
-          )}
-          <div className="mt-3 flex flex-col gap-2">
-            <Link
-              href="/gear?tab=overview"
-              className="rounded-md bg-[var(--accent)] px-3 py-2 text-center text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
-            >
-              Open My setup (pros / cons / launch)
-            </Link>
-            <Link
-              href="/gear?tab=rackets"
-              className="rounded-md px-3 py-2 text-center text-xs text-[var(--foreground)] transition hover:bg-white/5"
-              style={{ boxShadow: "0 0 0 1px var(--line)" }}
-            >
-              Return to Gear lab
-            </Link>
-          </div>
+          ) : null}
+          <Link
+            href="/you"
+            className="mt-3 inline-block text-xs text-[var(--accent)] hover:underline"
+          >
+            Tweak bag
+          </Link>
         </>
       ) : (
-        <>
-          <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
-            Build a racket + string + grip (+ optional tape) in Gear lab. The molded launch and
-            playstyle show here while you study form.
-          </p>
-          <div className="mt-3 flex flex-col gap-2">
-            <Link
-              href="/gear?tab=overview"
-              className="rounded-md bg-[var(--accent)] px-3 py-2 text-center text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
-            >
-              Build my setup
-            </Link>
-            <Link
-              href="/gear?tab=rackets"
-              className="rounded-md px-3 py-2 text-center text-xs text-[var(--foreground)] transition hover:bg-white/5"
-              style={{ boxShadow: "0 0 0 1px var(--line)" }}
-            >
-              Return to Gear lab
-            </Link>
-          </div>
-        </>
+        <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
+          <Link href="/you" className="text-[var(--accent)] hover:underline">
+            Finish setup
+          </Link>{" "}
+          to see your bag vs this stroke.
+        </p>
       )}
     </div>
   );

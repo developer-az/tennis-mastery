@@ -87,15 +87,15 @@ export function GearLab({
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:px-10 md:py-14">
+    <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 md:px-10 md:py-8">
       <MySetupBar onSelectTab={selectTab} />
       <AccountabilityStrip />
-      <div className="mb-5">
+      <div className="mb-4">
         <SetupDials strings={strings} compact hideStringDials={tab === "strings"} />
       </div>
 
       <div
-        className="sticky top-[3.25rem] z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none md:top-auto"
+        className="sticky top-0 z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none"
       >
         <div
           className="relative z-20 flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-4 [&::-webkit-scrollbar]:hidden"
@@ -136,10 +136,6 @@ export function GearLab({
           })}
         </div>
       </div>
-
-      <p className="mt-3 hidden max-w-2xl text-sm text-[var(--muted)] sm:mt-4 sm:block">
-        {TABS.find((t) => t.id === tab)?.blurb}
-      </p>
 
       <div className="relative z-10 mt-8">
         {tab === "overview" ? (

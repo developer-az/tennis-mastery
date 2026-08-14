@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { PlayerStrokePicker, PlaybackControls, ViewToggles } from "@/components/ui/Controls";
 import { MetricsPanel, SciencePanel } from "@/components/ui/MetricsPanel";
-import { LabSetupStrip } from "@/components/lab/LabSetupStrip";
 import { PlayerGripCue } from "@/components/lab/PlayerGripCue";
 
 const FormCanvas = dynamic(
@@ -21,7 +20,6 @@ const FormCanvas = dynamic(
 export function CoachLab() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <LabSetupStrip />
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <aside className="flex w-full shrink-0 flex-col gap-6 overflow-y-auto border-b border-[var(--line)] bg-[var(--panel)] p-5 lg:w-[300px] lg:border-b-0 lg:border-r">
           <PlayerStrokePicker />

@@ -159,7 +159,7 @@ function syncLegacyGripFields(
 export const useGearStore = create<GearState>()(
   persist(
     (set) => ({
-      tab: "rackets",
+      tab: "overview",
       setup: emptySetup,
       setTab: (tab) => set({ tab }),
       setRacket: (slug, label, meta) =>
@@ -282,6 +282,12 @@ export const useGearStore = create<GearState>()(
     },
   ),
 );
+
+export function hasAnyGear(setup: MySetup): boolean {
+  const tapeG = setup.leadTape?.pieces?.reduce((n, p) => n + p.massG, 0) ?? 0;
+  const hasGrip = (setup.gripLayers?.length ?? 0) > 0 || Boolean(setup.gripId);
+  return Boolean(setup.racketSlug || setup.stringId || hasGrip || tapeG > 0);
+}
 
 export function setupSummary(setup: MySetup): string {
   const parts: string[] = [];

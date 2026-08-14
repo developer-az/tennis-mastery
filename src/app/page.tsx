@@ -1,35 +1,10 @@
 import Link from "next/link";
 import { PLAYERS } from "@/data/players";
+import { HomeHeroCtas } from "@/components/home/HomeHeroCtas";
 
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-6 py-5 md:px-10">
-        <Link href="/" className="font-[family-name:var(--font-display)] text-lg tracking-tight">
-          STROKEFORM
-        </Link>
-        <nav className="flex items-center gap-6 text-sm text-[var(--muted)]">
-          <a href="#method" className="transition hover:text-[var(--foreground)]">
-            Method
-          </a>
-          <a href="#athletes" className="transition hover:text-[var(--foreground)]">
-            Athletes
-          </a>
-          <Link href="/profile" className="transition hover:text-[var(--foreground)]">
-            Profile
-          </Link>
-          <Link href="/gear" className="transition hover:text-[var(--foreground)]">
-            Gear
-          </Link>
-          <Link
-            href="/lab"
-            className="rounded-md bg-[var(--accent)] px-4 py-2 font-medium text-[#0b1a14] transition hover:brightness-110"
-          >
-            Open lab
-          </Link>
-        </nav>
-      </header>
-
       <main className="flex-1">
         {/* Hero — brand first, one composition, full-bleed court atmosphere */}
         <section className="relative flex min-h-[min(92vh,900px)] flex-col justify-end overflow-hidden px-6 pb-16 pt-24 md:px-10 md:pb-24">
@@ -91,24 +66,7 @@ export default function Home() {
               world&apos;s best — scrub every phase of the stroke and learn what makes each
               player consistent.
             </p>
-            <div
-              className="mt-8 flex flex-wrap gap-3"
-              style={{ animation: "rise 0.9s ease-out 0.32s both" }}
-            >
-              <Link
-                href="/lab"
-                className="rounded-md bg-[var(--accent)] px-6 py-3 font-medium text-[#0b1a14] transition hover:brightness-110"
-              >
-                Enter the lab
-              </Link>
-              <Link
-                href="/gear"
-                className="rounded-md px-6 py-3 text-[var(--foreground)] transition hover:bg-white/5"
-                style={{ boxShadow: "0 0 0 1px var(--line)" }}
-              >
-                Explore gear
-              </Link>
-            </div>
+            <HomeHeroCtas />
           </div>
         </section>
 
@@ -247,10 +205,10 @@ export default function Home() {
           </div>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link
-              href="/gear?tab=overview"
+              href="/you"
               className="inline-block rounded-md bg-[var(--accent)] px-6 py-3 font-medium text-[#0b1a14] transition hover:brightness-110"
             >
-              Combined setup readout
+              Set up your bag
             </Link>
             <Link
               href="/gear?tab=rackets"
