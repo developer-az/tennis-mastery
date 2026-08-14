@@ -20,6 +20,13 @@ export default function LabPage() {
         </div>
         <nav className="flex items-center gap-2 text-xs sm:gap-3">
           <Link
+            href="/profile"
+            className="rounded-md px-3 py-1.5 text-[var(--foreground)] transition hover:bg-white/5"
+            style={{ boxShadow: "0 0 0 1px var(--line)" }}
+          >
+            Profile
+          </Link>
+          <Link
             href="/gear?tab=overview"
             className="rounded-md bg-[var(--accent)] px-3 py-1.5 font-medium text-[#0b1a14] transition hover:brightness-110"
           >

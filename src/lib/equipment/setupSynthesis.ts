@@ -263,6 +263,7 @@ export function synthesizeCombinedSetup(
   string: StringProfile | null | undefined,
   grip: GripProfile | null | undefined,
   gripsCatalog: GripProfile[] = [],
+  opts?: { playerGrip?: import("@/lib/equipment/forehandMold").ForehandGripKind | null },
 ): CombinedSetupInsight {
   const pieces = setup.leadTape?.pieces ?? [];
   const hasRacket = Boolean(setup.racketSlug || racket);
@@ -555,6 +556,7 @@ export function synthesizeCombinedSetup(
     power,
     spin,
     control,
+    playerGrip: opts?.playerGrip ?? null,
   });
 
   const scienceNotes = buildScienceNotes({

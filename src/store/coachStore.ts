@@ -12,7 +12,7 @@ interface CoachState {
   showAngles: boolean;
   showRacketPath: boolean;
   showGroundForce: boolean;
-  cameraMode: "orbit" | "side" | "behind" | "front";
+  cameraMode: "orbit" | "side" | "behind" | "front" | "firstPerson";
   setPlayer: (id: string) => void;
   setStroke: (s: StrokeType) => void;
   setT: (t: number) => void;

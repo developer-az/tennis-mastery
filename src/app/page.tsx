@@ -15,6 +15,9 @@ export default function Home() {
           <a href="#athletes" className="transition hover:text-[var(--foreground)]">
             Athletes
           </a>
+          <Link href="/profile" className="transition hover:text-[var(--foreground)]">
+            Profile
+          </Link>
           <Link href="/gear" className="transition hover:text-[var(--foreground)]">
             Gear
           </Link>

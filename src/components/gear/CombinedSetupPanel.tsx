@@ -9,6 +9,7 @@ import { findSimilarStrings } from "@/lib/equipment/strings";
 import { gripSizeLabel } from "@/lib/equipment/gripSize";
 import { summarizeGripLayers } from "@/lib/equipment/gripStack";
 import { useGearStore } from "@/store/gearStore";
+import { usePlayerStore } from "@/store/playerStore";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 
@@ -23,6 +24,7 @@ export function CombinedSetupPanel({
 }) {
   const setup = useGearStore((s) => s.setup);
   const setTab = useGearStore((s) => s.setTab);
+  const playerGrip = usePlayerStore((s) => s.profile.grips.forehand);
 
   const racket = useMemo(
     () => rackets.find((r) => r.slug === setup.racketSlug) ?? null,
@@ -46,8 +48,8 @@ export function CombinedSetupPanel({
   );
 
   const insight = useMemo(
-    () => synthesizeCombinedSetup(setup, racket, string, grip, grips),
-    [setup, racket, string, grip, grips],
+    () => synthesizeCombinedSetup(setup, racket, string, grip, grips, { playerGrip }),
+    [setup, racket, string, grip, grips, playerGrip],
   );
 
   const stringAlts = useMemo(

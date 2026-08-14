@@ -57,9 +57,18 @@ function CameraRig() {
       side: [5.5, 1.6, PLAYER_Z + 0.2],
       behind: [0.3, 1.8, PLAYER_Z + 5.5],
       front: [0.2, 1.7, PLAYER_Z - 4.8],
+      // Over dominant shoulder / hand — first-person mapping for face & contact
+      firstPerson: [0.55, 1.55, PLAYER_Z + 0.35],
+    };
+    const targets: Record<typeof mode, [number, number, number]> = {
+      orbit: LOOK_AT,
+      side: LOOK_AT,
+      behind: LOOK_AT,
+      front: LOOK_AT,
+      firstPerson: [0.15, 1.35, PLAYER_Z - 1.2],
     };
     camera.position.set(...positions[mode]);
-    controls.current?.target.set(...LOOK_AT);
+    controls.current?.target.set(...targets[mode]);
     controls.current?.update();
   }, [mode, camera]);
 
@@ -68,8 +77,8 @@ function CameraRig() {
       ref={controls}
       target={LOOK_AT}
       maxPolarAngle={Math.PI * 0.49}
-      minDistance={1.5}
-      maxDistance={14}
+      minDistance={mode === "firstPerson" ? 0.4 : 1.5}
+      maxDistance={mode === "firstPerson" ? 4 : 14}
       enablePan
       // Cheaper orbit interaction
       enableDamping
