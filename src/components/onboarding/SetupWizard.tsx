@@ -9,6 +9,7 @@ import type { GripProfile, RacketProfile, StringProfile } from "@/types/equipmen
 import { usePlayerStore } from "@/store/playerStore";
 import { hasAnyGear, setupSummary, useGearStore } from "@/store/gearStore";
 import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
+import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import {
   CONSTRAINT_TEMPLATES,
   WIZARD_STEPS,
@@ -66,8 +67,9 @@ export function SetupWizard({
     () =>
       synthesizeCombinedSetup(setup, null, null, null, [], {
         playerGrip: profile.grips.forehand,
+        armFriendly: prefersArmFriendlySetup(profile),
       }),
-    [setup, profile.grips.forehand],
+    [setup, profile],
   );
 
   const bodyActive = (id: string) => profile.constraints.some((c) => c.id === id && c.active);

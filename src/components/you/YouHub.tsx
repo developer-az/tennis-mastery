@@ -7,8 +7,10 @@ import { usePlayerStore } from "@/store/playerStore";
 import { hasAnyGear, setupSummary, useGearStore } from "@/store/gearStore";
 import { derivePatterns, recentBodyTrend } from "@/lib/player/patterns";
 import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
+import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { fhGripLabel, gripPreviewLine } from "@/lib/player/onboarding";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
+import { InBandImproveSection } from "@/components/gear/InBandImproveSection";
 import { BagTab } from "./BagTab";
 import { AfterPlayTab } from "./AfterPlayTab";
 import { HistoryTab } from "./HistoryTab";
@@ -39,12 +41,27 @@ export function YouHub({
 
   const showWizard = hydrated && !onboardingComplete;
 
+  const racket = useMemo(
+    () => rackets.find((r) => r.slug === setup.racketSlug) ?? null,
+    [rackets, setup.racketSlug],
+  );
+  const string = useMemo(
+    () => strings.find((s) => s.id === setup.stringId) ?? null,
+    [strings, setup.stringId],
+  );
+  const grip = useMemo(() => {
+    const outerId = setup.gripLayers?.[setup.gripLayers.length - 1]?.id ?? setup.gripId;
+    return outerId ? grips.find((g) => g.id === outerId) ?? null : null;
+  }, [grips, setup.gripId, setup.gripLayers]);
+  const armFriendly = prefersArmFriendlySetup(profile);
+
   const insight = useMemo(
     () =>
-      synthesizeCombinedSetup(setup, null, null, null, [], {
+      synthesizeCombinedSetup(setup, racket, string, grip, grips, {
         playerGrip: profile.grips.forehand,
+        armFriendly,
       }),
-    [setup, profile.grips.forehand],
+    [setup, racket, string, grip, grips, profile.grips.forehand, armFriendly],
   );
   const patterns = useMemo(() => derivePatterns(profile).slice(0, 3), [profile]);
   const pending = profile.decisions.filter((d) => d.result === "pending");
@@ -173,6 +190,8 @@ export function YouHub({
                 value={insight.flight ? `${insight.flight.depth} / ${insight.flight.flyRisk}` : "—"}
               />
             </div>
+
+            {insight.hasAny ? <InBandImproveSection plan={insight.inBand} compact /> : null}
 
             {pending.length > 0 && (
               <button

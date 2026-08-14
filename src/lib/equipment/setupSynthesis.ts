@@ -8,6 +8,17 @@ import {
   deriveForehandMold,
   type ForehandMoldAdvice,
 } from "@/lib/equipment/forehandMold";
+import {
+  computeFlightMetrics,
+  scoreDeltasFromTape,
+  stringLaunchOffsets,
+  type FlightMetrics,
+  type ScorePieceDeltas,
+} from "@/lib/equipment/moldPhysics";
+import { buildInBandPlan, healthyBandsFor, type InBandPlan } from "@/lib/equipment/inBandImprove";
+
+export type { FlightMetrics, ScorePieceDeltas };
+export { computeFlightMetrics, scoreDeltasFromTape, stringLaunchOffsets };
 
 export interface ScoreTuneTip {
   score: "power" | "spin" | "control" | "comfort";
@@ -27,29 +38,6 @@ export interface FramePracticeTip {
   title: string;
   holdingBack: string;
   practice: string[];
-}
-
-/** Quantified clean-hit flight for the molded setup. */
-export interface FlightMetrics {
-  launchDeg: number;
-  pathDeg: number;
-  /** Effective plow-through (mass × tip bias) 0–100 */
-  plow: number;
-  /** Topspin / drop leverage 0–100 */
-  topspin: number;
-  /** Through-court depth 0–100 */
-  depth: number;
-  /** Estimated inches over the net on a center hit */
-  netClearIn: number;
-  /** Sail / long tendency 0–100 */
-  flyRisk: number;
-}
-
-export interface ScorePieceDeltas {
-  power: number;
-  spin: number;
-  control: number;
-  comfort: number;
 }
 
 export interface CombinedSetupInsight {
@@ -89,6 +77,8 @@ export interface CombinedSetupInsight {
   pros: string[];
   cons: string[];
   tuneTips: ScoreTuneTip[];
+  /** One-lever raises that keep every currently-healthy score inside its band. */
+  inBand: InBandPlan;
   scienceNotes: string[];
   /** What the frame itself is holding back + what to practice */
   weakPoints: FramePracticeTip[];
@@ -119,99 +109,7 @@ function fmtSigned(n: number): string {
   return `${r > 0 ? "+" : ""}${r}`;
 }
 
-/**
- * Lead-tape → score shifts (coaching-grade).
- * Tip/12: plow + power, flatter leave, arm tax.
- * 3/9: twist stability → control.
- * Handle: whip, slightly less plow, easier steep path.
- */
-export function scoreDeltasFromTape(input: {
-  tipG: number;
-  handleG: number;
-  sideG: number;
-  throatG: number;
-  deltaSw: number;
-  deltaPath: number;
-}): ScorePieceDeltas {
-  const { tipG, handleG, sideG, throatG, deltaSw, deltaPath } = input;
-  return {
-    power: round1(tipG * 1.45 + sideG * 0.35 + throatG * 0.45 - handleG * 0.4 + deltaSw * 0.12),
-    spin: round1(tipG * 0.4 + sideG * 0.2 + deltaPath * 0.55 - handleG * 0.15),
-    control: round1(sideG * 1.25 + handleG * 0.55 + throatG * 0.35 - tipG * 0.35),
-    comfort: round1(-tipG * 0.95 - deltaSw * 0.1 + handleG * 0.35 + throatG * 0.25),
-  };
-}
-
-/** Clean-hit flight quantities from molded leave/path/scores/SW. */
-export function computeFlightMetrics(input: {
-  launchDeg: number;
-  pathDeg: number;
-  power: number | null;
-  spin: number | null;
-  control: number | null;
-  swingweight: number | null;
-  tipG?: number;
-  handleG?: number;
-}): FlightMetrics {
-  const launch = clamp(input.launchDeg, 1.5, 16);
-  const path = clamp(input.pathDeg, 4, 48);
-  const pw = input.power ?? 55;
-  const sp = input.spin ?? 55;
-  const ct = input.control ?? 55;
-  const sw = input.swingweight ?? 315;
-  const tipG = input.tipG ?? 0;
-  const handleG = input.handleG ?? 0;
-
-  const plow = clamp(
-    Math.round(pw * 0.45 + (sw - 300) * 0.55 + tipG * 2.2 - handleG * 1.1),
-    5,
-    98,
-  );
-  const topspin = clamp(
-    Math.round(sp * 0.5 + path * 1.15 + (launch > 9 ? 4 : 0) + tipG * 0.4),
-    5,
-    98,
-  );
-  const depth = clamp(
-    Math.round(
-      plow * 0.35 +
-        pw * 0.25 +
-        (18 - Math.abs(launch - 7.2)) * 2.4 +
-        (40 - path) * 0.28 -
-        Math.max(0, topspin - 70) * 0.15,
-    ),
-    5,
-    98,
-  );
-  // ~net height 36"; clearance scales with leave + a touch of path lift
-  const netClearIn = round1(clamp(2.2 + launch * 1.85 + Math.max(0, path - 18) * 0.12, 0.5, 42));
-  const flyRisk = clamp(
-    Math.round(
-      22 +
-        (launch - 7) * 6.5 +
-        (22 - path) * 1.15 +
-        (pw - ct) * 0.28 +
-        Math.max(0, plow - 70) * 0.12 -
-        Math.max(0, topspin - 65) * 0.18,
-    ),
-    5,
-    98,
-  );
-
-  return {
-    launchDeg: round1(launch),
-    pathDeg: round1(path),
-    plow,
-    topspin,
-    depth,
-    netClearIn,
-    flyRisk,
-  };
-}
-
-function avg(
-  parts: { v: number; w: number }[],
-): number | null {
+function avg(parts: { v: number; w: number }[]): number | null {
   let sum = 0;
   let w = 0;
   for (const p of parts) {
@@ -220,32 +118,6 @@ function avg(
     w += p.w;
   }
   return w > 0 ? Math.round(sum / w) : null;
-}
-
-/** String bed → launch/path offsets from tension, gauge, and material. */
-export function stringLaunchOffsets(
-  string: StringProfile,
-  tensionLbs: number,
-  gaugeMm?: number,
-): { launch: number; path: number; hint: string } {
-  const o = tensionOutcome(string, tensionLbs, gaugeMm);
-  const [lo, hi] = string.tensionRangeLbs;
-  const mid = string.recommendedTensionLbs;
-  const span = Math.max(4, (hi - lo) / 2);
-  const delta = (tensionLbs - mid) / span; // soft −1 … tight +1
-
-  // Soft beds loft; tight beds flatten. Polys start flatter than multi/gut.
-  const materialBias: Record<StringProfile["material"], number> = {
-    polyester: -0.35,
-    "co-poly": -0.2,
-    hybrid: 0,
-    multifilament: 0.45,
-    "synthetic-gut": 0.35,
-    "natural-gut": 0.55,
-  };
-  const launch = round1(-delta * 1.15 + materialBias[string.material] + (o.spin - 55) * 0.008);
-  const path = round1(-delta * 0.6 + (string.shape !== "round" ? 0.8 : 0) + (o.spin - 55) * 0.02);
-  return { launch, path, hint: o.launchHint };
 }
 
 function gripLaunchOffset(grip: Pick<GripProfile, "cushion" | "tackiness" | "thicknessMm">): number {
@@ -263,7 +135,10 @@ export function synthesizeCombinedSetup(
   string: StringProfile | null | undefined,
   grip: GripProfile | null | undefined,
   gripsCatalog: GripProfile[] = [],
-  opts?: { playerGrip?: import("@/lib/equipment/forehandMold").ForehandGripKind | null },
+  opts?: {
+    playerGrip?: import("@/lib/equipment/forehandMold").ForehandGripKind | null;
+    armFriendly?: boolean;
+  },
 ): CombinedSetupInsight {
   const pieces = setup.leadTape?.pieces ?? [];
   const hasRacket = Boolean(setup.racketSlug || racket);
@@ -522,6 +397,21 @@ export function synthesizeCombinedSetup(
       stringPath,
       tapePath,
     },
+  });
+
+  const inBand = buildInBandPlan({
+    scores: { power, spin, control, comfort },
+    role: fit?.courtRole ?? playstyle.label,
+    string,
+    tensionLbs: setup.tensionLbs,
+    gaugeMm: setup.gaugeMm,
+    setup,
+    racket,
+    flight,
+    currentSw: effectiveSw,
+    currentTipG: tapeTipG,
+    currentHandleG: tapeHandleG,
+    armFriendly: opts?.armFriendly,
   });
 
   const tuneTips = buildTuneTips({
@@ -808,6 +698,7 @@ export function synthesizeCombinedSetup(
     pros,
     cons,
     tuneTips,
+    inBand,
     scienceNotes,
     weakPoints,
     gripBuildNote: hasGrip ? stack.buildNote : null,
@@ -935,23 +826,13 @@ function buildTuneTips(input: {
   tipHeavy: boolean;
   overgripCount: number;
 }): ScoreTuneTip[] {
-  const role = input.role.toLowerCase();
-  const wantsSpin = /spin|shape|rpms|baseliner/.test(role);
-  const wantsControl = /precision|control|counter|volley/.test(role);
-  const wantsPower = /power|first-strike|forgiving/.test(role);
-
-  const spinLow = wantsSpin ? 70 : 55;
-  const spinHigh = wantsSpin ? 92 : 82;
-  const ctlLow = wantsControl ? 70 : 55;
-  const ctlHigh = wantsControl ? 90 : 82;
-  const pwrLow = wantsPower ? 68 : 52;
-  const pwrHigh = wantsPower ? 90 : 80;
+  const bands = healthyBandsFor(input.role);
 
   return [
     {
       score: "spin",
       current: input.spin,
-      verdict: verdictFor(input.spin, spinLow, spinHigh),
+      verdict: verdictFor(input.spin, bands.spin.low, bands.spin.high),
       raise: [
         "−1–2 lbs tension (more snap-back dwell)",
         "Thinner gauge (−0.05 mm) if durability allows",
@@ -979,7 +860,7 @@ function buildTuneTips(input: {
     {
       score: "control",
       current: input.control,
-      verdict: verdictFor(input.control, ctlLow, ctlHigh),
+      verdict: verdictFor(input.control, bands.control.low, bands.control.high),
       raise: [
         "+1–3 lbs toward the top of the string’s range",
         "Thicker gauge or denser pattern feel",
@@ -1007,7 +888,7 @@ function buildTuneTips(input: {
     {
       score: "power",
       current: input.power,
-      verdict: verdictFor(input.power, pwrLow, pwrHigh),
+      verdict: verdictFor(input.power, bands.power.low, bands.power.high),
       raise: [
         "−1–2 lbs or a livelier gauge",
         "Softer multi / gut hybrid",
@@ -1033,7 +914,7 @@ function buildTuneTips(input: {
     {
       score: "comfort",
       current: input.comfort,
-      verdict: verdictFor(input.comfort, 48, 88),
+      verdict: verdictFor(input.comfort, bands.comfort.low, bands.comfort.high),
       raise: [
         "−2 lbs or thicker gauge on a stiff poly",
         "Multi/gut hybrid or softer co-poly",
