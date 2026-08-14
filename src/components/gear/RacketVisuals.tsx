@@ -160,35 +160,41 @@ export function LaunchAngleVisual({
       <svg viewBox="0 0 220 168" className="h-auto w-full max-w-md" aria-hidden>
         <defs>
           <linearGradient id={`ballArc-${uid}`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#c8f560" stopOpacity="0.45" />
-            <stop offset="40%" stopColor="#c8f560" stopOpacity="1" />
-            <stop offset="100%" stopColor="#f4a261" stopOpacity="0.9" />
+            <stop offset="0%" stopColor="#c8f560" stopOpacity="0.35" />
+            <stop offset="45%" stopColor="#c8f560" stopOpacity="1" />
+            <stop offset="100%" stopColor="#f4a261" stopOpacity="0.95" />
           </linearGradient>
+          <linearGradient id={`court-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#2f6f52" />
+            <stop offset="100%" stopColor="#1b4332" />
+          </linearGradient>
+          <linearGradient id={`frame3d-${uid}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#3a3a3a" />
+            <stop offset="45%" stopColor="#141414" />
+            <stop offset="100%" stopColor="#2c2c2c" />
+          </linearGradient>
+          <filter id={`glow-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="1.4" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
-        <line
-          x1="12"
-          y1={floorY}
-          x2="214"
-          y2={floorY}
-          stroke="rgba(232,239,233,0.22)"
-          strokeWidth="1.5"
+        <polygon
+          points="18,148 202,148 188,92 32,92"
+          fill={`url(#court-${uid})`}
+          opacity="0.55"
         />
-        <rect
-          x="14"
-          y="14"
-          width="28"
-          height="86"
-          rx="12"
-          fill="rgba(232,239,233,0.05)"
-          stroke="rgba(232,239,233,0.22)"
+        <polygon
+          points="40,146 180,146 172,108 48,108"
+          fill="none"
+          stroke="rgba(247,245,238,0.28)"
+          strokeWidth="0.8"
         />
-        <circle
-          cx="28"
-          cy="10"
-          r="7"
-          fill="rgba(232,239,233,0.1)"
-          stroke="rgba(232,239,233,0.3)"
-        />
+        <line x1="110" y1="108" x2="110" y2="146" stroke="rgba(247,245,238,0.2)" strokeWidth="0.7" />
+        <ellipse cx="110" cy="148" rx="96" ry="6" fill="#000" opacity="0.28" />
+
         {(Object.keys(bandY) as StrikeBand[]).map((band) => {
           const b = bandY[band];
           const active = z.bands.includes(band);
@@ -196,106 +202,115 @@ export function LaunchAngleVisual({
           return (
             <g key={band}>
               <rect
-                x="16"
+                x="8"
                 y={b.y}
-                width="24"
+                width="18"
                 height={b.h}
-                rx="3"
+                rx="1"
                 fill={
                   isPrimary
-                    ? "rgba(200,245,96,0.3)"
+                    ? "rgba(200,245,96,0.22)"
                     : active
-                      ? "rgba(200,245,96,0.1)"
-                      : "transparent"
+                      ? "rgba(200,245,96,0.08)"
+                      : "rgba(232,239,233,0.03)"
                 }
-                stroke={
-                  isPrimary
-                    ? "#c8f560"
-                    : active
-                      ? "rgba(200,245,96,0.4)"
-                      : "rgba(232,239,233,0.1)"
-                }
-                strokeWidth={isPrimary ? 1.4 : 1}
+                stroke={isPrimary ? "#c8f560" : "rgba(232,239,233,0.14)"}
+                strokeWidth={isPrimary ? 1.2 : 0.7}
               />
-              <text
-                x="46"
-                y={b.y + b.h / 2 + 3}
-                fill={isPrimary ? "#c8f560" : "#8aa396"}
-                fontSize="8"
-              >
+              <text x="28" y={b.y + b.h / 2 + 3} fill={isPrimary ? "#c8f560" : "#8aa396"} fontSize="7">
                 {b.title}
-                {isPrimary ? " · mold" : ""}
               </text>
             </g>
           );
         })}
+
+        {/* Racket face — graphite hoop + stringbed, slight 3D offset */}
+        <ellipse cx={faceCx + 2.5} cy={faceCy + 1.5} rx="15" ry="11" fill="#000" opacity="0.35" />
         <ellipse
           cx={faceCx}
           cy={faceCy}
-          rx="16"
-          ry="11"
-          fill="rgba(200,245,96,0.22)"
-          stroke="#c8f560"
-          strokeWidth="1.8"
+          rx="15.5"
+          ry="11.2"
+          fill="#0e0e0e"
+          stroke={`url(#frame3d-${uid})`}
+          strokeWidth="3.2"
         />
-        <ellipse
-          cx={faceCx + 3}
-          cy={faceCy}
-          rx="14"
-          ry="10"
-          fill="none"
-          stroke="#f4a261"
-          strokeWidth="1.2"
-          opacity="0.55"
-        />
-        <text x={faceCx - 22} y={faceCy + 22} fill="#c8f560" fontSize="7">
-          strings front
-        </text>
-        <circle cx={faceCx} cy={faceCy} r="3.2" fill="#c8f560">
-          <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" />
+        {[ -8, -4, 0, 4, 8 ].map((dx) => (
+          <line
+            key={`m${dx}`}
+            x1={faceCx + dx * 0.7}
+            y1={faceCy - 8}
+            x2={faceCx + dx * 0.7}
+            y2={faceCy + 8}
+            stroke="rgba(210,210,200,0.45)"
+            strokeWidth="0.45"
+          />
+        ))}
+        {[ -6, -2, 2, 6 ].map((dy) => (
+          <line
+            key={`c${dy}`}
+            x1={faceCx - 11}
+            y1={faceCy + dy}
+            x2={faceCx + 11}
+            y2={faceCy + dy}
+            stroke="rgba(210,210,200,0.4)"
+            strokeWidth="0.45"
+          />
+        ))}
+        <circle cx={faceCx} cy={faceCy} r="2.4" fill="#c8f560" filter={`url(#glow-${uid})`}>
+          <animate attributeName="opacity" values="0.55;1;0.55" dur="2.4s" repeatCount="indefinite" />
         </circle>
-        <line x1={netX} y1={netTop} x2={netX} y2={netBot} stroke="#e8efe9" strokeWidth="2.4" />
-        <line
-          x1={netX - 11}
-          y1={netTop}
-          x2={netX + 11}
-          y2={netTop}
-          stroke="#c8f560"
-          strokeWidth="2.4"
-        />
-        <text x={netX - 9} y={netTop - 5} fill="#8aa396" fontSize="8">
-          net
-        </text>
+
+        {/* Net mesh */}
+        <g>
+          {Array.from({ length: 9 }).map((_, i) => (
+            <line
+              key={i}
+              x1={netX - 8 + i * 2}
+              y1={netTop}
+              x2={netX - 8 + i * 2}
+              y2={netBot - 6}
+              stroke="rgba(232,239,233,0.28)"
+              strokeWidth="0.5"
+            />
+          ))}
+          <line x1={netX} y1={netTop} x2={netX} y2={netBot} stroke="#d8d6cf" strokeWidth="1.6" />
+          <line x1={netX - 12} y1={netTop} x2={netX + 12} y2={netTop} stroke="#f3f1ea" strokeWidth="2" />
+        </g>
+
         <path
           d={flightPath}
           fill="none"
           stroke={`url(#ballArc-${uid})`}
-          strokeWidth="2.5"
+          strokeWidth="2.3"
           strokeLinecap="round"
+          filter={`url(#glow-${uid})`}
         />
-        <circle cx={apexX} cy={apexY} r="2.8" fill="#f4a261" />
+        <circle cx={landX} cy={landY} r="3.4" fill="none" stroke="#f4a261" strokeWidth="0.8" opacity="0.7" />
+        <circle cx={apexX} cy={apexY} r="2.4" fill="#f4a261" />
         <line
-          x1={netX + 5}
+          x1={netX + 6}
           y1={overNetY}
-          x2={netX + 5}
+          x2={netX + 6}
           y2={netTop}
           stroke="#7dd3fc"
-          strokeWidth="1.4"
+          strokeWidth="1.2"
           strokeDasharray="2 2"
         />
-        <text x={netX + 9} y={(overNetY + netTop) / 2 + 3} fill="#7dd3fc" fontSize="7">
-          +{netClearIn.toFixed(0)}"
+        <text x={netX + 10} y={(overNetY + netTop) / 2 + 3} fill="#7dd3fc" fontSize="7">
+          +{netClearIn.toFixed(0)}″
         </text>
         <path
           d={`M ${apexX + 3} ${apexY + 2} q ${16 + spinDrop * 8} ${10 + spinDrop * 12}, ${30 + spinDrop * 8} ${20 + spinDrop * 16}`}
           fill="none"
           stroke="#f4a261"
-          strokeWidth="1.4"
+          strokeWidth="1.2"
           strokeDasharray="3 2"
+          opacity="0.85"
         />
         <text
-          x={Math.min(170, landX - 40)}
-          y={Math.min(apexY + 34, landY - 6)}
+          x={Math.min(168, landX - 38)}
+          y={Math.min(apexY + 32, landY - 6)}
           fill="#f4a261"
           fontSize="7"
         >
@@ -306,7 +321,7 @@ export function LaunchAngleVisual({
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
         {launch.toFixed(1)}° leave
         <span className="ml-2 text-base text-[var(--muted)]">
-          · path {path.toFixed(0)}° · +{netClearIn.toFixed(0)}" clear
+          · path {path.toFixed(0)}° · +{netClearIn.toFixed(0)}″ clear
         </span>
       </p>
       <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
@@ -398,27 +413,18 @@ export function SwingPathVisual({
       <svg viewBox="0 0 220 150" className="h-auto w-full max-w-sm" aria-hidden>
         <defs>
           <linearGradient id={`pathStroke-${uid}`} x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0%" stopColor="#f4a261" stopOpacity="0.3" />
+            <stop offset="0%" stopColor="#f4a261" stopOpacity="0.2" />
             <stop offset="55%" stopColor="#f4a261" stopOpacity="1" />
-            <stop offset="100%" stopColor="#c8f560" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#c8f560" stopOpacity="0.95" />
+          </linearGradient>
+          <linearGradient id={`torso-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#2a4a3c" />
+            <stop offset="100%" stopColor="#152820" />
           </linearGradient>
         </defs>
-        <rect
-          x="28"
-          y="18"
-          width="36"
-          height="92"
-          rx="14"
-          fill="rgba(232,239,233,0.06)"
-          stroke="rgba(232,239,233,0.25)"
-        />
-        <circle
-          cx="46"
-          cy="14"
-          r="9"
-          fill="rgba(232,239,233,0.12)"
-          stroke="rgba(232,239,233,0.35)"
-        />
+        <ellipse cx="110" cy="142" rx="70" ry="5" fill="#000" opacity="0.25" />
+        <ellipse cx="48" cy="78" rx="22" ry="48" fill={`url(#torso-${uid})`} opacity="0.85" />
+        <ellipse cx="48" cy="28" rx="11" ry="13" fill="#1e3329" stroke="rgba(232,239,233,0.18)" strokeWidth="0.8" />
         {(Object.keys(bandY) as StrikeBand[]).map((band) => {
           const b = bandY[band];
           const active = z.bands.includes(band);
@@ -426,61 +432,59 @@ export function SwingPathVisual({
           return (
             <g key={band}>
               <rect
-                x="30"
+                x="72"
                 y={b.y}
-                width="32"
+                width="118"
                 height={b.h}
-                rx="4"
                 fill={
                   primary
-                    ? "rgba(200,245,96,0.28)"
+                    ? "rgba(200,245,96,0.1)"
                     : active
-                      ? "rgba(200,245,96,0.12)"
+                      ? "rgba(200,245,96,0.04)"
                       : "transparent"
                 }
-                stroke={
-                  primary
-                    ? "#c8f560"
-                    : active
-                      ? "rgba(200,245,96,0.45)"
-                      : "rgba(232,239,233,0.12)"
-                }
-                strokeWidth={primary ? 1.5 : 1}
+                stroke={primary ? "rgba(200,245,96,0.35)" : "rgba(232,239,233,0.08)"}
+                strokeDasharray={primary ? undefined : "3 3"}
               />
               <text
-                x="70"
-                y={b.y + b.h / 2 + 3}
+                x="78"
+                y={b.y + 11}
                 fill={primary ? "#c8f560" : "#8aa396"}
-                fontSize="10"
+                fontSize="8"
               >
                 {b.title}
-                {primary ? " · best" : active ? " · ok" : ""}
+                {primary ? " · strike" : active ? " · ok" : ""}
               </text>
             </g>
           );
         })}
         <path
-          d={`M 52 ${bandY[z.primary].y + bandY[z.primary].h * 0.55 + 8 * (1 - steep)}
-              Q 100 ${bandY[z.primary].y + 10 - steep * 12}, 150 ${bandY[z.primary].y - 4 - steep * 8}
-              T 205 ${bandY[z.primary].y - 10 - steep * 14}`}
+          d={`M 58 ${bandY[z.primary].y + bandY[z.primary].h * 0.55 + 6 * (1 - steep)}
+              Q 108 ${bandY[z.primary].y + 8 - steep * 14}, 158 ${bandY[z.primary].y - 6 - steep * 10}
+              T 208 ${bandY[z.primary].y - 12 - steep * 16}`}
           fill="none"
           stroke={`url(#pathStroke-${uid})`}
-          strokeWidth="2.8"
+          strokeWidth="3.2"
           strokeLinecap="round"
         />
-        <rect
-          x="118"
-          y={bandY[z.primary].y + 2}
-          width="40"
-          height={bandY[z.primary].h - 4}
-          rx="3"
-          fill="rgba(200,245,96,0.08)"
-          stroke="rgba(200,245,96,0.4)"
-          strokeDasharray="3 2"
+        <path
+          d={`M 58 ${bandY[z.primary].y + bandY[z.primary].h * 0.55 + 10 * (1 - steep)}
+              Q 108 ${bandY[z.primary].y + 14 - steep * 10}, 158 ${bandY[z.primary].y + 2 - steep * 6}`}
+          fill="none"
+          stroke="rgba(244,162,97,0.35)"
+          strokeWidth="8"
+          strokeLinecap="round"
         />
-        <text x="120" y={bandY[z.primary].y - 2} fill="#8aa396" fontSize="8">
-          contact out front
-        </text>
+        <ellipse
+          cx="158"
+          cy={bandY[z.primary].y + 6}
+          rx="11"
+          ry="8"
+          fill="#111"
+          stroke="#3a3a3a"
+          strokeWidth="2.2"
+          transform={`rotate(${-18 - steep * 22} 158 ${bandY[z.primary].y + 6})`}
+        />
       </svg>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
         {z.label}

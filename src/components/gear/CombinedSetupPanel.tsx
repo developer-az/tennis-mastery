@@ -14,6 +14,19 @@ import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { InBandImproveSection } from "./InBandImproveSection";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
+import dynamic from "next/dynamic";
+
+const LeadTapeRacketCanvas = dynamic(
+  () => import("./LeadTapeRacketCanvas").then((m) => m.LeadTapeRacketCanvas),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-56 w-full items-center justify-center rounded-md bg-[#07140f] text-xs text-[var(--muted)]">
+        Loading frame…
+      </div>
+    ),
+  },
+);
 
 export function CombinedSetupPanel({
   rackets,
@@ -681,28 +694,9 @@ export function CombinedSetupPanel({
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
             Lead tape map
           </p>
-          <div className="mt-4 flex flex-wrap items-start gap-6">
-            <svg viewBox="0 0 120 180" className="h-44 w-28 shrink-0" aria-hidden>
-              <ellipse cx="60" cy="48" rx="38" ry="42" fill="none" stroke="rgba(232,239,233,0.35)" strokeWidth="2" />
-              <path d="M48 88 L48 150 L72 150 L72 88" fill="none" stroke="rgba(232,239,233,0.35)" strokeWidth="2" />
-              {Object.entries(LEAD_TAPE_ZONES).map(([zone, z]) => {
-                const g = tapeByZone[zone] ?? 0;
-                if (g <= 0) return null;
-                return (
-                  <circle
-                    key={zone}
-                    cx={z.x * 120}
-                    cy={z.y * 180}
-                    r={4 + Math.min(6, g)}
-                    fill="#c8f560"
-                    opacity={0.85}
-                  >
-                    <title>{`${z.label}: ${g}g`}</title>
-                  </circle>
-                );
-              })}
-            </svg>
-            <ul className="min-w-0 flex-1 space-y-2 text-sm">
+          <div className="mt-4 grid items-start gap-6 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <LeadTapeRacketCanvas pieces={setup.leadTape?.pieces ?? []} interactive={false} />
+            <ul className="min-w-0 space-y-2 text-sm">
               {Object.entries(tapeByZone).map(([zone, g]) => (
                 <li key={zone} className="flex justify-between gap-3 border-b border-[var(--line)] pb-1.5">
                   <span className="text-[var(--foreground)]/90">
