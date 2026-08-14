@@ -11,6 +11,7 @@ import { RacketExplorer } from "./RacketExplorer";
 import { StringExplorer } from "./StringExplorer";
 import { GripExplorer } from "./GripExplorer";
 import { LeadTapeLab } from "./LeadTapeLab";
+import { AccountabilityStrip } from "./AccountabilityStrip";
 
 const TABS: { id: EquipmentTab; label: string; blurb: string }[] = [
   {
@@ -88,6 +89,7 @@ export function GearLab({
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:px-10 md:py-14">
       <MySetupBar onSelectTab={selectTab} />
+      <AccountabilityStrip />
       <div className="mb-5">
         <SetupDials strings={strings} compact hideStringDials={tab === "strings"} />
       </div>

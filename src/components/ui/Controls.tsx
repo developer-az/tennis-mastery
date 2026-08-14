@@ -7,11 +7,15 @@ import { PHASE_LABELS, sampleStroke } from "@/lib/kinematics";
 
 const STROKES = Object.keys(STROKE_LABELS) as StrokeType[];
 
-const CAMERA_LABELS: Record<"orbit" | "side" | "behind" | "front", string> = {
+const CAMERA_LABELS: Record<
+  "orbit" | "side" | "behind" | "front" | "firstPerson",
+  string
+> = {
   orbit: "Orbit",
   side: "Side",
   behind: "Behind",
   front: "Front (net)",
+  firstPerson: "First-person",
 };
 
 export function PlayerStrokePicker() {
@@ -259,7 +263,7 @@ export function ViewToggles() {
         Camera
       </p>
       <div className="flex flex-wrap gap-2">
-        {(["orbit", "side", "behind", "front"] as const).map((m) => (
+        {(["orbit", "side", "behind", "front", "firstPerson"] as const).map((m) => (
           <button
             key={m}
             type="button"
@@ -272,7 +276,9 @@ export function ViewToggles() {
                   ? "Side-on coaching angle"
                   : m === "behind"
                     ? "Behind the athlete looking to the net"
-                    : "From the net looking back at the athlete"
+                    : m === "front"
+                      ? "From the net looking back at the athlete"
+                      : "Over the hitting shoulder — map hand and face angle"
             }
             className="rounded-md px-2.5 py-1.5 text-xs transition"
             style={{
@@ -282,8 +288,7 @@ export function ViewToggles() {
           >
             {CAMERA_LABELS[m]}
           </button>
-        ))}
-      </div>
+        ))}      </div>
     </div>
   );
 }

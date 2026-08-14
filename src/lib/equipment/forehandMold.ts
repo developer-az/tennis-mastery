@@ -165,12 +165,14 @@ export function deriveForehandMold(input: {
   power?: number | null;
   spin?: number | null;
   control?: number | null;
+  /** When set (player profile), face/bevel follow the stored grip — not a generic pro mold. */
+  playerGrip?: ForehandGripKind | null;
 }): ForehandMoldAdvice | null {
   const racket = input.racket;
   const launch =
     input.launchAngleDeg ?? racket?.idealLaunchAngleDeg ?? null;
   const path = input.swingPathDeg ?? racket?.idealSwingPathDeg ?? null;
-  if (launch == null && path == null && !racket) return null;
+  if (launch == null && path == null && !racket && !input.playerGrip) return null;
 
   const L = launch ?? 8;
   const P = path ?? 22;
@@ -178,15 +180,22 @@ export function deriveForehandMold(input: {
   const power = input.power ?? racket?.power ?? 55;
   const control = input.control ?? racket?.control ?? 55;
 
-  const grip = gripFromPath(P, spin);
+  const grip = input.playerGrip ?? gripFromPath(P, spin);
+  const fromProfile = Boolean(input.playerGrip);
   const bevel = bevelFor(grip);
   const face = faceForMold({ grip, launch: L, path: P, power, control, spin });
   const prefersHeight = prefersHeightFor(grip);
 
   const whyBits: string[] = [];
-  whyBits.push(
-    `Path ~${P.toFixed(0)}° and spin ${spin} push the index knuckle toward bevel ${bevel} (${gripLabel(grip).toLowerCase()}).`,
-  );
+  if (fromProfile) {
+    whyBits.push(
+      `Your stored ${gripLabel(grip).toLowerCase()} (bevel ${bevel}) drives face angle — not a generic model athlete grip.`,
+    );
+  } else {
+    whyBits.push(
+      `Path ~${P.toFixed(0)}° and spin ${spin} push the index knuckle toward bevel ${bevel} (${gripLabel(grip).toLowerCase()}).`,
+    );
+  }
   if (power - control >= 10) {
     whyBits.push(
       "Power-biased mold needs that closed face so free depth doesn’t sail — don’t open up to “help” the ball over.",

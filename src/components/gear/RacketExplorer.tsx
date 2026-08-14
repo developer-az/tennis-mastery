@@ -6,6 +6,7 @@ import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
+import { usePlayerStore } from "@/store/playerStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 import { deriveForehandMold } from "@/lib/equipment/forehandMold";
 import { computeFlightMetrics } from "@/lib/equipment/setupSynthesis";
@@ -45,6 +46,7 @@ export function RacketExplorer({
   const setupSlug = setup.racketSlug;
   const setRacket = useGearStore((s) => s.setRacket);
   const setTab = useGearStore((s) => s.setTab);
+  const playerGrip = usePlayerStore((s) => s.profile.grips.forehand);
   const [selectedSlug, setSelectedSlug] = useState(
     setupSlug && initialRackets.some((r) => r.slug === setupSlug)
       ? setupSlug
@@ -133,8 +135,11 @@ export function RacketExplorer({
     : null;
 
   const forehandAdvice = useMemo(
-    () => (selected ? deriveForehandMold({ racket: selected }) : null),
-    [selected],
+    () =>
+      selected
+        ? deriveForehandMold({ racket: selected, playerGrip: playerGrip ?? null })
+        : null,
+    [selected, playerGrip],
   );
   const stockFlight = useMemo(
     () =>
