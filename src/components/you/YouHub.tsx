@@ -217,7 +217,6 @@ export function YouHub({
                     launchDeg={insight.launchAngleDeg}
                     pathDeg={insight.swingPathDeg ?? 22}
                     flight={insight.flight}
-                    pieces={setup.leadTape?.pieces ?? []}
                     contactHeightM={strikeZone.heightM}
                     outFrontM={strikeZone.outFrontM}
                     faceClosedDeg={insight.forehand?.face.closedDeg ?? 8}
@@ -235,6 +234,7 @@ export function YouHub({
                         control={insight.scores.control}
                         flight={insight.flight}
                         zone={strikeZone}
+                        faceClosedDeg={insight.forehand?.face.closedDeg ?? 8}
                         label="Flight vs net — this setup"
                       />
                     </div>
@@ -245,6 +245,7 @@ export function YouHub({
                         <SwingPathVisual
                           degrees={insight.swingPathDeg}
                           zone={strikeZone}
+                          faceClosedDeg={insight.forehand?.face.closedDeg ?? 8}
                           label="Where to strike"
                         />
                       </div>

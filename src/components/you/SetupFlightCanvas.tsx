@@ -4,23 +4,18 @@ import { Suspense, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Line, OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
-import type { LeadTapePiece } from "@/types/equipment";
 import type { FlightMetrics } from "@/lib/equipment/setupSynthesis";
 import {
   BALL_RADIUS_M,
   BASELINE_TO_NET_M,
   computeBallTrajectory,
+  formatFt,
   NET_HEIGHT_M,
 } from "@/lib/equipment/ballFlight";
-import { RacketFrame3D } from "@/components/gear/RacketFrame3D";
 
 /** Compress court depth so the baseline-to-net slice fits the camera; heights stay in meters. */
 const SCENE_BASELINE_Z = 2.55;
 const XZ = SCENE_BASELINE_Z / BASELINE_TO_NET_M;
-/** Hoop center in RacketFrame3D local space. */
-const HOOP_Y = 0.495;
-/** Ball sits this far in front of the string plane (tube + ball radius). */
-const STRING_LEAVE_M = 0.045;
 
 function courtZ(fromBaselineM: number) {
   return SCENE_BASELINE_Z - fromBaselineM * XZ;
@@ -38,12 +33,8 @@ function CourtSlice() {
         <planeGeometry args={[8.23, 10]} />
         <meshLambertMaterial color="#2d6a4f" />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, 0.4]}>
-        <planeGeometry args={[10.97, 11.88]} />
-        <meshLambertMaterial color="#40916c" transparent opacity={0.35} />
-      </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, SCENE_BASELINE_Z]}>
-        <planeGeometry args={[8.23, 0.04]} />
+        <planeGeometry args={[8.23, 0.06]} />
         <meshBasicMaterial color="#f4f1ea" />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, courtZ(6.4)]}>
@@ -70,48 +61,63 @@ function CourtSlice() {
   );
 }
 
-function GroundstrokeRacket({
-  pieces,
-  contactY,
-  contactZ,
-  closedDeg,
-}: {
-  pieces: LeadTapePiece[];
-  contactY: number;
-  contactZ: number;
-  closedDeg: number;
-}) {
-  const closed = THREE.MathUtils.degToRad(closedDeg);
+/** Stance at the baseline — feet only. Face/racket live in the 2D side view. */
+function BaselineStance() {
   return (
-    <group position={[0, contactY, contactZ]}>
-      {/* Strings face the net (−Z). Closed: top of the hoop leans toward the opponent. */}
-      <group rotation={[0, Math.PI, 0]}>
-        <group rotation={[closed, 0, 0]}>
-          <group position={[0, -HOOP_Y, 0]}>
-            <RacketFrame3D pieces={pieces} />
-          </group>
-        </group>
-      </group>
+    <group position={[0, 0, SCENE_BASELINE_Z]}>
+      <mesh position={[-0.12, 0.04, 0.04]}>
+        <boxGeometry args={[0.08, 0.04, 0.22]} />
+        <meshLambertMaterial color="#1e3329" />
+      </mesh>
+      <mesh position={[0.12, 0.04, -0.02]}>
+        <boxGeometry args={[0.08, 0.04, 0.22]} />
+        <meshLambertMaterial color="#1e3329" />
+      </mesh>
     </group>
   );
 }
 
-function BallFlight({
-  points,
-  leaveZ,
+function LaunchWedge({
+  contactY,
+  contactZ,
+  launchDeg,
 }: {
-  points: THREE.Vector3[];
-  leaveZ: number;
+  contactY: number;
+  contactZ: number;
+  launchDeg: number;
 }) {
+  const len = 0.85;
+  const rad = THREE.MathUtils.degToRad(launchDeg);
+  const horiz = new THREE.Vector3(0, contactY, contactZ - len);
+  const leave = new THREE.Vector3(0, contactY + Math.sin(rad) * len, contactZ - Math.cos(rad) * len);
+  const origin = new THREE.Vector3(0, contactY, contactZ);
+  const arc: THREE.Vector3[] = [];
+  for (let i = 0; i <= 10; i++) {
+    const t = (rad * i) / 10;
+    const r = 0.42;
+    arc.push(new THREE.Vector3(0, contactY + Math.sin(t) * r, contactZ - Math.cos(t) * r));
+  }
+  return (
+    <group>
+      <Line points={[origin, horiz]} color="#8aa396" lineWidth={1} dashed dashSize={0.05} gapSize={0.04} />
+      <Line points={[origin, leave]} color="#c8f560" lineWidth={2} />
+      <Line points={arc} color="#c8f560" lineWidth={1.4} />
+      <mesh position={[0, contactY, contactZ]}>
+        <sphereGeometry args={[0.028, 12, 12]} />
+        <meshStandardMaterial color="#c8f560" emissive="#5a6a10" emissiveIntensity={0.35} />
+      </mesh>
+    </group>
+  );
+}
+
+function BallFlight({ points }: { points: THREE.Vector3[] }) {
   const ball = useRef<THREE.Mesh>(null);
   const curve = useMemo(() => new THREE.CatmullRomCurve3(points, false, "catmullrom", 0), [points]);
 
   useFrame(({ clock }) => {
     if (!ball.current) return;
     const t = (clock.getElapsedTime() * 0.18) % 1;
-    const p = curve.getPoint(t);
-    ball.current.position.copy(p);
-    if (t < 0.02) ball.current.position.z = leaveZ;
+    ball.current.position.copy(curve.getPoint(t));
   });
 
   return (
@@ -135,7 +141,6 @@ export function SetupFlightCanvas({
   launchDeg,
   pathDeg,
   flight,
-  pieces,
   contactHeightM,
   outFrontM,
   faceClosedDeg = 8,
@@ -143,7 +148,6 @@ export function SetupFlightCanvas({
   launchDeg: number;
   pathDeg: number;
   flight: FlightMetrics;
-  pieces: LeadTapePiece[];
   contactHeightM: number;
   outFrontM: number;
   faceClosedDeg?: number;
@@ -161,13 +165,9 @@ export function SetupFlightCanvas({
   );
 
   const contactZ = courtZ(outFrontM);
-  const leaveZ = contactZ - STRING_LEAVE_M;
 
   const points = useMemo(() => {
-    return traj.points.map((p, i) => {
-      const z = courtZ(outFrontM + p.x) - (i === 0 ? STRING_LEAVE_M : 0);
-      return new THREE.Vector3(0, p.y, z);
-    });
+    return traj.points.map((p) => new THREE.Vector3(0, p.y, courtZ(outFrontM + p.x)));
   }, [traj.points, outFrontM]);
 
   return (
@@ -185,7 +185,7 @@ export function SetupFlightCanvas({
           gl.toneMapping = THREE.ACESFilmicToneMapping;
         }}
       >
-        <PerspectiveCamera makeDefault position={[3.4, 1.45, 3.8]} fov={36} />
+        <PerspectiveCamera makeDefault position={[4.6, 1.25, 1.15]} fov={34} />
         <Suspense fallback={null}>
           <color attach="background" args={["#07140f"]} />
           <fog attach="fog" args={["#07140f", 8, 18]} />
@@ -193,16 +193,12 @@ export function SetupFlightCanvas({
           <hemisphereLight args={["#d5ead8", "#1a3328", 0.5]} />
           <directionalLight position={[4, 8, 3]} intensity={1.2} />
           <CourtSlice />
-          <GroundstrokeRacket
-            pieces={pieces}
-            contactY={contactHeightM}
-            contactZ={contactZ}
-            closedDeg={faceClosedDeg}
-          />
-          <BallFlight points={points} leaveZ={leaveZ} />
+          <BaselineStance />
+          <LaunchWedge contactY={contactHeightM} contactZ={contactZ} launchDeg={launchDeg} />
+          <BallFlight points={points} />
           <OrbitControls
             enablePan={false}
-            target={[0, 0.85, 0.55]}
+            target={[0, 0.85, 0.9]}
             minDistance={3.2}
             maxDistance={8}
             maxPolarAngle={1.35}
@@ -212,11 +208,12 @@ export function SetupFlightCanvas({
       </Canvas>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#07140f] via-[#07140f]/70 to-transparent px-3 pb-2.5 pt-10">
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
-          Clean-hit flight — off the strings
+          Clean-hit flight — from the baseline
         </p>
         <p className="mt-0.5 text-xs tabular-nums text-[var(--muted)]">
-          {launchDeg.toFixed(1)}° leave · face {faceClosedDeg.toFixed(1)}° closed · path {pathDeg.toFixed(0)}° · +
-          {traj.netClearIn.toFixed(1)}″ over 0.914 m tape · depth {flight.depth}
+          Hit {formatFt(outFrontM)} in front of the baseline · {launchDeg.toFixed(1)}° leave · face{" "}
+          {faceClosedDeg.toFixed(1)}° closed (see side view) · path {pathDeg.toFixed(0)}° · +
+          {traj.netClearIn.toFixed(1)}″ over a 3.0 ft net
         </p>
       </div>
     </div>

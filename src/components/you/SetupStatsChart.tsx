@@ -27,16 +27,6 @@ function poly(cx: number, cy: number, rs: number[], n: number) {
     .join(" ");
 }
 
-function ringPath(cx: number, cy: number, rs: number[], n: number) {
-  const pts = rs.map((r, i) => polar(cx, cy, r, i, n));
-  const start = pts[0];
-  const rest = pts
-    .slice(1)
-    .map((p) => `L ${p.x} ${p.y}`)
-    .join(" ");
-  return `M ${start.x} ${start.y} ${rest} Z`;
-}
-
 export function SetupStatsChart({
   scores,
   stock,
@@ -56,7 +46,6 @@ export function SetupStatsChart({
   const n = AXES.length;
 
   const moldedR = AXES.map((a) => ((scores[a.key] ?? 0) / 100) * maxR);
-  const stockR = AXES.map((a) => ((stock[a.key] ?? 0) / 100) * maxR);
   const lowR = AXES.map((a) => (bands[a.key].low / 100) * maxR);
   const highR = AXES.map((a) => (bands[a.key].high / 100) * maxR);
 
@@ -71,7 +60,8 @@ export function SetupStatsChart({
         Your numbers
       </h2>
       <p className="mt-1 max-w-xl text-xs text-[var(--muted)]">
-        Colors, not dashes: sky = stock frame, violet = healthy band for {role || "this mold"}, lime = this bag.
+        Lime is this bag. The tick on each spoke is the healthy band for {role || "this mold"} — a target
+        window, not a max and not a grade of the frame.
       </p>
 
       {!hasScores ? (
@@ -79,90 +69,78 @@ export function SetupStatsChart({
       ) : (
         <div className="mt-4 grid items-center gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
           <div>
-          <svg viewBox="0 0 240 250" className="h-auto w-full max-w-sm justify-self-center" role="img" aria-label="Setup radar">
-            <defs>
-              <radialGradient id={`radarFill-${uid}`} cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#c8f560" stopOpacity="0.28" />
-                <stop offset="100%" stopColor="#c8f560" stopOpacity="0.05" />
-              </radialGradient>
-            </defs>
-            {[0.25, 0.5, 0.75, 1].map((t) => (
-              <polygon
-                key={t}
-                points={poly(cx, cy, AXES.map(() => maxR * t), n)}
-                fill="none"
-                stroke="rgba(232,239,233,0.1)"
-                strokeWidth="1"
-              />
-            ))}
-            {AXES.map((_, i) => {
-              const p = polar(cx, cy, maxR, i, n);
-              return (
-                <line
-                  key={i}
-                  x1={cx}
-                  y1={cy}
-                  x2={p.x}
-                  y2={p.y}
-                  stroke="rgba(232,239,233,0.12)"
+            <svg viewBox="0 0 240 250" className="h-auto w-full max-w-sm justify-self-center" role="img" aria-label="Setup radar">
+              <defs>
+                <radialGradient id={`radarFill-${uid}`} cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#c8f560" stopOpacity="0.32" />
+                  <stop offset="100%" stopColor="#c8f560" stopOpacity="0.06" />
+                </radialGradient>
+              </defs>
+              {[0.5, 1].map((t) => (
+                <polygon
+                  key={t}
+                  points={poly(cx, cy, AXES.map(() => maxR * t), n)}
+                  fill="none"
+                  stroke="rgba(232,239,233,0.1)"
+                  strokeWidth="1"
                 />
-              );
-            })}
-            <path
-              d={`${ringPath(cx, cy, highR, n)} ${ringPath(cx, cy, lowR, n)}`}
-              fill="rgba(167,139,250,0.22)"
-              fillRule="evenodd"
-              stroke="#a78bfa"
-              strokeWidth="1.6"
-            />
-            {AXES.some((a) => stock[a.key] != null) ? (
+              ))}
+              {AXES.map((_, i) => {
+                const p = polar(cx, cy, maxR, i, n);
+                const lo = polar(cx, cy, lowR[i], i, n);
+                const hi = polar(cx, cy, highR[i], i, n);
+                return (
+                  <g key={i}>
+                    <line x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(232,239,233,0.12)" />
+                    <line
+                      x1={lo.x}
+                      y1={lo.y}
+                      x2={hi.x}
+                      y2={hi.y}
+                      stroke="#c8f560"
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                      opacity="0.28"
+                    />
+                  </g>
+                );
+              })}
               <polygon
-                points={poly(cx, cy, stockR, n)}
-                fill="rgba(125,211,252,0.16)"
-                stroke="#7dd3fc"
-                strokeWidth="2"
+                points={poly(cx, cy, moldedR, n)}
+                fill={`url(#radarFill-${uid})`}
+                stroke="#c8f560"
+                strokeWidth="2.4"
               />
-            ) : null}
-            <polygon
-              points={poly(cx, cy, moldedR, n)}
-              fill={`url(#radarFill-${uid})`}
-              stroke="#c8f560"
-              strokeWidth="2.2"
-            />
-            {AXES.map((a, i) => {
-              const p = polar(cx, cy, maxR + 16, i, n);
-              const d = polar(cx, cy, moldedR[i], i, n);
-              return (
-                <g key={a.key}>
-                  <circle cx={d.x} cy={d.y} r="3.2" fill={a.color} />
-                  <text
-                    x={p.x}
-                    y={p.y + 3}
-                    textAnchor="middle"
-                    fill={a.color}
-                    fontSize="9"
-                    fontWeight="600"
-                  >
-                    {a.label}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-          <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10px] uppercase tracking-[0.12em]">
-            <span className="inline-flex items-center gap-1.5 text-sky-300">
-              <span className="inline-block h-2 w-2 rounded-sm bg-[#7dd3fc]" />
-              Stock frame
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-violet-300">
-              <span className="inline-block h-2 w-2 rounded-sm bg-[#a78bfa]" />
-              Healthy band
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-[var(--accent)]">
-              <span className="inline-block h-2 w-2 rounded-sm bg-[#c8f560]" />
-              This bag
-            </span>
-          </div>
+              {AXES.map((a, i) => {
+                const p = polar(cx, cy, maxR + 16, i, n);
+                const d = polar(cx, cy, moldedR[i], i, n);
+                return (
+                  <g key={a.key}>
+                    <circle cx={d.x} cy={d.y} r="3.2" fill={a.color} />
+                    <text
+                      x={p.x}
+                      y={p.y + 3}
+                      textAnchor="middle"
+                      fill={a.color}
+                      fontSize="9"
+                      fontWeight="600"
+                    >
+                      {a.label}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+            <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10px] uppercase tracking-[0.12em]">
+              <span className="inline-flex items-center gap-1.5 text-[var(--accent)]">
+                <span className="inline-block h-2 w-2 rounded-sm bg-[#c8f560]" />
+                This bag
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[var(--muted)]">
+                <span className="inline-block h-2 w-4 rounded-sm bg-[#c8f560] opacity-40" />
+                Healthy band
+              </span>
+            </div>
           </div>
 
           <div className="space-y-3">

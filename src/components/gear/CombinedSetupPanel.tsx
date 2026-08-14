@@ -323,6 +323,7 @@ export function CombinedSetupPanel({
                       power: insight.scores.power,
                     })
               }
+              faceClosedDeg={insight.forehand?.face.closedDeg ?? 8}
               label="Flight vs net — this setup"
             />
           ) : (
@@ -358,6 +359,7 @@ export function CombinedSetupPanel({
                       power: insight.scores.power,
                     })
               }
+              faceClosedDeg={insight.forehand?.face.closedDeg ?? 8}
               label="Where to strike with this mold"
             />
           ) : (

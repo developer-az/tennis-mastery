@@ -13,6 +13,9 @@ import {
   contactHeightWindowM,
   contactOutFrontM,
   BALL_RADIUS_M,
+  BASELINE_TO_NET_M,
+  formatFt,
+  M_TO_FT,
   NET_HEIGHT_M,
   type StrikeBand,
 } from "@/lib/equipment/ballFlight";
@@ -112,7 +115,150 @@ function pathTypeLabel(degrees: number): string {
 }
 
 function strikeWindowCopy(launchDeg: number, pathDeg: number, zone: StrikeZoneHint): string {
-  return `${zone.label} · ${zone.heightM.toFixed(2)} m high · ${zone.outFrontM.toFixed(2)} m in front · ${launchDeg.toFixed(1)}° leave · path ~${pathDeg.toFixed(0)}°.`;
+  return `${zone.label} · ${formatFt(zone.heightM)} high · ${formatFt(zone.outFrontM)} in front · ${launchDeg.toFixed(1)}° leave · path ~${pathDeg.toFixed(0)}°.`;
+}
+
+function FootRuler({
+  x,
+  sy,
+  loM,
+  hiM,
+  maxFt = 6,
+}: {
+  x: number;
+  sy: (m: number) => number;
+  loM: number;
+  hiM: number;
+  maxFt?: number;
+}) {
+  const ticks = Array.from({ length: maxFt + 1 }, (_, ft) => ft);
+  return (
+    <g>
+      <rect
+        x={x - 5}
+        y={sy(hiM)}
+        width="10"
+        height={Math.max(2, sy(loM) - sy(hiM))}
+        fill="rgba(200,245,96,0.22)"
+        rx="1"
+      />
+      <line x1={x} y1={sy(0)} x2={x} y2={sy(maxFt / M_TO_FT)} stroke="rgba(232,239,233,0.5)" strokeWidth="1.4" />
+      {ticks.map((ft) => {
+        const y = sy(ft / M_TO_FT);
+        return (
+          <g key={ft}>
+            <line x1={x} y1={y} x2={x + 7} y2={y} stroke="rgba(232,239,233,0.55)" strokeWidth="1" />
+            <text x={x - 3} y={y + 3} textAnchor="end" fill="#8aa396" fontSize="6.5">
+              {ft} ft
+            </text>
+          </g>
+        );
+      })}
+      <text x={x + 10} y={(sy(loM) + sy(hiM)) / 2 + 3} fill="#c8f560" fontSize="6.5">
+        sweet
+      </text>
+    </g>
+  );
+}
+
+/** Side-view player with legs, facing the net (+x). Scale only — not a measured height. */
+function PlayerSideFigure({
+  x,
+  sy,
+  ground,
+  handX,
+  handY,
+}: {
+  x: number;
+  sy: (m: number) => number;
+  ground: number;
+  handX: number;
+  handY: number;
+}) {
+  const hipY = sy(0.92);
+  const shoulderY = sy(1.4);
+  const headCy = sy(1.66);
+  return (
+    <g>
+      {/* Back leg */}
+      <path
+        d={`M ${x - 4} ${hipY} L ${x - 10} ${sy(0.5)} L ${x - 12} ${ground}`}
+        fill="none"
+        stroke="#2a4a3c"
+        strokeWidth="4.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Front leg */}
+      <path
+        d={`M ${x + 3} ${hipY} L ${x + 8} ${sy(0.48)} L ${x + 11} ${ground}`}
+        fill="none"
+        stroke="#3d6a55"
+        strokeWidth="4.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <ellipse cx={x - 12} cy={ground - 1.5} rx="6" ry="2.2" fill="#1e3329" />
+      <ellipse cx={x + 11} cy={ground - 1.5} rx="6.5" ry="2.2" fill="#1e3329" />
+      <line x1={x} y1={hipY} x2={x + 1} y2={shoulderY} stroke="#2a4a3c" strokeWidth="7" strokeLinecap="round" />
+      <circle cx={x + 1} cy={headCy} r="6.5" fill="#1e3329" stroke="rgba(232,239,233,0.22)" strokeWidth="0.8" />
+      {/* Hitting arm to the strings */}
+      <path
+        d={`M ${x + 3} ${shoulderY} Q ${(x + handX) / 2} ${shoulderY + 6}, ${handX} ${handY}`}
+        fill="none"
+        stroke="#3d6a55"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+      />
+    </g>
+  );
+}
+
+function ClosedGroundstrokeFace({
+  cx,
+  cy,
+  closedDeg,
+  uid,
+}: {
+  cx: number;
+  cy: number;
+  closedDeg: number;
+  uid: string;
+}) {
+  // Side view: oval is the stringbed. Closed = top of the hoop toward the net (+x) / ground.
+  return (
+    <g transform={`rotate(${closedDeg} ${cx} ${cy})`}>
+      <line
+        x1={cx - 2}
+        y1={cy + 10}
+        x2={cx - 14}
+        y2={cy + 22}
+        stroke="#2a2a2a"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+      />
+      <ellipse
+        cx={cx}
+        cy={cy}
+        rx="7"
+        ry="13"
+        fill="#0e0e0e"
+        stroke={`url(#frame3d-${uid})`}
+        strokeWidth="2.6"
+      />
+      {[-8, -4, 0, 4, 8].map((dy) => (
+        <line
+          key={dy}
+          x1={cx - 4}
+          y1={cy + dy}
+          x2={cx + 4}
+          y2={cy + dy}
+          stroke="rgba(210,210,200,0.55)"
+          strokeWidth="0.45"
+        />
+      ))}
+    </g>
+  );
 }
 
 /**
@@ -127,6 +273,7 @@ export function LaunchAngleVisual({
   power = 55,
   control = 55,
   flight = null,
+  faceClosedDeg = 8,
   label = "Strike mold → flight",
 }: {
   degrees: number;
@@ -136,6 +283,7 @@ export function LaunchAngleVisual({
   power?: number | null;
   control?: number | null;
   flight?: FlightMetrics | null;
+  faceClosedDeg?: number;
   label?: string;
 }) {
   const uid = useId().replace(/:/g, "");
@@ -165,10 +313,11 @@ export function LaunchAngleVisual({
     topspin,
   });
 
+  const xMin = -z.outFrontM - 0.35;
   const xMax = Math.max(traj.landX, traj.netX + 2.5, 16);
-  const yMax = Math.max(2.2, traj.apex.y * 1.12, z.heightM + 0.55);
-  const plot = { left: 36, right: 268, top: 16, ground: 152 };
-  const sx = (x: number) => plot.left + (x / xMax) * (plot.right - plot.left);
+  const yMax = Math.max(1.95, traj.apex.y * 1.08, 6.2 / M_TO_FT);
+  const plot = { left: 48, right: 292, top: 10, ground: 188 };
+  const sx = (x: number) => plot.left + ((x - xMin) / (xMax - xMin)) * (plot.right - plot.left);
   const sy = (y: number) => plot.ground - (y / yMax) * (plot.ground - plot.top);
   const poly = traj.points
     .filter((p) => p.x <= xMax)
@@ -180,13 +329,16 @@ export function LaunchAngleVisual({
   const leaveRad = (launch * Math.PI) / 180;
   const faceCx = sx(0);
   const faceCy = sy(z.heightM);
+  const baseX = sx(-z.outFrontM);
+  const launchLen = 26;
+  const closed = Math.max(0, Math.min(28, faceClosedDeg));
 
   return (
     <div className="relative">
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
         {label}
       </p>
-      <svg viewBox="0 0 280 168" className="h-auto w-full max-w-lg" aria-hidden>
+      <svg viewBox="0 0 300 210" className="h-auto w-full max-w-lg" aria-hidden>
         <defs>
           <linearGradient id={`ballArc-${uid}`} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#c8f560" stopOpacity="0.4" />
@@ -203,26 +355,25 @@ export function LaunchAngleVisual({
             <stop offset="100%" stopColor="#2c2c2c" />
           </linearGradient>
         </defs>
-        <rect x="8" y={plot.ground} width="264" height="12" fill={`url(#court-${uid})`} opacity="0.7" />
-        <line x1="12" y1={plot.ground} x2="272" y2={plot.ground} stroke="rgba(247,245,238,0.35)" strokeWidth="1.2" />
+        <rect x="8" y={plot.ground} width="284" height="14" fill={`url(#court-${uid})`} opacity="0.7" />
+        <line x1="12" y1={plot.ground} x2="292" y2={plot.ground} stroke="rgba(247,245,238,0.4)" strokeWidth="1.4" />
 
-        {[0, 0.5, NET_HEIGHT_M, 1.5, 2].map((m) => (
-          <g key={m}>
-            <line
-              x1="12"
-              y1={sy(m)}
-              x2="272"
-              y2={sy(m)}
-              stroke="rgba(232,239,233,0.08)"
-              strokeWidth="0.6"
-            />
-            <text x="10" y={sy(m) + 3} textAnchor="end" fill="#8aa396" fontSize="6.5">
-              {m === NET_HEIGHT_M ? "net" : `${m.toFixed(1)}m`}
-            </text>
-          </g>
-        ))}
+        <FootRuler x={22} sy={sy} loM={z.heightLoM} hiM={z.heightHiM} />
 
-        {/* Net — ITF 0.914 m tape */}
+        <line
+          x1={baseX}
+          y1={plot.ground - 16}
+          x2={baseX}
+          y2={plot.ground}
+          stroke="#f4f1ea"
+          strokeWidth="2"
+        />
+        <text x={baseX} y={plot.ground + 12} textAnchor="middle" fill="#f4f1ea" fontSize="6.5">
+          baseline
+        </text>
+
+        <PlayerSideFigure x={baseX + 6} sy={sy} ground={plot.ground} handX={faceCx - 8} handY={faceCy + 4} />
+
         <rect x={netPx - 3} y={tapeY} width="6" height={plot.ground - tapeY} fill="rgba(232,239,233,0.08)" />
         {Array.from({ length: 7 }).map((_, i) => (
           <line
@@ -237,6 +388,9 @@ export function LaunchAngleVisual({
         ))}
         <line x1={netPx} y1={tapeY} x2={netPx} y2={plot.ground} stroke="#d8d6cf" strokeWidth="1.5" />
         <line x1={netPx - 10} y1={tapeY} x2={netPx + 10} y2={tapeY} stroke="#f3f1ea" strokeWidth="2" />
+        <text x={netPx} y={tapeY - 5} textAnchor="middle" fill="#8aa396" fontSize="6.5">
+          net 3.0 ft
+        </text>
 
         <polyline
           points={poly}
@@ -247,39 +401,48 @@ export function LaunchAngleVisual({
           strokeLinejoin="round"
         />
 
-        {/* Groundstroke hoop — strings face the net, ball leaves the bed */}
-        <g transform={`rotate(${-launch} ${faceCx} ${faceCy})`}>
-          <line
-            x1={faceCx - 11}
-            y1={faceCy + 2}
-            x2={faceCx - 22}
-            y2={faceCy + 16}
-            stroke="#2a2a2a"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-          <ellipse
-            cx={faceCx}
-            cy={faceCy}
-            rx="5.5"
-            ry="11"
-            fill="#0e0e0e"
-            stroke={`url(#frame3d-${uid})`}
-            strokeWidth="2.4"
-          />
-          {[-6, -2, 2, 6].map((dy) => (
-            <line
-              key={dy}
-              x1={faceCx - 3.2}
-              y1={faceCy + dy}
-              x2={faceCx + 3.2}
-              y2={faceCy + dy}
-              stroke="rgba(210,210,200,0.5)"
-              strokeWidth="0.4"
-            />
-          ))}
-        </g>
-        <circle cx={faceCx + Math.cos(leaveRad) * 7} cy={faceCy - Math.sin(leaveRad) * 7} r="3.1" fill="#d4e054" />
+        <ClosedGroundstrokeFace cx={faceCx} cy={faceCy} closedDeg={closed} uid={uid} />
+
+        <line
+          x1={faceCx}
+          y1={faceCy}
+          x2={faceCx + launchLen}
+          y2={faceCy}
+          stroke="#8aa396"
+          strokeWidth="1"
+          strokeDasharray="3 2"
+        />
+        <line
+          x1={faceCx}
+          y1={faceCy}
+          x2={faceCx + Math.cos(leaveRad) * launchLen}
+          y2={faceCy - Math.sin(leaveRad) * launchLen}
+          stroke="#c8f560"
+          strokeWidth="1.6"
+        />
+        <path
+          d={`M ${faceCx + 16} ${faceCy} A 16 16 0 0 ${launch > 0 ? 0 : 1} ${faceCx + Math.cos(leaveRad) * 16} ${faceCy - Math.sin(leaveRad) * 16}`}
+          fill="none"
+          stroke="#c8f560"
+          strokeWidth="1.2"
+        />
+        <text
+          x={faceCx + 20}
+          y={faceCy - Math.sin(leaveRad) * 10 - 4}
+          fill="#c8f560"
+          fontSize="7"
+        >
+          {launch.toFixed(1)}° leave
+        </text>
+        <text x={faceCx + 10} y={faceCy + 22} fill="#f4a261" fontSize="6.5">
+          {closed.toFixed(1)}° closed
+        </text>
+        <circle
+          cx={faceCx + Math.cos(leaveRad) * 9}
+          cy={faceCy - Math.sin(leaveRad) * 9}
+          r="3.1"
+          fill="#d4e054"
+        />
 
         <line
           x1={netPx + 8}
@@ -292,25 +455,24 @@ export function LaunchAngleVisual({
         <text x={netPx + 12} y={(ballAtNetY + tapeY) / 2 + 3} fill="#7dd3fc" fontSize="7">
           +{traj.netClearIn.toFixed(1)}″
         </text>
-        <circle cx={sx(traj.apex.x)} cy={sy(traj.apex.y)} r="2.2" fill="#f4a261" />
         {traj.landX <= xMax ? (
           <circle cx={sx(traj.landX)} cy={sy(BALL_RADIUS_M)} r="3.2" fill="none" stroke="#f4a261" strokeWidth="0.8" />
         ) : null}
-        <text x={sx(traj.netX)} y={plot.ground + 11} textAnchor="middle" fill="#8aa396" fontSize="6.5">
-          net {traj.netX.toFixed(1)} m
+        <text x={netPx} y={plot.ground + 12} textAnchor="middle" fill="#8aa396" fontSize="6.5">
+          {formatFt(BASELINE_TO_NET_M, 0)} from baseline
         </text>
       </svg>
 
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
         {launch.toFixed(1)}° leave
         <span className="ml-2 text-base text-[var(--muted)]">
-          · +{traj.netClearIn.toFixed(1)}″ over 0.914 m tape
+          · +{traj.netClearIn.toFixed(1)}″ over a 3.0 ft net
         </span>
       </p>
       <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-        Ball center at the net is {traj.heightAtNet.toFixed(2)} m (
-        {(traj.heightAtNet - NET_HEIGHT_M - BALL_RADIUS_M).toFixed(2)} m / {traj.netClearIn.toFixed(1)}″ of air
-        over the tape). Path from the strings at {z.heightM.toFixed(2)} m, {launch.toFixed(1)}° leave — not a sketch.
+        Contact {formatFt(z.outFrontM)} in front of the baseline at {formatFt(z.heightM)}. Face {closed.toFixed(1)}°
+        closed. Ball center at the net is {formatFt(traj.heightAtNet)} ({traj.netClearIn.toFixed(1)}″ of air over the
+        tape).
       </p>
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -372,10 +534,12 @@ function FlightGauge({
 export function SwingPathVisual({
   degrees,
   zone,
+  faceClosedDeg = 8,
   label = "Where to strike on this frame",
 }: {
   degrees: number;
   zone?: StrikeZoneHint;
+  faceClosedDeg?: number;
   label?: string;
 }) {
   const uid = useId().replace(/:/g, "");
@@ -383,93 +547,54 @@ export function SwingPathVisual({
   const z = zone ?? strikeZoneForFrame({ idealSwingPathDeg: deg });
   const type = pathTypeLabel(deg);
   const steep = deg / 40;
+  const closed = Math.max(0, Math.min(28, faceClosedDeg));
 
-  const ground = 168;
-  const pxPerM = 92;
-  const torsoX = 48;
-  const sx = (m: number) => torsoX + m * 155;
+  const ground = 188;
+  const yMax = 1.95;
+  const pxPerM = (ground - 12) / yMax;
+  const torsoX = 70;
+  const sx = (m: number) => torsoX + m * 140;
   const sy = (m: number) => ground - m * pxPerM;
   const cx = sx(z.outFrontM);
   const cy = sy(z.heightM);
-  const rx = Math.max(10, ((z.outFrontHiM - z.outFrontLoM) / 2) * 155);
-  const ry = Math.max(12, ((z.heightHiM - z.heightLoM) / 2) * pxPerM);
-  const pathStartY = sy(Math.max(0.35, z.heightLoM - 0.18));
-  const pathEndX = sx(z.outFrontM + 0.42);
-  const pathEndY = sy(z.heightHiM + 0.12 + steep * 0.12);
+  const rx = Math.max(9, ((z.outFrontHiM - z.outFrontLoM) / 2) * 140);
+  const ry = Math.max(11, ((z.heightHiM - z.heightLoM) / 2) * pxPerM);
 
   return (
     <div className="relative">
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
         {label}
       </p>
-      <svg viewBox="0 0 240 190" className="h-auto w-full max-w-sm" aria-hidden>
+      <svg viewBox="0 0 260 210" className="h-auto w-full max-w-sm" aria-hidden>
         <defs>
           <linearGradient id={`pathStroke-${uid}`} x1="0" y1="1" x2="1" y2="0">
             <stop offset="0%" stopColor="#f4a261" stopOpacity="0.25" />
             <stop offset="55%" stopColor="#f4a261" stopOpacity="1" />
             <stop offset="100%" stopColor="#c8f560" stopOpacity="0.95" />
           </linearGradient>
-          <linearGradient id={`torso-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2a4a3c" />
-            <stop offset="100%" stopColor="#152820" />
+          <linearGradient id={`frame3d-${uid}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#3a3a3a" />
+            <stop offset="100%" stopColor="#141414" />
           </linearGradient>
         </defs>
-        <line x1="18" y1={ground} x2="226" y2={ground} stroke="rgba(232,239,233,0.28)" strokeWidth="1.2" />
-        <text x="20" y={ground + 12} fill="#8aa396" fontSize="7">
-          0 m
+        <line x1="18" y1={ground} x2="246" y2={ground} stroke="rgba(232,239,233,0.35)" strokeWidth="1.4" />
+        <text x="72" y={ground + 12} fill="#8aa396" fontSize="6.5">
+          0 ft
         </text>
 
-        {/* Height ticks */}
-        {[0.5, 1, 1.5].map((m) => (
-          <g key={m}>
-            <line
-              x1="18"
-              y1={sy(m)}
-              x2="226"
-              y2={sy(m)}
-              stroke="rgba(232,239,233,0.08)"
-            />
-            <text x="16" y={sy(m) + 3} textAnchor="end" fill="#8aa396" fontSize="6.5">
-              {m.toFixed(1)}
-            </text>
-          </g>
-        ))}
+        <FootRuler x={22} sy={sy} loM={z.heightLoM} hiM={z.heightHiM} />
 
-        {/* Player */}
-        <ellipse cx={torsoX} cy={sy(0.95)} rx="11" ry="28" fill={`url(#torso-${uid})`} />
-        <circle cx={torsoX} cy={sy(1.55)} r="8" fill="#1e3329" stroke="rgba(232,239,233,0.2)" strokeWidth="0.8" />
-        <text x={torsoX} y={sy(1.78)} textAnchor="middle" fill="#8aa396" fontSize="7">
-          you
-        </text>
+        <PlayerSideFigure x={torsoX} sy={sy} ground={ground} handX={cx - 10} handY={cy + 6} />
 
-        {/* Out-front radius */}
         <path
-          d={`M ${torsoX + 14} ${ground - 4} A ${sx(z.outFrontM) - torsoX} ${sx(z.outFrontM) - torsoX} 0 0 1 ${sx(z.outFrontHiM)} ${ground - 4}`}
+          d={`M ${torsoX + 14} ${ground - 3} A ${sx(z.outFrontM) - torsoX} 28 0 0 1 ${sx(z.outFrontHiM)} ${ground - 3}`}
           fill="none"
           stroke="#7dd3fc"
-          strokeWidth="1.3"
+          strokeWidth="1.4"
         />
-        <line
-          x1={torsoX + 12}
-          y1={ground + 6}
-          x2={cx}
-          y2={ground + 6}
-          stroke="#7dd3fc"
-          strokeWidth="1"
-        />
+        <line x1={torsoX + 8} y1={ground + 6} x2={cx} y2={ground + 6} stroke="#7dd3fc" strokeWidth="1" />
         <text x={(torsoX + cx) / 2} y={ground + 16} textAnchor="middle" fill="#7dd3fc" fontSize="7">
-          {z.outFrontM.toFixed(2)} m in front
-        </text>
-
-        {/* Height dimension */}
-        <line x1={cx + rx + 10} y1={ground} x2={cx + rx + 10} y2={cy} stroke="#c8f560" strokeWidth="1" />
-        <text
-          x={cx + rx + 14}
-          y={(ground + cy) / 2}
-          fill="#c8f560"
-          fontSize="7"
-        >
-          {z.heightM.toFixed(2)} m
+          {formatFt(z.outFrontM)} in front
         </text>
 
         <ellipse
@@ -481,41 +606,31 @@ export function SwingPathVisual({
           stroke="#c8f560"
           strokeWidth="1.8"
         />
-        <text x={cx} y={cy - ry - 6} textAnchor="middle" fill="#c8f560" fontSize="8" fontWeight="600">
-          {z.primary} window
+        <text x={cx} y={cy - ry - 8} textAnchor="middle" fill="#c8f560" fontSize="7.5" fontWeight="600">
+          {z.primary} · {formatFt(z.heightM)}
         </text>
 
         <path
-          d={`M ${torsoX + 8} ${pathStartY}
+          d={`M ${torsoX + 10} ${sy(Math.max(0.4, z.heightLoM - 0.15))}
               Q ${sx(z.outFrontM * 0.45)} ${sy(z.heightLoM)}, ${cx} ${cy}
-              T ${pathEndX} ${pathEndY}`}
+              T ${sx(z.outFrontM + 0.28)} ${sy(z.heightHiM + 0.08 + steep * 0.1)}`}
           fill="none"
           stroke={`url(#pathStroke-${uid})`}
-          strokeWidth="2.6"
+          strokeWidth="2.4"
           strokeLinecap="round"
         />
-        <ellipse
-          cx={cx + 10}
-          cy={cy}
-          rx="8"
-          ry="12"
-          fill="#111"
-          stroke="#3a3a3a"
-          strokeWidth="2"
-          transform={`rotate(${-16 - steep * 18} ${cx + 10} ${cy})`}
-        />
-        <circle cx={cx} cy={cy} r="3.2" fill="#d4e054" />
+        <ClosedGroundstrokeFace cx={cx} cy={cy} closedDeg={closed} uid={uid} />
+        <circle cx={cx + 6} cy={cy} r="3" fill="#d4e054" />
       </svg>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
-        {z.heightM.toFixed(2)} m · {z.outFrontM.toFixed(2)} m out
+        {formatFt(z.heightM)} · {formatFt(z.outFrontM)} out
       </p>
       <p className="mt-1 text-sm text-[var(--foreground)]/85">
-        {z.label} · path ~{deg.toFixed(0)}° · {type}
+        {z.label} · path ~{deg.toFixed(0)}° · {type} · face {closed.toFixed(1)}° closed
       </p>
       <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-        Hit in a {((z.heightHiM - z.heightLoM) * 100).toFixed(0)} cm height band (
-        {z.heightLoM.toFixed(2)}–{z.heightHiM.toFixed(2)} m) and {z.outFrontLoM.toFixed(2)}–
-        {z.outFrontHiM.toFixed(2)} m in front of the torso. {z.detail}
+        Sweet-spot window {formatFt(z.heightLoM)}–{formatFt(z.heightHiM)} high and {formatFt(z.outFrontLoM)}–
+        {formatFt(z.outFrontHiM)} in front of the torso. {z.detail}
       </p>
     </div>
   );
@@ -556,7 +671,7 @@ export function StrikeCoachingBullets({
 
   bullets.push(strikeWindowCopy(launch, path, z));
   bullets.push(
-    `Take it ${z.outFrontM.toFixed(2)} m in front (${z.outFrontLoM.toFixed(2)}–${z.outFrontHiM.toFixed(2)} m) at ${z.heightM.toFixed(2)} m (${z.primary}; ${z.heightLoM.toFixed(2)}–${z.heightHiM.toFixed(2)} m).`,
+    `Take it ${formatFt(z.outFrontM)} in front (${formatFt(z.outFrontLoM)}–${formatFt(z.outFrontHiM)}) at ${formatFt(z.heightM)} (${z.primary}; ${formatFt(z.heightLoM)}–${formatFt(z.heightHiM)}).`,
   );
   bullets.push(
     `${launch.toFixed(1)}° leave off the strings. Path ~${path.toFixed(0)}° is the low-to-high through that window. Into the net = late or low; long = face open or bed soft.`,

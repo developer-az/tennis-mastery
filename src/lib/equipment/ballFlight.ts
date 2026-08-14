@@ -14,6 +14,15 @@ export const NET_HEIGHT_M = 0.914;
 export const BASELINE_TO_NET_M = 11.887;
 export const BALL_RADIUS_M = 0.0335;
 export const G_M_S2 = 9.81;
+export const M_TO_FT = 3.280839895;
+
+export function mToFt(m: number): number {
+  return m * M_TO_FT;
+}
+
+export function formatFt(m: number, digits = 1): string {
+  return `${mToFt(m).toFixed(digits)} ft`;
+}
 
 export type TrajectoryPoint = { x: number; y: number };
 
