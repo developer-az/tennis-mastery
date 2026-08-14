@@ -16,9 +16,7 @@ import {
 import { useGearStore } from "@/store/gearStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame } from "./RacketVisuals";
 import { MoldTowardPanel } from "./MoldTowardPanel";
-
-const VB_W = 200;
-const VB_H = 280;
+import { LeadTapeRacketDiagram } from "./LeadTapeRacketDiagram";
 
 const ZONE_ORDER: LeadTapeZone[] = ["tip", "twelve", "three", "nine", "throat", "handle"];
 
@@ -190,82 +188,13 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
           })}
         </div>
 
-        <div className="relative mx-auto max-w-sm">
-          <svg
-            viewBox={`0 0 ${VB_W} ${VB_H}`}
-            className="h-auto w-full"
-            role="img"
-            aria-label="Racket lead tape diagram"
-          >
-            <defs>
-              <linearGradient id="ltFrame" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2d6a4f" />
-                <stop offset="100%" stopColor="#1b4332" />
-              </linearGradient>
-            </defs>
-            <rect width={VB_W} height={VB_H} fill="#0a1410" rx="4" />
-            <ellipse
-              cx="100"
-              cy="88"
-              rx="58"
-              ry="70"
-              fill="#0d1f18"
-              stroke="url(#ltFrame)"
-              strokeWidth="8"
-            />
-            <path
-              d="M 90 150 L 92 210 L 108 210 L 110 150 Z"
-              fill="#1b4332"
-              stroke="#2d6a4f"
-              strokeWidth="2"
-            />
-            <rect
-              x="93"
-              y="208"
-              width="14"
-              height="52"
-              rx="3"
-              fill="#152820"
-              stroke="#c8f560"
-              strokeWidth="1"
-            />
-
-            {ZONE_ORDER.map((id) => {
-              const z = LEAD_TAPE_ZONES[id];
-              const massHere = pieces
-                .filter((p) => p.zone === id)
-                .reduce((n, p) => n + p.massG, 0);
-              return (
-                <g
-                  key={id}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => addAtZone(id)}
-                >
-                  <circle
-                    cx={z.x * VB_W}
-                    cy={z.y * VB_H}
-                    r={massHere > 0 ? 14 : 11}
-                    fill={massHere > 0 ? "rgba(200,245,96,0.35)" : "rgba(200,245,96,0.08)"}
-                    stroke={selectedZone === id ? "#c8f560" : "rgba(200,245,96,0.45)"}
-                    strokeWidth={selectedZone === id ? 2 : 1}
-                  />
-                  <text
-                    x={z.x * VB_W}
-                    y={z.y * VB_H + 3}
-                    textAnchor="middle"
-                    fill="#e8efe9"
-                    fontSize="7"
-                    fontWeight="600"
-                  >
-                    {massHere > 0 ? `${massHere}g` : id.slice(0, 3)}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-          <p className="mt-2 text-center text-xs text-[var(--muted)]">
-            Tap a highlighted zone on the diagram or use the buttons above to place tape.
-          </p>
+        <div className="relative mx-auto w-full max-w-md">
+          <LeadTapeRacketDiagram
+            pieces={pieces}
+            selectedZone={selectedZone}
+            interactive
+            onZoneClick={addAtZone}
+          />
         </div>
 
         {hasTape ? (
