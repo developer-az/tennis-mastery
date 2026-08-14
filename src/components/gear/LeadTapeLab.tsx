@@ -71,6 +71,7 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
       swingweight: effect.swingweight,
       tipG,
       handleG,
+      sideG,
     });
   }, [baseRacket, effect]);
 

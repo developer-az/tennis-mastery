@@ -33,10 +33,16 @@ function round1(v: number): number {
 }
 
 /**
- * Lead-tape → score shifts (coaching-grade).
- * Tip/12: plow + power, flatter leave, arm tax.
- * 3/9: twist stability → control.
- * Handle: whip, slightly less plow, easier steep path.
+ * Lead-tape → score shifts (coaching-grade, same map as Gear Lab).
+ *
+ * Physics basis (Brody; Cross & Lindsey / Tennis Warehouse University):
+ * - Swingweight scales ~ m·r² about the handle. Tip/12 sit ~65–68 cm from the
+ *   butt → largest SW and plow per gram, slightly flatter leave, more arm load.
+ * - Twistweight / polar MOI: 3 & 9 sit far from the long axis, so the hoop
+ *   resists twisting on off-center hits (face stays through the ball).
+ * - Handle mass is near the rotation axis: recoil weight up, SW barely moves,
+ *   balance goes head-light → faster prep, easier low-to-high path.
+ * - Throat/yoke sits near the balance point: solid without a SW spike.
  */
 export function scoreDeltasFromTape(input: {
   tipG: number;
@@ -65,6 +71,8 @@ export function computeFlightMetrics(input: {
   swingweight: number | null;
   tipG?: number;
   handleG?: number;
+  /** 3 + 9 grams — polar stability through contact (optional). */
+  sideG?: number;
 }): FlightMetrics {
   const launch = clamp(input.launchDeg, 1.5, 16);
   const path = clamp(input.pathDeg, 4, 48);
@@ -74,9 +82,10 @@ export function computeFlightMetrics(input: {
   const sw = input.swingweight ?? 315;
   const tipG = input.tipG ?? 0;
   const handleG = input.handleG ?? 0;
+  const sideG = input.sideG ?? 0;
 
   const plow = clamp(
-    Math.round(pw * 0.45 + (sw - 300) * 0.55 + tipG * 2.2 - handleG * 1.1),
+    Math.round(pw * 0.45 + (sw - 300) * 0.55 + tipG * 2.2 - handleG * 1.1 + sideG * 0.7),
     5,
     98,
   );

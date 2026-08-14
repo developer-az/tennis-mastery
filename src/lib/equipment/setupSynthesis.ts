@@ -360,6 +360,7 @@ export function synthesizeCombinedSetup(
           swingweight: effectiveSw,
           tipG: tapeTipG,
           handleG: tapeHandleG,
+          sideG: tapeSideG,
         })
       : null;
 
@@ -411,6 +412,7 @@ export function synthesizeCombinedSetup(
     currentSw: effectiveSw,
     currentTipG: tapeTipG,
     currentHandleG: tapeHandleG,
+    currentSideG: tapeSideG,
     armFriendly: opts?.armFriendly,
   });
 
