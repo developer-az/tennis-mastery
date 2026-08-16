@@ -275,6 +275,7 @@ export function LaunchAngleVisual({
   flight = null,
   faceClosedDeg = 8,
   label = "Strike mold → flight",
+  compact = false,
 }: {
   degrees: number;
   pathDeg?: number;
@@ -285,6 +286,8 @@ export function LaunchAngleVisual({
   flight?: FlightMetrics | null;
   faceClosedDeg?: number;
   label?: string;
+  /** Hide gauges + long copy when embedded in a larger story. */
+  compact?: boolean;
 }) {
   const uid = useId().replace(/:/g, "");
   const launch = Math.max(1.5, Math.min(16, flight?.launchDeg ?? degrees));
@@ -463,29 +466,37 @@ export function LaunchAngleVisual({
         </text>
       </svg>
 
-      <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
-        {launch.toFixed(1)}° leave
-        <span className="ml-2 text-base text-[var(--muted)]">
-          · +{traj.netClearIn.toFixed(1)}″ over a 3.0 ft net
-        </span>
-      </p>
-      <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-        Contact {formatFt(z.outFrontM)} in front of the baseline at {formatFt(z.heightM)}. Face {closed.toFixed(1)}°
-        closed. Ball center at the net is {formatFt(traj.heightAtNet)} ({traj.netClearIn.toFixed(1)}″ of air over the
-        tape).
-      </p>
-
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <FlightGauge label="Plow" value={plow} color="#e9c46a" hint="Mass through hit" />
-        <FlightGauge label="Topspin" value={topspin} color="#7dd3fc" hint="Drop after tape" />
-        <FlightGauge
-          label="Launch"
-          value={clampNum(Math.round(launch * 6.2), 8, 98)}
-          color="#c8f560"
-          hint={`${launch.toFixed(1)}° leave`}
-        />
-        <FlightGauge label="Depth" value={depth} color="#f4a261" hint={`Fly risk ${flyRisk}`} />
-      </div>
+      {!compact ? (
+        <>
+          <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
+            {launch.toFixed(1)}° leave
+            <span className="ml-2 text-base text-[var(--muted)]">
+              · +{traj.netClearIn.toFixed(1)}″ over a 3.0 ft net
+            </span>
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+            Contact {formatFt(z.outFrontM)} in front of the baseline at {formatFt(z.heightM)}. Face{" "}
+            {closed.toFixed(1)}° closed. Ball center at the net is {formatFt(traj.heightAtNet)} (
+            {traj.netClearIn.toFixed(1)}″ of air over the tape).
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <FlightGauge label="Plow" value={plow} color="#e9c46a" hint="Mass through hit" />
+            <FlightGauge label="Topspin" value={topspin} color="#7dd3fc" hint="Drop after tape" />
+            <FlightGauge
+              label="Launch"
+              value={clampNum(Math.round(launch * 6.2), 8, 98)}
+              color="#c8f560"
+              hint={`${launch.toFixed(1)}° leave`}
+            />
+            <FlightGauge label="Depth" value={depth} color="#f4a261" hint={`Fly risk ${flyRisk}`} />
+          </div>
+        </>
+      ) : (
+        <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
+          {launch.toFixed(1)}° leave · +{traj.netClearIn.toFixed(1)}″ clear · apex {formatFt(traj.apex.y)} · land ~
+          {formatFt(traj.landX)} past contact
+        </p>
+      )}
     </div>
   );
 }
@@ -536,11 +547,13 @@ export function SwingPathVisual({
   zone,
   faceClosedDeg = 8,
   label = "Where to strike on this frame",
+  compact = false,
 }: {
   degrees: number;
   zone?: StrikeZoneHint;
   faceClosedDeg?: number;
   label?: string;
+  compact?: boolean;
 }) {
   const uid = useId().replace(/:/g, "");
   const deg = Math.max(5, Math.min(40, degrees));
@@ -628,10 +641,17 @@ export function SwingPathVisual({
       <p className="mt-1 text-sm text-[var(--foreground)]/85">
         {z.label} · path ~{deg.toFixed(0)}° · {type} · face {closed.toFixed(1)}° closed
       </p>
-      <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-        Sweet-spot window {formatFt(z.heightLoM)}–{formatFt(z.heightHiM)} high and {formatFt(z.outFrontLoM)}–
-        {formatFt(z.outFrontHiM)} in front of the torso. {z.detail}
-      </p>
+      {!compact ? (
+        <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+          Sweet-spot window {formatFt(z.heightLoM)}–{formatFt(z.heightHiM)} high and {formatFt(z.outFrontLoM)}–
+          {formatFt(z.outFrontHiM)} in front of the torso. {z.detail}
+        </p>
+      ) : (
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Window {formatFt(z.heightLoM)}–{formatFt(z.heightHiM)} · {formatFt(z.outFrontLoM)}–
+          {formatFt(z.outFrontHiM)} out
+        </p>
+      )}
     </div>
   );
 }
@@ -836,8 +856,10 @@ export function ForehandGripBevelVisual({
  */
 export function FaceAngleAtContactVisual({
   advice,
+  compact = false,
 }: {
   advice: ForehandMoldAdvice;
+  compact?: boolean;
 }) {
   const uid = useId().replace(/:/g, "");
   const closed = advice.face.closedDeg;
@@ -992,12 +1014,21 @@ export function FaceAngleAtContactVisual({
           · ~{advice.face.closedDeg.toFixed(1)}° past vertical
         </span>
       </p>
-      <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{advice.face.detail}</p>
-      <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">
-        Pair with {advice.prefersHeight}-high contact on the{" "}
-        <span className="text-[var(--accent)]">{advice.gripLabel.toLowerCase()}</span>.{" "}
-        {advice.avoid}
-      </p>
+      {!compact ? (
+        <>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{advice.face.detail}</p>
+          <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">
+            Pair with {advice.prefersHeight}-high contact on the{" "}
+            <span className="text-[var(--accent)]">{advice.gripLabel.toLowerCase()}</span>.{" "}
+            {advice.avoid}
+          </p>
+        </>
+      ) : (
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Lime = strings (hits ball). Amber = frame back. Pair with {advice.prefersHeight}-high contact ·{" "}
+          {advice.gripLabel.toLowerCase()}.
+        </p>
+      )}
     </div>
   );
 }

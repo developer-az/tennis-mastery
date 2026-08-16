@@ -163,6 +163,8 @@ export function SetupFlightCanvas({
       }),
     [launchDeg, flight.netClearIn, flight.topspin, contactHeightM, outFrontM],
   );
+  void pathDeg;
+  void faceClosedDeg;
 
   const contactZ = courtZ(outFrontM);
 
@@ -208,12 +210,11 @@ export function SetupFlightCanvas({
       </Canvas>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#07140f] via-[#07140f]/70 to-transparent px-3 pb-2.5 pt-10">
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
-          Clean-hit flight — from the baseline
+          Court view — clean hit
         </p>
         <p className="mt-0.5 text-xs tabular-nums text-[var(--muted)]">
-          Hit {formatFt(outFrontM)} in front of the baseline · {launchDeg.toFixed(1)}° leave · face{" "}
-          {faceClosedDeg.toFixed(1)}° closed (see side view) · path {pathDeg.toFixed(0)}° · +
-          {traj.netClearIn.toFixed(1)}″ over a 3.0 ft net
+          Baseline → contact {formatFt(outFrontM)} out · {launchDeg.toFixed(1)}° leave · +{traj.netClearIn.toFixed(1)}″
+          over net
         </p>
       </div>
     </div>

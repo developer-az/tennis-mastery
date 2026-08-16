@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import type { GripProfile, RacketProfile, StringProfile } from "@/types/equipment";
 import { usePlayerStore } from "@/store/playerStore";
 import { hasAnyGear, setupSummary, useGearStore } from "@/store/gearStore";
@@ -12,24 +11,11 @@ import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { fhGripLabel, gripPreviewLine } from "@/lib/player/onboarding";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
 import { InBandImproveSection } from "@/components/gear/InBandImproveSection";
-import { LaunchAngleVisual, SwingPathVisual, strikeZoneForFrame } from "@/components/gear/RacketVisuals";
-import { SetupStatsChart } from "./SetupStatsChart";
+import { strikeZoneForFrame } from "@/components/gear/RacketVisuals";
+import { SetupVisualStory } from "./SetupVisualStory";
 import { BagTab } from "./BagTab";
 import { AfterPlayTab } from "./AfterPlayTab";
 import { HistoryTab } from "./HistoryTab";
-import { LeadTapeRacketDiagram } from "@/components/gear/LeadTapeRacketDiagram";
-
-const SetupFlightCanvas = dynamic(
-  () => import("./SetupFlightCanvas").then((m) => m.SetupFlightCanvas),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-[280px] items-center justify-center rounded-md bg-[#07140f] text-xs text-[var(--muted)] md:h-[340px]">
-        Loading flight…
-      </div>
-    ),
-  },
-);
 
 type HubTab = "today" | "bag" | "play" | "history";
 
@@ -159,12 +145,8 @@ export function YouHub({
 
       <div className="mt-8">
         {tab === "today" && (
-          <div className="space-y-5">
-            <p className="text-xs leading-relaxed text-[var(--muted)]">
-              Coaching-grade models, not Hawk-Eye. Logged feel outweighs spec math.
-            </p>
-
-            <div className="flex flex-wrap gap-2">
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center gap-2">
               {profile.grips.forehand && (
                 <span className="rounded-md bg-[var(--accent-dim)] px-2.5 py-1 text-xs text-[var(--accent)]">
                   FH {fhGripLabel(profile.grips.forehand)}
@@ -184,89 +166,45 @@ export function YouHub({
                   {c.label}
                 </span>
               ))}
+              <p className="text-xs text-[var(--muted)]">
+                Coaching models · logged feel outweighs spec math
+              </p>
             </div>
-            {preview && <p className="text-sm text-[var(--muted)]">{preview}</p>}
+            {preview ? <p className="text-sm text-[var(--muted)]">{preview}</p> : null}
 
-            <div className="border border-[var(--line)] bg-[var(--panel)]/70 px-4 py-4">
-              <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">Bag</p>
-              <p className="mt-1 text-sm">{hasAnyGear(setup) ? setupSummary(setup) : "No bag yet"}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" onClick={() => setTab("bag")} className="text-xs text-[var(--accent)]">
-                  Tweak bag
-                </button>
-                <Link href="/lab" className="text-xs text-[var(--accent)]">
-                  Open Lab
-                </Link>
-                <Link href="/gear?tab=lead-tape" className="text-xs text-[var(--accent)]">
-                  Tape lab
-                </Link>
+            <div className="border border-[var(--line)] bg-[var(--panel)]/70 px-4 py-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">Bag</p>
+                  <p className="mt-0.5 text-sm">{hasAnyGear(setup) ? setupSummary(setup) : "No bag yet"}</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <button type="button" onClick={() => setTab("bag")} className="text-xs text-[var(--accent)]">
+                    Tweak bag
+                  </button>
+                  <Link href="/lab" className="text-xs text-[var(--accent)]">
+                    Lab
+                  </Link>
+                  <Link href="/gear?tab=lead-tape" className="text-xs text-[var(--accent)]">
+                    Tape
+                  </Link>
+                </div>
               </div>
             </div>
 
             {insight.hasAny ? (
-              <>
-                <SetupStatsChart
-                  scores={insight.scores}
-                  stock={insight.stockScores}
-                  role={insight.playstyle}
-                  flight={insight.flight}
-                />
-
-                {insight.launchAngleDeg != null && insight.flight ? (
-                  <SetupFlightCanvas
-                    launchDeg={insight.launchAngleDeg}
-                    pathDeg={insight.swingPathDeg ?? 22}
-                    flight={insight.flight}
-                    contactHeightM={strikeZone.heightM}
-                    outFrontM={strikeZone.outFrontM}
-                    faceClosedDeg={insight.forehand?.face.closedDeg ?? 8}
-                  />
-                ) : null}
-
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-                  {insight.launchAngleDeg != null ? (
-                    <div className="border border-[var(--line)] bg-[var(--panel)]/80 p-4 md:p-5">
-                      <LaunchAngleVisual
-                        degrees={insight.launchAngleDeg}
-                        pathDeg={insight.swingPathDeg ?? undefined}
-                        spin={insight.scores.spin}
-                        power={insight.scores.power}
-                        control={insight.scores.control}
-                        flight={insight.flight}
-                        zone={strikeZone}
-                        faceClosedDeg={insight.forehand?.face.closedDeg ?? 8}
-                        label="Flight vs net — this setup"
-                      />
-                    </div>
-                  ) : null}
-                  <div className="space-y-4">
-                    {insight.swingPathDeg != null ? (
-                      <div className="border border-[var(--line)] bg-[var(--panel)]/80 p-4 md:p-5">
-                        <SwingPathVisual
-                          degrees={insight.swingPathDeg}
-                          zone={strikeZone}
-                          faceClosedDeg={insight.forehand?.face.closedDeg ?? 8}
-                          label="Where to strike"
-                        />
-                      </div>
-                    ) : null}
-                    {insight.hasRacket ? (
-                      <div className="border border-[var(--line)] bg-[var(--panel)]/80 p-3">
-                        <LeadTapeRacketDiagram
-                          pieces={setup.leadTape?.pieces ?? []}
-                          interactive={false}
-                        />
-                        <Link
-                          href="/gear?tab=lead-tape"
-                          className="mt-2 inline-block px-1 text-xs text-[var(--accent)]"
-                        >
-                          Customize tape →
-                        </Link>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </>
+              <SetupVisualStory
+                scores={insight.scores}
+                stock={insight.stockScores}
+                role={insight.playstyle}
+                flight={insight.flight}
+                launchDeg={insight.launchAngleDeg}
+                pathDeg={insight.swingPathDeg}
+                zone={strikeZone}
+                forehand={insight.forehand}
+                pieces={setup.leadTape?.pieces ?? []}
+                hasRacket={insight.hasRacket}
+              />
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <Stat label="Launch" value="—" />
