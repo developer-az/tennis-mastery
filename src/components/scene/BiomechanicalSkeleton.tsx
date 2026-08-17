@@ -267,8 +267,9 @@ export function BiomechanicalSkeleton({
     if (m.trailAnkle) m.trailAnkle.scale.setScalar(0.038);
 
     if (m.leadFoot) {
-      // Toes along hip→ankle on the court (stance line), so feet stand under the hips
+      // Toes toward the net with a hint of the plant line — not spun with the hips
       _dir.set(p.leadAnkle.x - p.leadHip.x, 0, p.leadAnkle.z - p.leadHip.z);
+      _dir.z -= 0.55;
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.leadFoot.position.set(
@@ -281,6 +282,7 @@ export function BiomechanicalSkeleton({
     }
     if (m.trailFoot) {
       _dir.set(p.trailAnkle.x - p.trailHip.x, 0, p.trailAnkle.z - p.trailHip.z);
+      _dir.z -= 0.4;
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.trailFoot.position.set(
