@@ -64,10 +64,8 @@ export function SetupVisualStory({
   return (
     <div className="space-y-6">
       {/* 0 — one readout for the whole story */}
-      <section className="border border-[var(--line)] bg-[var(--panel)]/90 p-4 md:p-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
-          This mold at a glance
-        </p>
+      <section className="sf-panel p-4 md:p-5">
+        <p className="sf-kicker">This mold at a glance</p>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <Readout
             label="Leave"
@@ -102,7 +100,7 @@ export function SetupVisualStory({
 
       {/* 2 — contact */}
       {(pathDeg != null || forehand) && (
-        <section className="border border-[var(--line)] bg-[var(--panel)]/90 p-4 md:p-5">
+        <section className="sf-panel p-4 md:p-5">
           <SectionHead
             step="01"
             title="Contact"
@@ -131,7 +129,7 @@ export function SetupVisualStory({
 
       {/* 3 — flight */}
       {hasFlight ? (
-        <section className="border border-[var(--line)] bg-[var(--panel)]/90 p-4 md:p-5">
+        <section className="sf-panel p-4 md:p-5">
           <SectionHead
             step="02"
             title="Flight"
@@ -167,7 +165,7 @@ export function SetupVisualStory({
 
       {/* 4 — tape map (only when relevant) */}
       {hasRacket ? (
-        <section className="border border-[var(--line)] bg-[var(--panel)]/90 p-4 md:p-5">
+        <section className="sf-panel p-4 md:p-5">
           <SectionHead
             step="03"
             title="Lead tape"
@@ -200,7 +198,7 @@ function SectionHead({
 }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+      <p className="sf-kicker !text-[var(--muted)]">
         {step} · {title}
       </p>
       <p className="mt-1 text-xs text-[var(--muted)]">{blurb}</p>
