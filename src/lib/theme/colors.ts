@@ -47,11 +47,11 @@ const LIGHT: ThemeColors = {
 };
 
 const DARK: ThemeColors = {
-  background: "#06110d",
+  background: "#0a1812",
   foreground: "#eef3ef",
-  panel: "#0b1a14",
-  bgScene: "#07140f",
-  bgSunken: "#050c09",
+  panel: "#0d1c16",
+  bgScene: "#07150f",
+  bgSunken: "#06110d",
   muted: "#8b9e92",
   line: "rgba(238, 243, 239, 0.1)",
   accent: "#c5e85a",
@@ -59,8 +59,8 @@ const DARK: ThemeColors = {
   amber: "#e8a05a",
   sky: "#7ec8e8",
   court: "#1f5c43",
-  silhouette: "#1e3329",
-  silhouetteRim: "#2a4a3c",
+  silhouette: "#9eb5a8",
+  silhouetteRim: "#c5d4cc",
   chartPower: "#f4a261",
   chartSpin: "#7dd3fc",
   chartControl: "#c5e85a",

@@ -19,7 +19,6 @@ import {
   NET_HEIGHT_M,
   type StrikeBand,
 } from "@/lib/equipment/ballFlight";
-import { AthleteSilhouette, RacketHoopPhoto } from "@/components/gear/AthleteSilhouette";
 
 export type { StrikeBand };
 
@@ -162,22 +161,74 @@ function FootRuler({
   );
 }
 
-/** Side-view athlete cutout facing the net (+x). Scale only — not a measured height. */
-function PlayerSideFigure({
-  x,
+/**
+ * Measured side-view at contact: feet on the court, arm to the hoop, face closed
+ * past vertical (clockwise = top of hoop toward the net / +x).
+ */
+function ContactStroke({
+  baseX,
+  sy,
   ground,
+  contactX,
+  contactY,
+  closedDeg,
 }: {
-  x: number;
-  sy?: (m: number) => number;
+  baseX: number;
+  sy: (m: number) => number;
   ground: number;
-  handX?: number;
-  handY?: number;
+  contactX: number;
+  contactY: number;
+  closedDeg: number;
 }) {
-  const scale = 0.92;
-  return <AthleteSilhouette x={x} y={ground - 6} scale={scale} />;
+  const hipY = sy(0.92);
+  const shoulderY = sy(1.38);
+  const headCy = sy(1.66);
+  const fill = "var(--silhouette)";
+  const closed = Math.max(0, Math.min(28, closedDeg));
+  return (
+    <g>
+      <ellipse cx={baseX - 9} cy={ground - 2} rx="8" ry="2.5" fill={fill} />
+      <ellipse cx={baseX + 8} cy={ground - 2} rx="8.5" ry="2.5" fill={fill} />
+      <path
+        d={`M ${baseX - 2} ${hipY} L ${baseX - 9} ${sy(0.5)} L ${baseX - 9} ${ground - 3}`}
+        fill="none"
+        stroke={fill}
+        strokeWidth="4.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={`M ${baseX + 3} ${hipY} L ${baseX + 8} ${sy(0.48)} L ${baseX + 8} ${ground - 3}`}
+        fill="none"
+        stroke={fill}
+        strokeWidth="4.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <line
+        x1={baseX}
+        y1={hipY}
+        x2={baseX + 2}
+        y2={shoulderY}
+        stroke={fill}
+        strokeWidth="7.5"
+        strokeLinecap="round"
+      />
+      <circle cx={baseX + 2} cy={headCy} r="6.8" fill={fill} />
+      <path
+        d={`M ${baseX + 4} ${shoulderY} Q ${(baseX + contactX) / 2} ${(shoulderY + contactY) / 2 + 10}, ${contactX - 7} ${contactY + 6}`}
+        fill="none"
+        stroke={fill}
+        strokeWidth="3.4"
+        strokeLinecap="round"
+      />
+      <ClosedFaceRacket cx={contactX} cy={contactY} closedDeg={closed} />
+    </g>
+  );
 }
 
-function ClosedGroundstrokeFace({
+/** Edge-on hoop. 0° = vertical bed; +closedDeg tips the top toward the net. */
+function ClosedFaceRacket({
   cx,
   cy,
   closedDeg,
@@ -185,18 +236,50 @@ function ClosedGroundstrokeFace({
   cx: number;
   cy: number;
   closedDeg: number;
-  uid?: string;
 }) {
   return (
-    <RacketHoopPhoto
-      cx={cx}
-      cy={cy}
-      rot={-12}
-      faceClosed={closedDeg}
-      scale={0.72}
-      frame="var(--chart-control)"
-      strings="color-mix(in srgb, var(--foreground) 35%, transparent)"
-    />
+    <g>
+      <line
+        x1={cx}
+        y1={cy - 18}
+        x2={cx}
+        y2={cy + 16}
+        stroke="color-mix(in srgb, var(--foreground) 28%, transparent)"
+        strokeWidth="1"
+        strokeDasharray="2 2"
+      />
+      <g transform={`rotate(${closedDeg} ${cx} ${cy})`}>
+        <ellipse
+          cx={cx}
+          cy={cy}
+          rx="5.2"
+          ry="13.5"
+          fill="#141414"
+          stroke="var(--chart-control)"
+          strokeWidth="2.3"
+        />
+        {[-9, -4.5, 0, 4.5, 9].map((dy) => (
+          <line
+            key={dy}
+            x1={cx - 3}
+            y1={cy + dy}
+            x2={cx + 3}
+            y2={cy + dy}
+            stroke="color-mix(in srgb, var(--foreground) 40%, transparent)"
+            strokeWidth="0.5"
+          />
+        ))}
+        <line
+          x1={cx}
+          y1={cy + 13}
+          x2={cx - 7}
+          y2={cy + 26}
+          stroke="#2a2a2a"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+      </g>
+    </g>
   );
 }
 
@@ -314,7 +397,14 @@ export function LaunchAngleVisual({
           baseline
         </text>
 
-        <PlayerSideFigure x={baseX + 6} ground={plot.ground} />
+        <ContactStroke
+          baseX={baseX + 4}
+          sy={sy}
+          ground={plot.ground}
+          contactX={faceCx}
+          contactY={faceCy}
+          closedDeg={closed}
+        />
 
         <rect x={netPx - 3} y={tapeY} width="6" height={plot.ground - tapeY} fill="rgba(232,239,233,0.08)" />
         {Array.from({ length: 7 }).map((_, i) => (
@@ -342,8 +432,6 @@ export function LaunchAngleVisual({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-
-        <ClosedGroundstrokeFace cx={faceCx} cy={faceCy} closedDeg={closed} />
 
         <line
           x1={faceCx}
@@ -536,7 +624,14 @@ export function SwingPathVisual({
 
         <FootRuler x={22} sy={sy} loM={z.heightLoM} hiM={z.heightHiM} />
 
-        <PlayerSideFigure x={torsoX} ground={ground} />
+        <ContactStroke
+          baseX={torsoX}
+          sy={sy}
+          ground={ground}
+          contactX={cx}
+          contactY={cy}
+          closedDeg={closed}
+        />
 
         <path
           d={`M ${torsoX + 14} ${ground - 3} A ${sx(z.outFrontM) - torsoX} 28 0 0 1 ${sx(z.outFrontHiM)} ${ground - 3}`}
@@ -571,8 +666,7 @@ export function SwingPathVisual({
           strokeWidth="2.4"
           strokeLinecap="round"
         />
-        <ClosedGroundstrokeFace cx={cx} cy={cy} closedDeg={closed} />
-        <circle cx={cx + 6} cy={cy} r="3" fill="var(--chart-control)" />
+        <circle cx={cx + 5} cy={cy} r="2.6" fill="#d4e054" />
       </svg>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
         {formatFt(z.heightM)} · {formatFt(z.outFrontM)} out
@@ -998,22 +1092,29 @@ export function ContactGeometryVisual({
         Contact geometry
       </p>
       <svg viewBox="0 0 220 130" className="h-auto w-full max-w-md" aria-hidden>
-        <AthleteSilhouette x={40} y={108} scale={0.72} opacity={0.88} />
+        <line
+          x1="16"
+          y1="118"
+          x2="204"
+          y2="118"
+          stroke="color-mix(in srgb, var(--foreground) 28%, transparent)"
+          strokeWidth="1.3"
+        />
         {bands.map((b) => {
           const active = b.id === advice.prefersHeight;
           return (
             <g key={b.id}>
               <rect
-                x="68"
+                x="18"
                 y={b.y}
-                width="28"
+                width="22"
                 height={b.h}
                 rx="2"
-                fill={active ? "color-mix(in srgb, var(--accent) 28%, transparent)" : "transparent"}
+                fill={active ? "color-mix(in srgb, var(--accent) 22%, transparent)" : "transparent"}
                 stroke={active ? "var(--chart-control)" : "color-mix(in srgb, var(--foreground) 12%, transparent)"}
               />
               <text
-                x="102"
+                x="46"
                 y={b.y + b.h / 2 + 3}
                 fill={active ? "var(--chart-control)" : "var(--muted)"}
                 fontSize="8"
@@ -1024,18 +1125,16 @@ export function ContactGeometryVisual({
             </g>
           );
         })}
-        <line
-          x1="78"
-          y1={hy}
-          x2={hx - 18}
-          y2={hy}
-          stroke="color-mix(in srgb, var(--chart-spin) 55%, transparent)"
-          strokeWidth="1.2"
-          strokeDasharray="3 2"
+        <ContactStroke
+          baseX={78}
+          sy={(m) => 118 - m * 52}
+          ground={118}
+          contactX={hx}
+          contactY={hy}
+          closedDeg={closed}
         />
-        <RacketHoopPhoto cx={hx} cy={hy} rot={-8} faceClosed={closed} scale={0.55} />
-        <text x={hx} y={hy + 42} textAnchor="middle" fill="var(--muted)" fontSize="7.5">
-          face {closed.toFixed(1)}° closed
+        <text x={hx} y={hy + 36} textAnchor="middle" fill="var(--muted)" fontSize="7.5">
+          {closed.toFixed(1)}° closed past vertical
         </text>
       </svg>
       <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">

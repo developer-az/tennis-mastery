@@ -75,9 +75,9 @@ export function GearLab({
 
       <AccountabilityStrip />
 
-      {tab === "overview" ? (
+      {tab === "overview" || tab === "strings" || tab === "grips" ? (
         <div className="mb-3">
-          <SetupDials strings={strings} compact />
+          <SetupDials strings={strings} compact hideStringDials={false} />
         </div>
       ) : null}
 

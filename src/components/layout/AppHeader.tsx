@@ -15,7 +15,7 @@ export function AppHeader() {
   const isHome = pathname === "/";
 
   return (
-    <header className="sticky top-0 z-50 shrink-0 border-b border-[var(--line)] bg-[var(--background)]/92 backdrop-blur-md">
+    <header className="sticky top-0 z-50 shrink-0 border-b border-[var(--line)] bg-[var(--body-top)]/92 backdrop-blur-md">
       <div className="mx-auto flex h-[var(--header-h)] w-full max-w-[1400px] items-center justify-between gap-4 px-4 md:px-8">
         <Link href="/" className="group flex min-w-0 items-center gap-3">
           <span
