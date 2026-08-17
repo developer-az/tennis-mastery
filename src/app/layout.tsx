@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Archivo, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Outfit, Source_Sans_3, IBM_Plex_Mono } from "next/font/google";
 import { AppHeader } from "@/components/layout/AppHeader";
 import "./globals.css";
 
-const display = Archivo({
+const display = Outfit({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
 });
 
-const sans = IBM_Plex_Sans({
+const sans = Source_Sans_3({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const mono = IBM_Plex_Mono({
@@ -22,9 +22,12 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Strokeform — Scientific Tennis Form Coaching",
+  title: {
+    default: "Strokeform — Tennis Form & Gear Intelligence",
+    template: "%s · Strokeform",
+  },
   description:
-    "Explore elite tennis biomechanics in 3D. Joint angles, kinetic-chain timing, spin, and racket-path data mapped onto interactive player models.",
+    "Professional tennis biomechanics and gear molding. Scrub elite stroke models in 3D, build your bag, and keep every change accountable.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

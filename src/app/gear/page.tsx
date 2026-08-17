@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { GearLab } from "@/components/gear/GearLab";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { loadRackets } from "@/lib/equipment/rackets";
 import { STRINGS } from "@/data/equipment/strings";
 import { GRIPS } from "@/data/equipment/grips";
 
 export const metadata: Metadata = {
-  title: "Gear Lab — Strokeform",
+  title: "Gear Lab",
   description:
     "Understand modern tennis rackets, strings, overgrips, and lead tape — compare to your setup, filter by gauge and feel, and visualize launch angle and swing path.",
 };
@@ -26,21 +27,11 @@ export default async function GearPage() {
         <GearLab rackets={rackets} racketMeta={meta} strings={STRINGS} grips={GRIPS} />
       </Suspense>
 
-      <footer className="border-t border-[var(--line)] px-6 py-8 text-xs text-[var(--muted)] md:px-10">
-        <p>
-          Racket specs powered by the{" "}
-          <a
-            href="https://www.racqix.com/en/tennis-racquet-dataset"
-            className="underline decoration-[var(--line)] underline-offset-2 hover:text-[var(--foreground)]"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Racqix Tennis Racquet Dataset
-          </a>
-          . Launch/swing-path and string/grip scores are coaching-grade models for learning,
-          not laboratory certificates.
-        </p>
-      </footer>
+      <SiteFooter
+        note={
+          'Racket specs powered by the Racqix Tennis Racquet Dataset. Launch, swing-path, and string/grip scores are coaching-grade models for learning — not laboratory certificates.'
+        }
+      />
     </div>
   );
 }

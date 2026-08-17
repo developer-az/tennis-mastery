@@ -87,7 +87,18 @@ export function GearLab({
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 md:px-10 md:py-8">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:px-10 md:py-10">
+      <header className="mb-6 border-b border-[var(--line)] pb-6">
+        <p className="sf-kicker">Gear lab</p>
+        <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight md:text-4xl">
+          Build and mold your bag
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
+          Compare retail frames and beds to what you already hit with. Dial tension and gauge, place
+          lead tape, and keep every change tied to the same mold physics.
+        </p>
+      </header>
+
       <MySetupBar onSelectTab={selectTab} />
       <AccountabilityStrip />
       <div className="mb-4">
@@ -95,10 +106,10 @@ export function GearLab({
       </div>
 
       <div
-        className="sticky top-0 z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none"
+        className="sticky top-0 z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:backdrop-blur-none"
       >
         <div
-          className="relative z-20 flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-4 [&::-webkit-scrollbar]:hidden"
+          className="relative z-20 flex gap-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] sm:overflow-visible [&::-webkit-scrollbar]:hidden"
           role="tablist"
           aria-label="Equipment category"
         >
@@ -124,13 +135,19 @@ export function GearLab({
                     selectTab(TABS[(idx - 1 + TABS.length) % TABS.length].id);
                   }
                 }}
-                className={`relative z-20 shrink-0 cursor-pointer rounded-md px-3.5 py-2 text-sm transition sm:px-4 sm:py-2.5 ${
+                className={`relative z-20 shrink-0 cursor-pointer px-3.5 py-3.5 text-sm font-medium tracking-[0.03em] transition sm:px-4 ${
                   active
-                    ? "bg-[var(--accent)] font-medium text-[#0b1a14]"
-                    : "text-[var(--muted)] hover:bg-white/5 hover:text-[var(--foreground)]"
+                    ? "text-[var(--foreground)]"
+                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
                 }`}
               >
                 {t.label}
+                <span
+                  className={`absolute inset-x-3 bottom-0 h-px ${
+                    active ? "bg-[var(--accent)]" : "bg-transparent"
+                  }`}
+                  aria-hidden
+                />
               </button>
             );
           })}
