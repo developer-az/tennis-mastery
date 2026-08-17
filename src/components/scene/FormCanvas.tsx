@@ -12,6 +12,8 @@ import { AngleOverlays } from "./AngleOverlays";
 import { RacketPathTrail } from "./RacketPathTrail";
 import { TennisCourt } from "./TennisCourt";
 import type { JointAngles } from "@/types/biomechanics";
+import { getThemeColors } from "@/lib/theme/colors";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 const PLAYER_Z = 11.5;
 const LOOK_AT: [number, number, number] = [0, 1.1, PLAYER_Z];
@@ -217,14 +219,14 @@ function AdaptiveDpr() {
   return null;
 }
 
-function SceneContent() {
+function SceneContent({ bg }: { bg: string }) {
   return (
     <>
       <PlaybackDriver />
       <AdaptiveDpr />
       <CameraRig />
-      <color attach="background" args={["#0b1a14"]} />
-      <fog attach="fog" args={["#0b1a14", 14, 36]} />
+      <color attach="background" args={[bg]} />
+      <fog attach="fog" args={[bg, 14, 36]} />
 
       {/* Lean lighting: no shadow maps */}
       <ambientLight intensity={0.55} />
@@ -244,6 +246,9 @@ function SceneContent() {
 }
 
 export function FormCanvas() {
+  const { colors } = useTheme();
+  const bg = colors.bgScene;
+
   useEffect(() => {
     return useCoachStore.subscribe((state, prev) => {
       if (!state.playing && state.t !== prev.t) {
@@ -256,7 +261,7 @@ export function FormCanvas() {
   }, []);
 
   return (
-    <div className="relative h-full min-h-[420px] w-full">
+    <div className="relative h-full min-h-[420px] w-full" style={{ background: bg }}>
       <Canvas
         className="!absolute inset-0"
         dpr={[1, 1.5]}
@@ -269,16 +274,21 @@ export function FormCanvas() {
           depth: true,
         }}
         onCreated={({ gl }) => {
-          gl.setClearColor(new THREE.Color("#0b1a14"));
+          gl.setClearColor(new THREE.Color(getThemeColors().bgScene));
           gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         }}
       >
         <PerspectiveCamera makeDefault position={[3.2, 2.1, PLAYER_Z + 4.2]} fov={42} />
         <Suspense fallback={null}>
-          <SceneContent />
+          <SceneContent bg={bg} />
         </Suspense>
       </Canvas>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0b1a14]/90 to-transparent" />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-24"
+        style={{
+          background: `linear-gradient(to top, color-mix(in srgb, ${bg} 90%, transparent), transparent)`,
+        }}
+      />
     </div>
   );
 }

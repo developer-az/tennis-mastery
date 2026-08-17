@@ -8,6 +8,7 @@ const VB_W = 200;
 const VB_H = 280;
 const ZONE_ORDER: LeadTapeZone[] = ["tip", "twelve", "three", "nine", "throat", "handle"];
 
+/** Realistic hoop / throat / string density with metallic lead strips on zones. */
 export function LeadTapeRacketDiagram({
   pieces,
   selectedZone = null,
@@ -36,9 +37,15 @@ export function LeadTapeRacketDiagram({
       >
         <defs>
           <linearGradient id={`ltGraphite-${uid}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#3a3a3a" />
-            <stop offset="40%" stopColor="#161616" />
-            <stop offset="100%" stopColor="#2a2a2a" />
+            <stop offset="0%" stopColor="#4a4a4a" />
+            <stop offset="35%" stopColor="#1a1a1a" />
+            <stop offset="70%" stopColor="#2e2e2e" />
+            <stop offset="100%" stopColor="#121212" />
+          </linearGradient>
+          <linearGradient id={`ltMetal-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#d8dce0" />
+            <stop offset="40%" stopColor="#9aa3ab" />
+            <stop offset="100%" stopColor="#5c656e" />
           </linearGradient>
           <linearGradient id={`ltGrip-${uid}`} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#2a1c14" />
@@ -49,14 +56,19 @@ export function LeadTapeRacketDiagram({
             <ellipse cx="100" cy="86" rx="52" ry="64" />
           </clipPath>
         </defs>
-        <rect width={VB_W} height={VB_H} fill="#07140f" rx="4" />
+        <rect width={VB_W} height={VB_H} fill="var(--bg-scene)" rx="4" />
 
-        {/* Handle / grip */}
-        <rect x="91" y="198" width="18" height="58" rx="4" fill={`url(#ltGrip-${uid})`} />
+        {/* Handle / grip with bevel facets */}
+        <rect x="91" y="198" width="18" height="58" rx="3" fill={`url(#ltGrip-${uid})`} />
         {[206, 214, 222, 230, 238, 246].map((y) => (
           <line key={y} x1="92" y1={y} x2="108" y2={y} stroke="rgba(0,0,0,0.35)" strokeWidth="1" />
         ))}
-        <rect x="88" y="254" width="24" height="10" rx="3" fill="#111" stroke="#3a3a3a" strokeWidth="0.8" />
+        <path
+          d="M88 254 L100 252 L112 254 L112 264 L88 264 Z"
+          fill="#111"
+          stroke="#3a3a3a"
+          strokeWidth="0.8"
+        />
 
         {/* Shaft + throat */}
         <path
@@ -72,15 +84,15 @@ export function LeadTapeRacketDiagram({
           strokeWidth="1.2"
         />
 
-        {/* Stringbed */}
-        <g clipPath={`url(#ltBed-${uid})`} opacity="0.7">
-          {Array.from({ length: 16 }).map((_, i) => {
-            const x = 52 + (i + 0.5) * (96 / 16);
-            return <line key={`m${i}`} x1={x} y1="22" x2={x} y2="150" stroke="#c8c8c0" strokeWidth="0.55" />;
+        {/* Stringbed density */}
+        <g clipPath={`url(#ltBed-${uid})`} opacity="0.75">
+          {Array.from({ length: 18 }).map((_, i) => {
+            const x = 50 + (i + 0.5) * (100 / 18);
+            return <line key={`m${i}`} x1={x} y1="22" x2={x} y2="150" stroke="#c8c8c0" strokeWidth="0.5" />;
           })}
-          {Array.from({ length: 19 }).map((_, i) => {
-            const y = 24 + (i + 0.5) * (124 / 19);
-            return <line key={`c${i}`} x1="48" y1={y} x2="152" y2={y} stroke="#c8c8c0" strokeWidth="0.5" />;
+          {Array.from({ length: 21 }).map((_, i) => {
+            const y = 24 + (i + 0.5) * (124 / 21);
+            return <line key={`c${i}`} x1="48" y1={y} x2="152" y2={y} stroke="#c8c8c0" strokeWidth="0.45" />;
           })}
         </g>
 
@@ -92,9 +104,18 @@ export function LeadTapeRacketDiagram({
           ry="70"
           fill="none"
           stroke={`url(#ltGraphite-${uid})`}
-          strokeWidth="11"
+          strokeWidth="12"
         />
-        <ellipse cx="100" cy="86" rx="51.5" ry="63.5" fill="none" stroke="#2d4a3c" strokeWidth="1.2" opacity="0.7" />
+        <ellipse
+          cx="100"
+          cy="86"
+          rx="51.5"
+          ry="63.5"
+          fill="none"
+          stroke="var(--silhouette-rim)"
+          strokeWidth="1.2"
+          opacity="0.7"
+        />
 
         {ZONE_ORDER.map((id) => {
           const z = LEAD_TAPE_ZONES[id];
@@ -102,7 +123,8 @@ export function LeadTapeRacketDiagram({
           const cy = z.y * VB_H;
           const massHere = massByZone[id] ?? 0;
           const selected = selectedZone === id;
-          const hitR = interactive ? 16 : 11;
+          const hitR = interactive ? 17 : 12;
+          const vertical = id === "three" || id === "nine";
           return (
             <g
               key={id}
@@ -113,28 +135,40 @@ export function LeadTapeRacketDiagram({
                 cx={cx}
                 cy={cy}
                 r={hitR}
-                fill={selected ? "rgba(200,245,96,0.22)" : massHere > 0 ? "rgba(244,162,97,0.18)" : "rgba(232,239,233,0.04)"}
-                stroke={selected ? "#c8f560" : massHere > 0 ? "#f4a261" : "rgba(232,239,233,0.28)"}
-                strokeWidth={selected ? 2 : 1.2}
+                fill={
+                  selected
+                    ? "color-mix(in srgb, var(--accent) 22%, transparent)"
+                    : massHere > 0
+                      ? "color-mix(in srgb, var(--amber) 16%, transparent)"
+                      : "transparent"
+                }
+                stroke={
+                  selected
+                    ? "var(--chart-control)"
+                    : massHere > 0
+                      ? "var(--amber)"
+                      : "color-mix(in srgb, var(--foreground) 22%, transparent)"
+                }
+                strokeWidth={selected ? 2 : 1.1}
+                strokeDasharray={massHere > 0 || selected ? undefined : "2 2"}
               />
               {massHere > 0 ? (
                 <rect
-                  x={cx - 9}
-                  y={cy - 3.5}
-                  width="18"
-                  height="7"
+                  x={cx - (vertical ? 3.5 : 11)}
+                  y={cy - (vertical ? 11 : 3.5)}
+                  width={vertical ? 7 : 22}
+                  height={vertical ? 22 : 7}
                   rx="1"
-                  fill="#111"
-                  stroke="#f4a261"
-                  strokeWidth="0.6"
-                  transform={id === "three" || id === "nine" ? `rotate(90 ${cx} ${cy})` : undefined}
+                  fill={`url(#ltMetal-${uid})`}
+                  stroke="#2a2a2a"
+                  strokeWidth="0.5"
                 />
               ) : null}
               <text
                 x={cx}
-                y={cy + (massHere > 0 ? 14 : 3)}
+                y={cy + (massHere > 0 ? 16 : 3)}
                 textAnchor="middle"
-                fill={selected ? "#c8f560" : "#e8efe9"}
+                fill={selected ? "var(--chart-control)" : "var(--foreground)"}
                 fontSize="7"
                 fontWeight="600"
               >

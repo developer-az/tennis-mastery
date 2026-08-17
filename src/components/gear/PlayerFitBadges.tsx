@@ -39,7 +39,7 @@ export function PlayerFitBadges({ racket }: { racket: RacketProfile }) {
       <div className="mt-4 grid grid-cols-3 gap-2" aria-hidden>
         <FeelChip label="Power" value={racket.power} color="#f4a261" />
         <FeelChip label="Spin" value={racket.spin} color="#7dd3fc" />
-        <FeelChip label="Control" value={racket.control} color="#c8f560" />
+        <FeelChip label="Control" value={racket.control} color="var(--chart-control)" />
       </div>
     </section>
   );

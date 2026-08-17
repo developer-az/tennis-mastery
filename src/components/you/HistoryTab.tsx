@@ -88,7 +88,7 @@ export function HistoryTab() {
           <button
             type="button"
             onClick={() => startLeverWorkflow(problem)}
-            className="rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[#0b1a14]"
+            className="rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-ink)]"
           >
             Rank levers
           </button>
@@ -149,7 +149,7 @@ export function HistoryTab() {
         {decError && <p className="mt-2 text-sm text-red-300">{decError}</p>}
         <button
           type="button"
-          className="mt-3 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1a14]"
+          className="mt-3 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)]"
           onClick={() => {
             const res = logDecision({
               setupSummary: summary,

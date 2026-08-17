@@ -54,6 +54,8 @@ const TAB_IDS = new Set<EquipmentTab>([
   "lead-tape",
 ]);
 
+const SHOW_DIALS = new Set<EquipmentTab>(["overview", "strings"]);
+
 export function GearLab({
   rackets,
   racketMeta,
@@ -79,12 +81,20 @@ export function GearLab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const selectTab = (id: EquipmentTab) => {
+  const selectTab = (id: EquipmentTab, extra?: Record<string, string | null>) => {
     setTab(id);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", id);
+    if (extra) {
+      for (const [k, v] of Object.entries(extra)) {
+        if (v == null) params.delete(k);
+        else params.set(k, v);
+      }
+    }
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
+
+  const activeBlurb = TABS.find((t) => t.id === tab)?.blurb;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:px-10 md:py-10">
@@ -101,15 +111,19 @@ export function GearLab({
 
       <MySetupBar onSelectTab={selectTab} />
       <AccountabilityStrip />
-      <div className="mb-4">
-        <SetupDials strings={strings} compact hideStringDials={tab === "strings"} />
-      </div>
+
+      {SHOW_DIALS.has(tab) ? (
+        <div className="mb-4">
+          <SetupDials strings={strings} compact hideStringDials={tab === "strings"} />
+        </div>
+      ) : null}
 
       <div
-        className="sticky top-0 z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:backdrop-blur-none"
+        className="sticky top-0 z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 backdrop-blur md:static md:mx-0 md:bg-transparent md:px-0 md:backdrop-blur-none"
+        style={{ ["--gear-tab-h" as string]: "52px" }}
       >
         <div
-          className="relative z-20 flex gap-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+          className="relative z-20 flex gap-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] md:overflow-visible [&::-webkit-scrollbar]:hidden"
           role="tablist"
           aria-label="Equipment category"
         >
@@ -152,39 +166,41 @@ export function GearLab({
             );
           })}
         </div>
+        {activeBlurb ? (
+          <p className="max-w-3xl pb-3 pt-2 text-xs leading-relaxed text-[var(--muted)] md:pb-0 md:pt-3">
+            {activeBlurb}
+          </p>
+        ) : null}
       </div>
 
-      <div className="relative z-10 mt-8">
+      <div className="relative z-10 mt-6 md:mt-8">
         {tab === "overview" ? (
-          <div
-            id="gear-panel-overview"
-            role="tabpanel"
-            aria-labelledby="gear-tab-overview"
-          >
-            <CombinedSetupPanel rackets={rackets} strings={strings} grips={grips} />
+          <div id="gear-panel-overview" role="tabpanel" aria-labelledby="gear-tab-overview">
+            <CombinedSetupPanel
+              rackets={rackets}
+              strings={strings}
+              grips={grips}
+              onSelectTab={selectTab}
+            />
           </div>
         ) : null}
         {tab === "rackets" ? (
           <div id="gear-panel-rackets" role="tabpanel" aria-labelledby="gear-tab-rackets">
-            <RacketExplorer initialRackets={rackets} meta={racketMeta} />
+            <RacketExplorer initialRackets={rackets} meta={racketMeta} onSelectTab={selectTab} />
           </div>
         ) : null}
         {tab === "strings" ? (
           <div id="gear-panel-strings" role="tabpanel" aria-labelledby="gear-tab-strings">
-            <StringExplorer strings={strings} />
+            <StringExplorer strings={strings} onSelectTab={selectTab} />
           </div>
         ) : null}
         {tab === "grips" ? (
           <div id="gear-panel-grips" role="tabpanel" aria-labelledby="gear-tab-grips">
-            <GripExplorer grips={grips} />
+            <GripExplorer grips={grips} onSelectTab={selectTab} />
           </div>
         ) : null}
         {tab === "lead-tape" ? (
-          <div
-            id="gear-panel-lead-tape"
-            role="tabpanel"
-            aria-labelledby="gear-tab-lead-tape"
-          >
+          <div id="gear-panel-lead-tape" role="tabpanel" aria-labelledby="gear-tab-lead-tape">
             <LeadTapeLab rackets={rackets} />
           </div>
         ) : null}

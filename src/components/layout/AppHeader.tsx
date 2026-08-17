@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const LINKS = [
   { href: "/you", label: "You", match: (p: string) => p === "/you" || p.startsWith("/profile") },
@@ -33,36 +34,39 @@ export function AppHeader() {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-0.5 sm:gap-1" aria-label="Primary">
-          {LINKS.map((link) => {
-            const active = link.match(pathname);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={active ? "page" : undefined}
-                className={`relative px-3 py-2 text-[13px] font-medium tracking-[0.04em] transition md:px-4 ${
-                  active
-                    ? "text-[var(--foreground)]"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                {link.label}
-                <span
-                  className={`absolute inset-x-3 bottom-0 h-px md:inset-x-4 ${
-                    active ? "bg-[var(--accent)]" : "bg-transparent"
+        <div className="flex items-center gap-1 sm:gap-2">
+          <nav className="flex items-center gap-0.5 sm:gap-1" aria-label="Primary">
+            {LINKS.map((link) => {
+              const active = link.match(pathname);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative px-3 py-2 text-[13px] font-medium tracking-[0.04em] transition md:px-4 ${
+                    active
+                      ? "text-[var(--foreground)]"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
                   }`}
-                  aria-hidden
-                />
+                >
+                  {link.label}
+                  <span
+                    className={`absolute inset-x-3 bottom-0 h-px md:inset-x-4 ${
+                      active ? "bg-[var(--accent)]" : "bg-transparent"
+                    }`}
+                    aria-hidden
+                  />
+                </Link>
+              );
+            })}
+            {!isHome ? (
+              <Link href="/" className="sf-btn-ghost ml-1 hidden text-xs tracking-[0.06em] md:inline-flex">
+                Home
               </Link>
-            );
-          })}
-          {!isHome ? (
-            <Link href="/" className="sf-btn-ghost ml-1 hidden text-xs tracking-[0.06em] md:inline-flex">
-              Home
-            </Link>
-          ) : null}
-        </nav>
+            ) : null}
+          </nav>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

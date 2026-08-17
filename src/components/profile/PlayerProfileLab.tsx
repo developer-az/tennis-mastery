@@ -475,7 +475,7 @@ export function PlayerProfileLab() {
           <button
             type="button"
             onClick={() => startLeverWorkflow(problem)}
-            className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1a14]"
+            className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)]"
           >
             Rank levers
           </button>
@@ -593,7 +593,7 @@ export function PlayerProfileLab() {
         {decError && <p className="text-sm text-red-300">{decError}</p>}
         <button
           type="button"
-          className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1a14]"
+          className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)]"
           onClick={() => {
             const res = logDecision({
               setupSummary: gearSummary,
@@ -769,7 +769,7 @@ export function PlayerProfileLab() {
         />
         <button
           type="button"
-          className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1a14]"
+          className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)]"
           onClick={() => {
             const h = Math.max(0, Number.parseFloat(hours) || 0);
             logSession({
@@ -874,7 +874,7 @@ export function PlayerProfileLab() {
         </div>
         <button
           type="button"
-          className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1a14]"
+          className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)]"
           onClick={() => {
             if (!pairA || !pairB) return;
             upsertMatchedPair({
@@ -967,7 +967,7 @@ function Chip({
       className="rounded-md px-2.5 py-1.5 text-xs transition"
       style={{
         background: active ? "var(--accent)" : "transparent",
-        color: active ? "#0b1a14" : "var(--foreground)",
+        color: active ? "var(--accent-ink)" : "var(--foreground)",
         boxShadow: active ? "none" : "0 0 0 1px var(--line)",
         fontWeight: active ? 600 : 400,
       }}

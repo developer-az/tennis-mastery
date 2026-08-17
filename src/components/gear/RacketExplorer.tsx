@@ -1,7 +1,7 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
-import type { RacketCatalogMeta, RacketProfile } from "@/types/equipment";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import type { EquipmentTab, RacketCatalogMeta, RacketProfile } from "@/types/equipment";
 import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search";
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
@@ -29,9 +29,11 @@ function patternBand(pattern: string | null): "16x19" | "18x20" | "other" {
 export function RacketExplorer({
   initialRackets,
   meta,
+  onSelectTab,
 }: {
   initialRackets: RacketProfile[];
   meta: RacketCatalogMeta;
+  onSelectTab?: (tab: EquipmentTab, extra?: Record<string, string | null>) => void;
 }) {
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("all");
@@ -246,6 +248,15 @@ export function RacketExplorer({
     : [];
 
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const detailRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setFiltersOpen(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const saveRacket = (r: RacketProfile) => {
     setRacket(r.slug, `${r.brand} ${r.model}`, {
@@ -265,7 +276,7 @@ export function RacketExplorer({
     <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
       {/* List first on phones so search/save is immediate */}
       <div className="order-1 space-y-3 lg:order-1 lg:space-y-4">
-        <div className="sticky top-0 z-20 -mx-1 space-y-2 bg-[var(--background)]/95 px-1 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <div className="space-y-2 md:static">
           <label className="relative block flex-1">
             <span className="sr-only">Search rackets</span>
             <input
@@ -281,7 +292,7 @@ export function RacketExplorer({
           </label>
           <button
             type="button"
-            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)]"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)] md:hidden"
             style={{ boxShadow: "0 0 0 1px var(--line)" }}
             onClick={() => setFiltersOpen((o) => !o)}
             aria-expanded={filtersOpen}
@@ -289,9 +300,44 @@ export function RacketExplorer({
             <span>Filters & sort</span>
             <span className="text-xs">{filtersOpen ? "Hide" : "Show"}</span>
           </button>
+          {!filtersOpen ? (
+            <div className="flex flex-wrap items-center gap-1.5 md:hidden">
+              {[
+                brand !== "all" ? brand : null,
+                style !== "all" ? style : null,
+                weightBand !== "all" ? `wt:${weightBand}` : null,
+                headBand !== "all" ? `head:${headBand}` : null,
+                pattern !== "all" ? pattern : null,
+              ]
+                .filter(Boolean)
+                .map((chip) => (
+                  <span
+                    key={String(chip)}
+                    className="rounded-sm bg-[var(--accent-dim)] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[var(--accent)]"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              {(brand !== "all" || style !== "all" || weightBand !== "all" || headBand !== "all" || pattern !== "all") ? (
+                <button
+                  type="button"
+                  className="text-[10px] uppercase tracking-[0.1em] text-[var(--muted)] hover:text-[var(--foreground)]"
+                  onClick={() => {
+                    setBrand("all");
+                    setStyle("all");
+                    setWeightBand("all");
+                    setHeadBand("all");
+                    setPattern("all");
+                  }}
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           <div
             className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${
-              filtersOpen ? "" : "hidden"
+              filtersOpen ? "" : "hidden md:grid"
             }`}
           >
             <select
@@ -386,7 +432,7 @@ export function RacketExplorer({
             return (
               <li key={r.slug} className="flex items-stretch gap-0.5">
                 <label
-                  className="hidden shrink-0 items-center px-2 sm:flex"
+                  className="flex shrink-0 items-center px-2"
                   title={inCompare ? "Remove from compare" : "Add to compare"}
                 >
                   <span className="sr-only">
@@ -401,7 +447,12 @@ export function RacketExplorer({
                 </label>
                 <button
                   type="button"
-                  onClick={() => setSelectedSlug(r.slug)}
+                  onClick={() => {
+                    setSelectedSlug(r.slug);
+                    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+                      requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+                    }
+                  }}
                   aria-pressed={active}
                   className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-3 text-left transition sm:gap-3 ${
                     active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
@@ -426,7 +477,7 @@ export function RacketExplorer({
                       <span className="hidden sm:inline"> · {r.style}</span>
                     </span>
                     <span className="hidden flex-wrap gap-1.5 pt-0.5 sm:flex">
-                      <MiniTag label={fit.skill} color="#c8f560" />
+                      <MiniTag label={fit.skill} color="var(--chart-control)" />
                       <MiniTag label={fit.courtRole} color="#7dd3fc" />
                       <MiniTag label={fit.feelAxis} color="#f4a261" />
                     </span>
@@ -441,7 +492,7 @@ export function RacketExplorer({
                   className="m-1.5 min-h-11 shrink-0 self-center rounded-md px-3 py-2.5 text-xs font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:min-h-10 sm:px-3.5"
                   style={{
                     background: saved ? "var(--accent-dim)" : "var(--accent)",
-                    color: saved ? "var(--accent)" : "#0b1a14",
+                    color: saved ? "var(--accent)" : "var(--accent-ink)",
                     boxShadow: saved ? "0 0 0 1px var(--accent)" : "none",
                   }}
                   aria-label={
@@ -476,7 +527,8 @@ export function RacketExplorer({
 
       {selected && (
         <div
-          className="order-2 space-y-6 lg:order-2 lg:space-y-8"
+          className="order-2 scroll-mt-16 space-y-6 lg:order-2 lg:scroll-mt-4 lg:space-y-8"
+          ref={detailRef}
           key={selected.slug}
           style={{ animation: "rise 0.45s ease-out both" }}
         >
@@ -511,7 +563,7 @@ export function RacketExplorer({
                 className="mt-4 min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
                 style={{
                   background: inSetup ? "var(--accent-dim)" : "var(--accent)",
-                  color: inSetup ? "var(--accent)" : "#0b1a14",
+                  color: inSetup ? "var(--accent)" : "var(--accent-ink)",
                   boxShadow: inSetup ? "0 0 0 1px var(--accent)" : "none",
                 }}
               >
@@ -520,15 +572,14 @@ export function RacketExplorer({
               <button
                 type="button"
                 onClick={() => {
-                  setTab("lead-tape");
-                  const url = new URL(window.location.href);
-                  url.searchParams.set("tab", "lead-tape");
-                  url.searchParams.set("mold", selected.slug);
-                  window.history.replaceState(
-                    null,
-                    "",
-                    `${url.pathname}?${url.searchParams.toString()}`,
-                  );
+                  if (onSelectTab) onSelectTab("lead-tape", { mold: selected.slug });
+                  else {
+                    setTab("lead-tape");
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("tab", "lead-tape");
+                    url.searchParams.set("mold", selected.slug);
+                    window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}`);
+                  }
                 }}
                 className="mt-2 w-full rounded-md px-4 py-2 text-xs text-[var(--muted)] transition hover:bg-white/5 hover:text-[var(--foreground)] sm:w-auto"
                 style={{ boxShadow: "0 0 0 1px var(--line)" }}

@@ -47,7 +47,7 @@ export function TensionCurve({
       <svg viewBox="0 0 200 110" className="mb-4 h-auto w-full" aria-hidden>
         <line x1="0" y1="100" x2="200" y2="100" stroke="rgba(232,239,233,0.15)" />
         <polyline points={points.pwr} fill="none" stroke="#f4a261" strokeWidth="1.5" />
-        <polyline points={points.ctrl} fill="none" stroke="#c8f560" strokeWidth="1.5" />
+        <polyline points={points.ctrl} fill="none" stroke="var(--chart-control)" strokeWidth="1.5" />
         <polyline points={points.spn} fill="none" stroke="#7dd3fc" strokeWidth="1.5" />
         <line
           x1={markerX}
@@ -61,7 +61,7 @@ export function TensionCurve({
         <text x="4" y="12" fill="#f4a261" fontSize="8">
           power
         </text>
-        <text x="48" y="12" fill="#c8f560" fontSize="8">
+        <text x="48" y="12" fill="var(--chart-control)" fontSize="8">
           control
         </text>
         <text x="96" y="12" fill="#7dd3fc" fontSize="8">

@@ -26,7 +26,7 @@ export function GripFeelVisual({ grip }: { grip: GripProfile }) {
                 key={i}
                 points={`${40 - inset * 0.15},${20 - i} ${80 + inset * 0.15},${20 - i} ${95 + inset * 0.2},${50 - i * 0.3} ${95 + inset * 0.2},${110 + i * 0.2} 60,${130 + i * 0.4} ${25 - inset * 0.2},${110 + i * 0.2} ${25 - inset * 0.2},${50 - i * 0.3}`}
                 fill="none"
-                stroke={grip.kind === "overgrip" ? "#c8f560" : "#f4a261"}
+                stroke={grip.kind === "overgrip" ? "var(--chart-control)" : "#f4a261"}
                 strokeOpacity={0.35 + i * 0.12}
                 strokeWidth="2"
               />

@@ -1,7 +1,7 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
-import type { StringProfile } from "@/types/equipment";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import type { EquipmentTab, StringProfile } from "@/types/equipment";
 import {
   GAUGE_FILTER_OPTIONS,
   gaugeLabel,
@@ -27,7 +27,8 @@ import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToS
 
 type TensionFilter = "all" | "soft" | "mid" | "firm" | "target";
 
-export function StringExplorer({ strings }: { strings: StringProfile[] }) {
+export function StringExplorer({ strings, onSelectTab }: { strings: StringProfile[]; onSelectTab?: (tab: EquipmentTab) => void; }) {
+  void onSelectTab;
   const setup = useGearStore((s) => s.setup);
   const setString = useGearStore((s) => s.setString);
   const setTensionStore = useGearStore((s) => s.setTension);
@@ -144,6 +145,16 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
     : null;
   const inSetup = selected != null && selected.id === setup.stringId;
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const detailRef = useRef<HTMLDivElement>(null);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setFiltersOpen(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const saveStringRow = (s: StringProfile) => {
     const t = tensionById[s.id] ?? s.recommendedTensionLbs;
@@ -196,7 +207,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
   return (
     <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
       <div className="order-1 space-y-3 lg:space-y-4">
-        <div className="sticky top-0 z-20 -mx-1 space-y-2 bg-[var(--background)]/95 px-1 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <div className="space-y-2">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -210,7 +221,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
           />
           <button
             type="button"
-            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)]"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)] md:hidden"
             style={{ boxShadow: "0 0 0 1px var(--line)" }}
             onClick={() => setFiltersOpen((o) => !o)}
             aria-expanded={filtersOpen}
@@ -218,9 +229,42 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
             <span>Filters</span>
             <span className="text-xs">{filtersOpen ? "Hide" : "Show"}</span>
           </button>
+          {!filtersOpen ? (
+            <div className="flex flex-wrap items-center gap-1.5 md:hidden">
+              {[
+                material !== "all" ? material : null,
+                shape !== "all" ? shape : null,
+                gaugeFilter !== "all" ? gaugeFilter : null,
+                tensionFilter !== "all" ? tensionFilter : null,
+              ]
+                .filter(Boolean)
+                .map((chip) => (
+                  <span
+                    key={String(chip)}
+                    className="rounded-sm bg-[var(--accent-dim)] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[var(--accent)]"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              {material !== "all" || shape !== "all" || gaugeFilter !== "all" || tensionFilter !== "all" ? (
+                <button
+                  type="button"
+                  className="text-[10px] uppercase tracking-[0.1em] text-[var(--muted)] hover:text-[var(--foreground)]"
+                  onClick={() => {
+                    setMaterial("all");
+                    setShape("all");
+                    setGaugeFilter("all");
+                    setTensionFilter("all");
+                  }}
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           <div
             className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${
-              filtersOpen ? "" : "hidden"
+              filtersOpen ? "" : "hidden md:grid"
             }`}
           >
             <select
@@ -305,8 +349,8 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
           <div
             className="rounded-md px-3 py-3 text-sm leading-relaxed"
             style={{
-              background: "rgba(125,211,252,0.06)",
-              boxShadow: "inset 0 0 0 1px rgba(125,211,252,0.25)",
+              background: "color-mix(in srgb, var(--chart-spin) 8%, transparent)",
+              boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--chart-spin) 28%, transparent)",
             }}
           >
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-300">
@@ -316,7 +360,14 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
             <p className="mt-2 text-[var(--foreground)]/90">
               {stringCategoryBlurb(categoryMaterial, categoryGauge, shape)}
             </p>
-            <ul className="mt-3 max-h-48 space-y-1.5 overflow-y-auto text-xs text-[var(--muted)]">
+            <button
+              type="button"
+              className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[var(--chart-spin)]"
+              onClick={() => setCategoryOpen((o) => !o)}
+            >
+              {categoryOpen ? "Hide matches" : "Show matching beds"}
+            </button>
+            <ul className={`mt-3 max-h-48 space-y-1.5 overflow-y-auto text-xs text-[var(--muted)] ${categoryOpen ? "" : "hidden"}`}>
               {[...filtered]
                 .sort((a, b) => b.spin - a.spin)
                 .slice(0, 12)
@@ -360,7 +411,14 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               <li key={s.id} className="flex items-stretch gap-0.5">
                 <button
                   type="button"
-                  onClick={() => setSelectedId(s.id)}
+                  onClick={() => {
+                    setSelectedId(s.id);
+                    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+                      requestAnimationFrame(() =>
+                        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                      );
+                    }
+                  }}
                   aria-pressed={active}
                   className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-3 text-left transition sm:gap-3 ${
                     active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
@@ -389,7 +447,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                     </span>
                     <span className="hidden flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] tabular-nums text-[var(--foreground)]/70 sm:flex">
                       <span style={{ color: "#7dd3fc" }}>Sp {s.spin}</span>
-                      <span style={{ color: "#c8f560" }}>Ctl {s.control}</span>
+                      <span style={{ color: "var(--chart-control)" }}>Ctl {s.control}</span>
                       <span style={{ color: "#f4a261" }}>Pwr {s.power}</span>
                       <span style={{ color: "#e9c46a" }}>Dur {s.durability}</span>
                       <span>Tm {s.tensionMaintenance}</span>
@@ -406,7 +464,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                   className="m-1.5 min-h-11 shrink-0 self-center rounded-md px-3 py-2.5 text-xs font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:min-h-10 sm:px-3.5"
                   style={{
                     background: saved ? "rgba(125,211,252,0.12)" : "var(--accent)",
-                    color: saved ? "#7dd3fc" : "#0b1a14",
+                    color: saved ? "#7dd3fc" : "var(--accent-ink)",
                     boxShadow: saved ? "0 0 0 1px #7dd3fc" : "none",
                   }}
                   aria-label={
@@ -430,7 +488,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
 
       {selected && selectedOutcome && (
         <div
-          className="order-2 space-y-6 lg:space-y-8"
+          ref={detailRef} className="order-2 scroll-mt-16 space-y-6 lg:space-y-8"
           key={selected.id}
           style={{ animation: "rise 0.45s ease-out both" }}
         >
@@ -455,7 +513,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                 <span
                   className="rounded-md px-2.5 py-1 font-medium tabular-nums"
                   style={{
-                    color: "#c8f560",
+                    color: "var(--chart-control)",
                     background: "color-mix(in srgb, #c8f560 12%, transparent)",
                     boxShadow: "inset 0 0 0 1px color-mix(in srgb, #c8f560 40%, transparent)",
                   }}
@@ -481,7 +539,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                 className="mt-4 min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
                 style={{
                   background: inSetup ? "rgba(125,211,252,0.12)" : "var(--accent)",
-                  color: inSetup ? "#7dd3fc" : "#0b1a14",
+                  color: inSetup ? "#7dd3fc" : "var(--accent-ink)",
                   boxShadow: inSetup ? "0 0 0 1px #7dd3fc" : "none",
                 }}
               >

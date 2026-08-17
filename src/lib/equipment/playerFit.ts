@@ -180,7 +180,7 @@ export function derivePlayerFit(r: RacketProfile): PlayerFit {
 
 const SKILL_COLOR: Record<SkillBand, string> = {
   "Beginner-friendly": "#7dd3fc",
-  Intermediate: "#c8f560",
+  Intermediate: "var(--chart-control)",
   Advanced: "#f4a261",
   "Tour / expert": "#e9c46a",
 };
@@ -188,17 +188,17 @@ const SKILL_COLOR: Record<SkillBand, string> = {
 const ROLE_COLOR: Record<CourtRole, string> = {
   "Heavy-spin baseliner": "#7dd3fc",
   "Shape baseliner": "#7dd3fc",
-  "Precision baseliner": "#c8f560",
+  "Precision baseliner": "var(--chart-control)",
   Counterpuncher: "#f4a261",
   "First-strike power": "#f4a261",
   "Serve & volley": "#e9c46a",
-  "Net-transition all-courter": "#c8f560",
+  "Net-transition all-courter": "var(--chart-control)",
   "Balanced all-courter": "#e8efe9",
 };
 
 const AXIS_COLOR: Record<FeelAxis, string> = {
   "Power-oriented": "#f4a261",
-  "Control-oriented": "#c8f560",
+  "Control-oriented": "var(--chart-control)",
   "Spin-oriented": "#7dd3fc",
   Balanced: "#e8efe9",
 };

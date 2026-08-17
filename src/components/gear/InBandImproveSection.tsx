@@ -13,7 +13,7 @@ import { DEPTH_FLOOR, FLY_RISK_CAP } from "@/lib/equipment/inBandImprove";
 const SCORE_COLOR: Record<ScoreKey, string> = {
   power: "#f4a261",
   spin: "#7dd3fc",
-  control: "#c8f560",
+  control: "var(--chart-control)",
   comfort: "#e9c46a",
 };
 

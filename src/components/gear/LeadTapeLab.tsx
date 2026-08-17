@@ -128,6 +128,13 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
           }}
         />
 
+        <details className="group rounded-md border border-[var(--line)] open:bg-[var(--panel)]/40">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--foreground)] [&::-webkit-details-marker]:hidden">
+            <span className="font-medium text-[var(--foreground)]/90">Place tape by hand</span>
+            <span className="ml-2 text-xs">— pick strip mass, tap hoop zones</span>
+          </summary>
+          <div className="space-y-5 border-t border-[var(--line)] px-4 py-4">
+
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-[var(--muted)]">Strip mass</span>
           {LEAD_TAPE_MASS_PRESETS.map((m) => (
@@ -229,6 +236,8 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
             No tape yet — stock frame specs shown on the right. Add strips to see the deltas.
           </p>
         )}
+          </div>
+        </details>
       </div>
 
       <div className="space-y-6">

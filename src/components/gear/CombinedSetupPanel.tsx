@@ -15,15 +15,18 @@ import { EquipmentThumb } from "./EquipmentThumb";
 import { InBandImproveSection } from "./InBandImproveSection";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 import { LeadTapeRacketDiagram } from "./LeadTapeRacketDiagram";
+import { gripImageUrl, racketImageUrl, stringImageUrl } from "@/lib/equipment/media/urls";
 
 export function CombinedSetupPanel({
   rackets,
   strings,
   grips,
+  onSelectTab,
 }: {
   rackets: RacketProfile[];
   strings: StringProfile[];
   grips: GripProfile[];
+  onSelectTab?: (tab: EquipmentTab) => void;
 }) {
   const setup = useGearStore((s) => s.setup);
   const setTab = useGearStore((s) => s.setTab);
@@ -66,10 +69,8 @@ export function CombinedSetupPanel({
   );
 
   const go = (tab: EquipmentTab) => {
-    setTab(tab);
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", tab);
-    window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}`);
+    if (onSelectTab) onSelectTab(tab);
+    else setTab(tab);
   };
 
   const tapeByZone = useMemo(() => {
@@ -143,7 +144,7 @@ export function CombinedSetupPanel({
           <div className="flex shrink-0 flex-wrap gap-2">
             <Link
               href="/lab"
-              className="rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
+              className="rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-medium text-[var(--accent-ink)] transition hover:brightness-110"
             >
               Lab
             </Link>
@@ -173,7 +174,7 @@ export function CombinedSetupPanel({
             thumb={
               setup.racketSlug ? (
                 <EquipmentThumb
-                  src={`/api/equipment/rackets/${setup.racketSlug}/image`}
+                  src={racketImageUrl({ slug: setup.racketSlug })}
                   alt={setup.racketLabel ?? "Racket"}
                   size="md"
                 />
@@ -193,7 +194,7 @@ export function CombinedSetupPanel({
             thumb={
               setup.stringId ? (
                 <EquipmentThumb
-                  src={`/api/equipment/strings/${setup.stringId}/image`}
+                  src={stringImageUrl({ id: setup.stringId })}
                   alt={setup.stringLabel ?? "String"}
                   size="md"
                 />
@@ -213,7 +214,7 @@ export function CombinedSetupPanel({
             thumb={
               setup.gripId ? (
                 <EquipmentThumb
-                  src={`/api/equipment/grips/${setup.gripId}/image`}
+                  src={gripImageUrl({ id: setup.gripId })}
                   alt={gripStackLabel ?? "Grip"}
                   size="md"
                 />
@@ -289,11 +290,78 @@ export function CombinedSetupPanel({
         />
       </div>
 
+
+      {(insight.scores.power != null || insight.scores.comfort != null) && (
+        <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+            Molded scores
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Frame + string + grip + tape. Deltas vs stock frame.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(
+              [
+                ["Power", insight.scores.power, insight.stockScores.power, insight.scoreDeltas.total.power, "var(--chart-power)"],
+                ["Spin", insight.scores.spin, insight.stockScores.spin, insight.scoreDeltas.total.spin, "var(--chart-spin)"],
+                ["Control", insight.scores.control, insight.stockScores.control, insight.scoreDeltas.total.control, "var(--chart-control)"],
+                ["Comfort", insight.scores.comfort, insight.stockScores.comfort, insight.scoreDeltas.total.comfort, "var(--chart-comfort)"],
+              ] as const
+            ).map(([label, v, stock, delta, color]) => (
+              <div key={label}>
+                <p className="text-[10px] uppercase tracking-[0.14em]" style={{ color }}>
+                  {label}
+                </p>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/5">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-500"
+                    style={{
+                      width: `${Math.max(0, Math.min(100, v ?? 0))}%`,
+                      background: color,
+                    }}
+                  />
+                </div>
+                <p className="mt-1 font-[family-name:var(--font-display)] text-xl tabular-nums tracking-tight">
+                  {v ?? "—"}
+                  {stock != null && Math.abs(delta) >= 0.5 ? (
+                    <span className="ml-1.5 text-xs text-[var(--muted)]">
+                      {stock}
+                      <span style={{ color }}>
+                        {" "}
+                        {delta > 0 ? "+" : ""}
+                        {Math.round(delta)}
+                      </span>
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+            ))}
+          </div>
+          {(insight.hasString || insight.hasGrip || insight.hasTape) && (
+            <p className="mt-3 text-[11px] tabular-nums text-[var(--muted)]">
+              Shifts — string P/S/C{" "}
+              {fmtDelta(insight.scoreDeltas.string.power)}/
+              {fmtDelta(insight.scoreDeltas.string.spin)}/
+              {fmtDelta(insight.scoreDeltas.string.control)}
+              {" · "}grip{" "}
+              {fmtDelta(insight.scoreDeltas.grip.power)}/
+              {fmtDelta(insight.scoreDeltas.grip.spin)}/
+              {fmtDelta(insight.scoreDeltas.grip.control)}
+              {" · "}tape{" "}
+              {fmtDelta(insight.scoreDeltas.tape.power)}/
+              {fmtDelta(insight.scoreDeltas.tape.spin)}/
+              {fmtDelta(insight.scoreDeltas.tape.control)}
+            </p>
+          )}
+        </div>
+      )}
+
       <InBandImproveSection plan={insight.inBand} />
 
       <details className="group space-y-6">
-        <summary className="cursor-pointer text-sm text-[var(--muted)] hover:text-[var(--foreground)]">
-          How this was calculated
+        <summary className="cursor-pointer list-none text-sm text-[var(--muted)] hover:text-[var(--foreground)] [&::-webkit-details-marker]:hidden">
+          <span className="underline-offset-2 group-open:text-[var(--foreground)]">Deep coaching &amp; flight visuals</span>
+          <span className="ml-2 text-[10px] uppercase tracking-[0.12em] opacity-70">expand</span>
         </summary>
         <div className="mt-4 space-y-6">
 
@@ -437,71 +505,6 @@ export function CombinedSetupPanel({
 
       {/* Delta breakdown moved to the compact header */}
 
-      {(insight.scores.power != null || insight.scores.comfort != null) && (
-        <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
-            Molded scores
-          </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">
-            Frame + string + grip + tape. Deltas vs stock frame.
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {(
-              [
-                ["Power", insight.scores.power, insight.stockScores.power, insight.scoreDeltas.total.power, "#f4a261"],
-                ["Spin", insight.scores.spin, insight.stockScores.spin, insight.scoreDeltas.total.spin, "#7dd3fc"],
-                ["Control", insight.scores.control, insight.stockScores.control, insight.scoreDeltas.total.control, "#c8f560"],
-                ["Comfort", insight.scores.comfort, insight.stockScores.comfort, insight.scoreDeltas.total.comfort, "#e9c46a"],
-              ] as const
-            ).map(([label, v, stock, delta, color]) => (
-              <div key={label}>
-                <p className="text-[10px] uppercase tracking-[0.14em]" style={{ color }}>
-                  {label}
-                </p>
-                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/5">
-                  <div
-                    className="h-full rounded-full transition-[width] duration-500"
-                    style={{
-                      width: `${Math.max(0, Math.min(100, v ?? 0))}%`,
-                      background: color,
-                    }}
-                  />
-                </div>
-                <p className="mt-1 font-[family-name:var(--font-display)] text-xl tabular-nums tracking-tight">
-                  {v ?? "—"}
-                  {stock != null && Math.abs(delta) >= 0.5 ? (
-                    <span className="ml-1.5 text-xs text-[var(--muted)]">
-                      {stock}
-                      <span style={{ color }}>
-                        {" "}
-                        {delta > 0 ? "+" : ""}
-                        {Math.round(delta)}
-                      </span>
-                    </span>
-                  ) : null}
-                </p>
-              </div>
-            ))}
-          </div>
-          {(insight.hasString || insight.hasGrip || insight.hasTape) && (
-            <p className="mt-3 text-[11px] tabular-nums text-[var(--muted)]">
-              Shifts — string P/S/C{" "}
-              {fmtDelta(insight.scoreDeltas.string.power)}/
-              {fmtDelta(insight.scoreDeltas.string.spin)}/
-              {fmtDelta(insight.scoreDeltas.string.control)}
-              {" · "}grip{" "}
-              {fmtDelta(insight.scoreDeltas.grip.power)}/
-              {fmtDelta(insight.scoreDeltas.grip.spin)}/
-              {fmtDelta(insight.scoreDeltas.grip.control)}
-              {" · "}tape{" "}
-              {fmtDelta(insight.scoreDeltas.tape.power)}/
-              {fmtDelta(insight.scoreDeltas.tape.spin)}/
-              {fmtDelta(insight.scoreDeltas.tape.control)}
-            </p>
-          )}
-        </div>
-      )}
-
       {insight.tuneTips.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
@@ -514,12 +517,12 @@ export function CombinedSetupPanel({
             {insight.tuneTips.map((tip) => {
               const accent =
                 tip.score === "spin"
-                  ? "#7dd3fc"
+                  ? "var(--chart-spin)"
                   : tip.score === "power"
-                    ? "#f4a261"
+                    ? "var(--chart-power)"
                     : tip.score === "comfort"
-                      ? "#e9c46a"
-                      : "#c8f560";
+                      ? "var(--chart-comfort)"
+                      : "var(--chart-control)";
               const verdictLabel =
                 tip.verdict === "low"
                   ? "Room to raise"

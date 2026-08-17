@@ -1,7 +1,7 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
-import type { GripProfile } from "@/types/equipment";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import type { EquipmentTab, GripProfile } from "@/types/equipment";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { gripImageUrl } from "@/lib/equipment/media/urls";
 import { GRIP_SIZES } from "@/lib/equipment/gripSize";
@@ -19,7 +19,8 @@ import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToS
 
 const MAX_COMPARE = 3;
 
-export function GripExplorer({ grips }: { grips: GripProfile[] }) {
+export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onSelectTab?: (tab: EquipmentTab) => void; }) {
+  void onSelectTab;
   const setup = useGearStore((s) => s.setup);
   const layers = setup.gripLayers ?? [];
   const setupGripId = setup.gripId;
@@ -79,6 +80,15 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
   const canAddSelected =
     selected != null && canAddGripLayer(layers, selected.kind);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setFiltersOpen(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const replaceStack = (g: GripProfile) => {
     setGrip(g.id, `${g.brand} ${g.name}`, {
@@ -169,7 +179,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
   return (
     <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
       <div className="order-1 space-y-3 lg:space-y-4">
-        <div className="sticky top-0 z-20 -mx-1 space-y-2 bg-[var(--background)]/95 px-1 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <div className="space-y-2">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -183,7 +193,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
           />
           <button
             type="button"
-            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)]"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)] md:hidden"
             style={{ boxShadow: "0 0 0 1px var(--line)" }}
             onClick={() => setFiltersOpen((o) => !o)}
             aria-expanded={filtersOpen}
@@ -191,7 +201,33 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
             <span>Filters</span>
             <span className="text-xs">{filtersOpen ? "Hide" : "Show"}</span>
           </button>
-          <div className={`grid grid-cols-2 gap-2 ${filtersOpen ? "" : "hidden"}`}>
+          {!filtersOpen ? (
+            <div className="flex flex-wrap items-center gap-1.5 md:hidden">
+              {[kind !== "all" ? kind : null, texture !== "all" ? texture : null]
+                .filter(Boolean)
+                .map((chip) => (
+                  <span
+                    key={String(chip)}
+                    className="rounded-sm bg-[var(--accent-dim)] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[var(--accent)]"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              {kind !== "all" || texture !== "all" ? (
+                <button
+                  type="button"
+                  className="text-[10px] uppercase tracking-[0.1em] text-[var(--muted)] hover:text-[var(--foreground)]"
+                  onClick={() => {
+                    setKind("all");
+                    setTexture("all");
+                  }}
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          <div className={`grid grid-cols-2 gap-2 ${filtersOpen ? "" : "hidden md:grid"}`}>
             <select
               value={kind}
               onChange={(e) => setKind(e.target.value as typeof kind)}
@@ -291,7 +327,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
             return (
               <li key={g.id} className="flex items-stretch gap-0.5">
                 <label
-                  className="hidden shrink-0 items-center px-2 sm:flex"
+                  className="flex shrink-0 items-center px-2"
                   title={inCompare ? "Remove from compare" : "Add to compare"}
                 >
                   <span className="sr-only">
@@ -306,7 +342,14 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                 </label>
                 <button
                   type="button"
-                  onClick={() => setSelectedId(g.id)}
+                  onClick={() => {
+                    setSelectedId(g.id);
+                    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+                      requestAnimationFrame(() =>
+                        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                      );
+                    }
+                  }}
                   aria-pressed={active}
                   className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-3 text-left transition sm:gap-3 ${
                     active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
@@ -343,7 +386,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                     className="rounded-md px-2.5 py-2 text-[11px] font-semibold uppercase tracking-wide transition active:scale-[0.98] disabled:opacity-40 sm:min-h-10 sm:px-3 sm:py-2.5 sm:text-xs"
                     style={{
                       background: "var(--accent)",
-                      color: "#0b1a14",
+                      color: "var(--accent-ink)",
                     }}
                     aria-label={
                       layers.length === 0
@@ -381,7 +424,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
 
       {selected && (
         <div
-          className="order-2 space-y-6"
+          ref={detailRef} className="order-2 scroll-mt-16 space-y-6"
           key={selected.id}
           style={{ animation: "rise 0.45s ease-out both" }}
         >
@@ -408,7 +451,7 @@ export function GripExplorer({ grips }: { grips: GripProfile[] }) {
                   className="min-h-11 rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 disabled:opacity-40"
                   style={{
                     background: inStack ? "rgba(244,162,97,0.15)" : "var(--accent)",
-                    color: inStack ? "var(--amber)" : "#0b1a14",
+                    color: inStack ? "var(--amber)" : "var(--accent-ink)",
                     boxShadow: inStack ? "0 0 0 1px var(--amber)" : "none",
                   }}
                 >

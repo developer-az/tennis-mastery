@@ -89,7 +89,7 @@ export function BagTab({
                     : "transparent",
                 color:
                   setup.gripSize === g.code || profile.grips.targetSize === g.code
-                    ? "#0b1a14"
+                    ? "var(--accent-ink)"
                     : "var(--foreground)",
                 boxShadow:
                   setup.gripSize === g.code || profile.grips.targetSize === g.code

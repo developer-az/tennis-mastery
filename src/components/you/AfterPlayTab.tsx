@@ -78,7 +78,7 @@ export function AfterPlayTab() {
               className="rounded-md px-2.5 py-1.5 text-xs"
               style={{
                 background: feel === f.id ? "var(--accent)" : "transparent",
-                color: feel === f.id ? "#0b1a14" : "var(--foreground)",
+                color: feel === f.id ? "var(--accent-ink)" : "var(--foreground)",
                 boxShadow: feel === f.id ? "none" : "0 0 0 1px var(--line)",
               }}
             >
@@ -111,7 +111,7 @@ export function AfterPlayTab() {
 
       <button
         type="button"
-        className="w-full rounded-md bg-[var(--accent)] py-3 text-sm font-medium text-[#0b1a14]"
+        className="w-full rounded-md bg-[var(--accent)] py-3 text-sm font-medium text-[var(--accent-ink)]"
         onClick={() => {
           logSession({
             setupSummary: summary,

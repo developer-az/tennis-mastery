@@ -72,7 +72,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-y border-[var(--line)] bg-[#050c09]/80">
+        <section className="border-y border-[var(--line)] bg-[var(--bg-sunken)]/80">
           <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-px bg-[var(--line)] md:grid-cols-4">
             {[
               ["3D form lab", "Phase-scrubbed biomechanics"],
@@ -130,7 +130,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="athletes" className="border-t border-[var(--line)] bg-[#050c09]/50">
+        <section id="athletes" className="border-t border-[var(--line)] bg-[var(--bg-sunken)]/50">
           <div className="mx-auto w-full max-w-[1400px] px-6 py-20 md:px-10 md:py-24 lg:px-14">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>

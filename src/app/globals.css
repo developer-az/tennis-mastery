@@ -1,23 +1,72 @@
 @import "tailwindcss";
 
-:root {
+/* Light = TW-style retail surfaces; dark = court night. One accent pair. */
+:root,
+[data-theme="light"] {
+  --background: #f3f6f4;
+  --foreground: #0d1f18;
+  --panel: #ffffff;
+  --panel-raised: #ffffff;
+  --bg-sunken: #e8eeea;
+  --bg-scene: #dce8e0;
+  --muted: #5a6f64;
+  --line: rgba(13, 31, 24, 0.1);
+  --line-strong: rgba(13, 31, 24, 0.18);
+  --accent: #5a8f28;
+  --accent-dim: rgba(90, 143, 40, 0.12);
+  --accent-fg: #ffffff;
+  --accent-ink: #ffffff;
+  --court: #2d6a4f;
+  --amber: #c47a2c;
+  --sky: #2a7a9b;
+  --danger: #c45a4a;
+  --overlay-hover: rgba(13, 31, 24, 0.04);
+  --body-glow: rgba(45, 106, 79, 0.12);
+  --body-top: #eef3f0;
+  --body-bottom: #e4ebe6;
+  --radius: 2px;
+  --header-h: 64px;
+  --gear-tab-h: 52px;
+  --shadow-soft: 0 12px 40px rgba(13, 31, 24, 0.08);
+  --chart-power: #c47a2c;
+  --chart-spin: #2a7a9b;
+  --chart-control: #5a8f28;
+  --chart-comfort: #a67c2a;
+  --chart-fill: rgba(90, 143, 40, 0.14);
+  --silhouette: #1a3328;
+  --silhouette-rim: #2d4a3c;
+}
+
+[data-theme="dark"] {
   --background: #06110d;
   --foreground: #eef3ef;
   --panel: #0b1a14;
   --panel-raised: #0f221a;
+  --bg-sunken: #050c09;
+  --bg-scene: #07140f;
   --muted: #8b9e92;
   --line: rgba(238, 243, 239, 0.1);
   --line-strong: rgba(238, 243, 239, 0.18);
   --accent: #c5e85a;
-  --accent-dim: rgba(197, 232, 90, 0.1);
+  --accent-dim: rgba(197, 232, 90, 0.12);
+  --accent-fg: #0a160f;
   --accent-ink: #0a160f;
   --court: #1f5c43;
   --amber: #e8a05a;
   --sky: #7ec8e8;
   --danger: #e07a6a;
-  --radius: 2px;
-  --header-h: 64px;
+  --overlay-hover: rgba(255, 255, 255, 0.04);
+  --body-glow: rgba(31, 92, 67, 0.35);
+  --body-top: #08150f;
+  --body-bottom: #040a08;
   --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --chart-power: #f4a261;
+  --chart-spin: #7dd3fc;
+  --chart-control: #c5e85a;
+  --chart-comfort: #e9c46a;
+  --chart-fill: rgba(197, 232, 90, 0.2);
+  --silhouette: #1e3329;
+  --silhouette-rim: #2a4a3c;
 }
 
 @theme inline {
@@ -30,13 +79,14 @@
 
 body {
   background:
-    radial-gradient(ellipse 100% 55% at 50% -20%, rgba(31, 92, 67, 0.35), transparent 55%),
-    linear-gradient(180deg, #08150f 0%, var(--background) 40%, #040a08 100%);
+    radial-gradient(ellipse 100% 55% at 50% -20%, var(--body-glow), transparent 55%),
+    linear-gradient(180deg, var(--body-top) 0%, var(--background) 40%, var(--body-bottom) 100%);
   color: var(--foreground);
   font-family: var(--font-sans), "Source Sans 3", sans-serif;
   font-feature-settings: "ss01" on, "kern" on;
   letter-spacing: 0.01em;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 h1,
@@ -47,7 +97,6 @@ h3,
   letter-spacing: -0.02em;
 }
 
-/* Focus — accessible, not neon glow */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -55,10 +104,9 @@ h3,
 
 ::selection {
   background: var(--accent);
-  color: var(--accent-ink);
+  color: var(--accent-fg);
 }
 
-/* Shared product buttons */
 .sf-btn {
   display: inline-flex;
   align-items: center;
@@ -74,7 +122,7 @@ h3,
 
 .sf-btn-primary {
   background: var(--accent);
-  color: var(--accent-ink);
+  color: var(--accent-fg);
 }
 
 .sf-btn-primary:hover {
@@ -87,8 +135,8 @@ h3,
 }
 
 .sf-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: inset 0 0 0 1px rgba(238, 243, 239, 0.28);
+  background: var(--overlay-hover);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
 }
 
 .sf-btn-ghost {
@@ -101,7 +149,7 @@ h3,
 }
 
 .sf-panel {
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
   border: 1px solid var(--line);
 }
 
@@ -118,7 +166,6 @@ h3,
   background: var(--line);
 }
 
-/* Range inputs */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -150,4 +197,9 @@ input[type="range"]::-webkit-slider-thumb {
 
 .sf-rise {
   animation: sf-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sf-thumb-well {
+  background: var(--bg-scene);
+  box-shadow: inset 0 0 0 1px var(--line);
 }

@@ -155,7 +155,7 @@ export function RacketFrame3D({
               >
                 <sphereGeometry args={[0.03, 16, 16]} />
                 <meshStandardMaterial
-                  color={active ? "#c8f560" : mass > 0 ? "#8fb84a" : "#c8f560"}
+                  color={active ? "var(--chart-control)" : mass > 0 ? "#8fb84a" : "var(--chart-control)"}
                   transparent
                   opacity={active ? 0.28 : mass > 0 ? 0.16 : 0.07}
                   roughness={0.4}

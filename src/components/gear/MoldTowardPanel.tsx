@@ -221,7 +221,7 @@ export function MoldTowardPanel({
               <button
                 type="button"
                 onClick={() => onApplyPlan(plan)}
-                className="min-h-11 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1a14] transition hover:brightness-110"
+                className="min-h-11 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)] transition hover:brightness-110"
               >
                 Apply tape plan to My setup
               </button>
