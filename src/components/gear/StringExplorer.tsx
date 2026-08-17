@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
 import type { EquipmentTab, StringProfile } from "@/types/equipment";
 import {
   GAUGE_FILTER_OPTIONS,
@@ -144,17 +144,8 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
       )
     : null;
   const inSetup = selected != null && selected.id === setup.stringId;
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const detailRef = useRef<HTMLDivElement>(null);
   const [categoryOpen, setCategoryOpen] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
-    const sync = () => setFiltersOpen(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
 
   const saveStringRow = (s: StringProfile) => {
     const t = tensionById[s.id] ?? s.recommendedTensionLbs;
@@ -205,7 +196,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
       : [];
 
   return (
-    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-6">
       <div className="order-1 space-y-3 lg:space-y-4">
         <div className="space-y-2">
           <input
@@ -217,61 +208,14 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
             enterKeyHint="search"
             autoCapitalize="off"
             autoCorrect="off"
-            className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-3 text-base outline-none focus:border-[var(--accent)] sm:py-2.5 sm:text-sm"
+            className="w-full rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
           />
-          <button
-            type="button"
-            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)] md:hidden"
-            style={{ boxShadow: "0 0 0 1px var(--line)" }}
-            onClick={() => setFiltersOpen((o) => !o)}
-            aria-expanded={filtersOpen}
-          >
-            <span>Filters</span>
-            <span className="text-xs">{filtersOpen ? "Hide" : "Show"}</span>
-          </button>
-          {!filtersOpen ? (
-            <div className="flex flex-wrap items-center gap-1.5 md:hidden">
-              {[
-                material !== "all" ? material : null,
-                shape !== "all" ? shape : null,
-                gaugeFilter !== "all" ? gaugeFilter : null,
-                tensionFilter !== "all" ? tensionFilter : null,
-              ]
-                .filter(Boolean)
-                .map((chip) => (
-                  <span
-                    key={String(chip)}
-                    className="rounded-sm bg-[var(--accent-dim)] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[var(--accent)]"
-                  >
-                    {chip}
-                  </span>
-                ))}
-              {material !== "all" || shape !== "all" || gaugeFilter !== "all" || tensionFilter !== "all" ? (
-                <button
-                  type="button"
-                  className="text-[10px] uppercase tracking-[0.1em] text-[var(--muted)] hover:text-[var(--foreground)]"
-                  onClick={() => {
-                    setMaterial("all");
-                    setShape("all");
-                    setGaugeFilter("all");
-                    setTensionFilter("all");
-                  }}
-                >
-                  Clear
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-          <div
-            className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${
-              filtersOpen ? "" : "hidden md:grid"
-            }`}
-          >
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
             <select
               value={material}
               onChange={(e) => setMaterial(e.target.value)}
               aria-label="Material"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">All materials</option>
               <option value="poly">Poly family (poly + co-poly)</option>
@@ -286,7 +230,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
               value={shape}
               onChange={(e) => setShape(e.target.value)}
               aria-label="Shape"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">Any shape</option>
               <option value="round">Round</option>
@@ -301,7 +245,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
               value={gaugeFilter}
               onChange={(e) => setGaugeFilter(e.target.value)}
               aria-label="Gauge"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">Any gauge</option>
               {GAUGE_FILTER_OPTIONS.map((g) => (
@@ -314,7 +258,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
               value={tensionFilter}
               onChange={(e) => setTensionFilter(e.target.value as TensionFilter)}
               aria-label="Tension band"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">Any tension band</option>
               <option value="soft">Soft rec. (≤50 lbs)</option>
@@ -420,8 +364,8 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                     }
                   }}
                   aria-pressed={active}
-                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-3 text-left transition sm:gap-3 ${
-                    active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
+                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left transition sm:gap-3 ${
+                    active ? "bg-[var(--accent-dim)]" : "hover:bg-[var(--overlay-hover)]"
                   }`}
                 >
                   <EquipmentThumb

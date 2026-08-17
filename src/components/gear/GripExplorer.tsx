@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
 import type { EquipmentTab, GripProfile } from "@/types/equipment";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { gripImageUrl } from "@/lib/equipment/media/urls";
@@ -22,7 +22,7 @@ const MAX_COMPARE = 3;
 export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onSelectTab?: (tab: EquipmentTab) => void; }) {
   void onSelectTab;
   const setup = useGearStore((s) => s.setup);
-  const layers = setup.gripLayers ?? [];
+  const layers = useMemo(() => setup.gripLayers ?? [], [setup.gripLayers]);
   const setupGripId = setup.gripId;
   const setGrip = useGearStore((s) => s.setGrip);
   const addGripLayer = useGearStore((s) => s.addGripLayer);
@@ -79,16 +79,7 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
     selected != null && layers.some((l) => l.id === selected.id);
   const canAddSelected =
     selected != null && canAddGripLayer(layers, selected.kind);
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const detailRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
-    const sync = () => setFiltersOpen(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
 
   const replaceStack = (g: GripProfile) => {
     setGrip(g.id, `${g.brand} ${g.name}`, {
@@ -177,7 +168,7 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
   const stackSummary = summarizeGripLayers(layers, setup.gripSize);
 
   return (
-    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-6">
       <div className="order-1 space-y-3 lg:space-y-4">
         <div className="space-y-2">
           <input
@@ -189,50 +180,14 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
             enterKeyHint="search"
             autoCapitalize="off"
             autoCorrect="off"
-            className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-3 text-base outline-none focus:border-[var(--accent)] sm:py-2.5 sm:text-sm"
+            className="w-full rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
           />
-          <button
-            type="button"
-            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)] md:hidden"
-            style={{ boxShadow: "0 0 0 1px var(--line)" }}
-            onClick={() => setFiltersOpen((o) => !o)}
-            aria-expanded={filtersOpen}
-          >
-            <span>Filters</span>
-            <span className="text-xs">{filtersOpen ? "Hide" : "Show"}</span>
-          </button>
-          {!filtersOpen ? (
-            <div className="flex flex-wrap items-center gap-1.5 md:hidden">
-              {[kind !== "all" ? kind : null, texture !== "all" ? texture : null]
-                .filter(Boolean)
-                .map((chip) => (
-                  <span
-                    key={String(chip)}
-                    className="rounded-sm bg-[var(--accent-dim)] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[var(--accent)]"
-                  >
-                    {chip}
-                  </span>
-                ))}
-              {kind !== "all" || texture !== "all" ? (
-                <button
-                  type="button"
-                  className="text-[10px] uppercase tracking-[0.1em] text-[var(--muted)] hover:text-[var(--foreground)]"
-                  onClick={() => {
-                    setKind("all");
-                    setTexture("all");
-                  }}
-                >
-                  Clear
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-          <div className={`grid grid-cols-2 gap-2 ${filtersOpen ? "" : "hidden md:grid"}`}>
+          <div className="grid grid-cols-2 gap-1.5">
             <select
               value={kind}
               onChange={(e) => setKind(e.target.value as typeof kind)}
               aria-label="Grip kind"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">All grips</option>
               <option value="overgrip">Overgrips</option>
@@ -242,7 +197,7 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
               value={texture}
               onChange={(e) => setTexture(e.target.value)}
               aria-label="Texture"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">Any texture</option>
               {textures.map((t) => (
@@ -351,8 +306,8 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
                     }
                   }}
                   aria-pressed={active}
-                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-3 text-left transition sm:gap-3 ${
-                    active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
+                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left transition sm:gap-3 ${
+                    active ? "bg-[var(--accent-dim)]" : "hover:bg-[var(--overlay-hover)]"
                   }`}
                 >
                   <EquipmentThumb
@@ -469,7 +424,7 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
                   <button
                     type="button"
                     onClick={() => replaceStack(selected)}
-                    className="min-h-11 rounded-md px-4 py-2.5 text-sm transition hover:bg-white/5"
+                    className="min-h-11 rounded-md px-4 py-2.5 text-sm transition hover:bg-[var(--overlay-hover)]"
                     style={{ boxShadow: "0 0 0 1px var(--line)" }}
                   >
                     Replace whole stack

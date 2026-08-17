@@ -13,25 +13,18 @@ export function MySetupBar({
 
   const go = (tab: EquipmentTab) => {
     if (onSelectTab) onSelectTab(tab);
-    else {
-      setTab(tab);
-      if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
-        url.searchParams.set("tab", tab);
-        window.history.replaceState(null, "", url.toString());
-      }
-    }
+    else setTab(tab);
   };
 
   return (
     <button
       type="button"
       onClick={() => go("overview")}
-      className="mb-4 flex w-full items-center justify-between gap-3 border border-[var(--line)] bg-[var(--panel)]/90 px-4 py-3 text-left text-sm transition hover:border-[var(--line-strong)]"
+      className="flex max-w-full min-w-0 items-center gap-2 rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-left text-xs transition hover:border-[var(--line-strong)] md:max-w-md"
     >
-      <span className="min-w-0 truncate text-[var(--foreground)]/90">{setupSummary(setup)}</span>
-      <span className="shrink-0 text-[11px] font-semibold tracking-[0.1em] text-[var(--accent)] uppercase">
-        Overview
+      <span className="min-w-0 truncate text-[var(--foreground)]/85">{setupSummary(setup)}</span>
+      <span className="shrink-0 text-[10px] font-semibold tracking-[0.1em] text-[var(--accent)] uppercase">
+        Bag
       </span>
     </button>
   );

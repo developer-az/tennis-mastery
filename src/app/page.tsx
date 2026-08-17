@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
       <main className="flex-1">
-        <section className="relative flex min-h-[min(88vh,860px)] flex-col justify-end overflow-hidden px-6 pb-16 pt-28 md:px-10 md:pb-24 lg:px-14">
+        <section className="sf-on-court relative flex min-h-[min(88vh,860px)] flex-col justify-end overflow-hidden px-6 pb-16 pt-28 md:px-10 md:pb-24 lg:px-14">
           <div
             className="pointer-events-none absolute inset-0"
             style={{
@@ -49,13 +49,13 @@ export default function Home() {
             <div className="max-w-2xl">
               <p className="sf-kicker sf-rise">Professional tennis intelligence</p>
               <p
-                className="sf-rise mt-5 font-[family-name:var(--font-display)] text-5xl font-semibold leading-[0.92] tracking-tight md:text-7xl lg:text-[5.5rem]"
+                className="sf-rise mt-5 font-[family-name:var(--font-display)] text-5xl font-semibold leading-[0.92] tracking-tight text-[#eef3ef] md:text-7xl lg:text-[5.5rem]"
                 style={{ animationDelay: "0.06s" }}
               >
                 STROKEFORM
               </p>
               <h1
-                className="sf-rise mt-6 max-w-xl text-xl leading-snug text-[var(--foreground)]/92 md:text-2xl md:leading-snug"
+                className="sf-rise mt-6 max-w-xl text-xl leading-snug text-[#eef3ef] md:text-2xl md:leading-snug"
                 style={{ animationDelay: "0.14s" }}
               >
                 Form and gear, built like a tour product — not a classroom demo.

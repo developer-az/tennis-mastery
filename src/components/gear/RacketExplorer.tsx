@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
 import type { EquipmentTab, RacketCatalogMeta, RacketProfile } from "@/types/equipment";
 import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search";
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
@@ -35,6 +35,7 @@ export function RacketExplorer({
   meta: RacketCatalogMeta;
   onSelectTab?: (tab: EquipmentTab, extra?: Record<string, string | null>) => void;
 }) {
+  void meta;
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("all");
   const [style, setStyle] = useState("all");
@@ -247,16 +248,7 @@ export function RacketExplorer({
       ]
     : [];
 
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const detailRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
-    const sync = () => setFiltersOpen(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
 
   const saveRacket = (r: RacketProfile) => {
     setRacket(r.slug, `${r.brand} ${r.model}`, {
@@ -273,7 +265,7 @@ export function RacketExplorer({
   };
 
   return (
-    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-6">
       {/* List first on phones so search/save is immediate */}
       <div className="order-1 space-y-3 lg:order-1 lg:space-y-4">
         <div className="space-y-2 md:static">
@@ -287,64 +279,15 @@ export function RacketExplorer({
               enterKeyHint="search"
               autoCapitalize="off"
               autoCorrect="off"
-              className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-3 text-base outline-none transition focus:border-[var(--accent)] sm:py-2.5 sm:text-sm"
+              className="w-full rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
             />
           </label>
-          <button
-            type="button"
-            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)] md:hidden"
-            style={{ boxShadow: "0 0 0 1px var(--line)" }}
-            onClick={() => setFiltersOpen((o) => !o)}
-            aria-expanded={filtersOpen}
-          >
-            <span>Filters & sort</span>
-            <span className="text-xs">{filtersOpen ? "Hide" : "Show"}</span>
-          </button>
-          {!filtersOpen ? (
-            <div className="flex flex-wrap items-center gap-1.5 md:hidden">
-              {[
-                brand !== "all" ? brand : null,
-                style !== "all" ? style : null,
-                weightBand !== "all" ? `wt:${weightBand}` : null,
-                headBand !== "all" ? `head:${headBand}` : null,
-                pattern !== "all" ? pattern : null,
-              ]
-                .filter(Boolean)
-                .map((chip) => (
-                  <span
-                    key={String(chip)}
-                    className="rounded-sm bg-[var(--accent-dim)] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[var(--accent)]"
-                  >
-                    {chip}
-                  </span>
-                ))}
-              {(brand !== "all" || style !== "all" || weightBand !== "all" || headBand !== "all" || pattern !== "all") ? (
-                <button
-                  type="button"
-                  className="text-[10px] uppercase tracking-[0.1em] text-[var(--muted)] hover:text-[var(--foreground)]"
-                  onClick={() => {
-                    setBrand("all");
-                    setStyle("all");
-                    setWeightBand("all");
-                    setHeadBand("all");
-                    setPattern("all");
-                  }}
-                >
-                  Clear
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-          <div
-            className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${
-              filtersOpen ? "" : "hidden md:grid"
-            }`}
-          >
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
             <select
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
               aria-label="Brand"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">All brands</option>
               {brands.map((b) => (
@@ -357,7 +300,7 @@ export function RacketExplorer({
               value={style}
               onChange={(e) => setStyle(e.target.value)}
               aria-label="Style"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">All styles</option>
               {styles.map((s) => (
@@ -370,7 +313,7 @@ export function RacketExplorer({
               value={weightBand}
               onChange={(e) => setWeightBand(e.target.value)}
               aria-label="Weight"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">Any weight</option>
               <option value="light">&lt; 295 g</option>
@@ -381,7 +324,7 @@ export function RacketExplorer({
               value={headBand}
               onChange={(e) => setHeadBand(e.target.value)}
               aria-label="Head size"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">Any head size</option>
               <option value="mid">Mid (&lt; 98&quot;)</option>
@@ -392,7 +335,7 @@ export function RacketExplorer({
               value={pattern}
               onChange={(e) => setPattern(e.target.value)}
               aria-label="String pattern"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">Any pattern</option>
               <option value="16x19">16×19 open</option>
@@ -403,7 +346,7 @@ export function RacketExplorer({
               value={sort}
               onChange={(e) => setSort(e.target.value as typeof sort)}
               aria-label="Sort"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="newest">Sort: newest</option>
               <option value="spin">Sort: spin</option>
@@ -415,12 +358,8 @@ export function RacketExplorer({
         </div>
 
         <p className="text-xs text-[var(--muted)]">
-          Showing {shown.length} of {filtered.length} frames
-          {filtered.length !== initialRackets.length
-            ? ` (filtered from ${initialRackets.length})`
-            : ""}{" "}
-          · compare up to {MAX_COMPARE} · {meta.source} v{meta.version}
-          {meta.live ? " · live" : " · offline snapshot"}
+          {shown.length} of {filtered.length}
+          {query.trim() ? " matches" : " frames"}
         </p>
 
         <ul className="max-h-[min(70vh,28rem)] divide-y divide-[var(--line)] overflow-y-auto overscroll-contain border-y border-[var(--line)] md:max-h-[32rem]">
@@ -454,7 +393,7 @@ export function RacketExplorer({
                     }
                   }}
                   aria-pressed={active}
-                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-3 text-left transition sm:gap-3 ${
+                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left transition sm:gap-3 ${
                     active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
                   }`}
                 >
@@ -489,7 +428,7 @@ export function RacketExplorer({
                     e.stopPropagation();
                     saveRacket(r);
                   }}
-                  className="m-1.5 min-h-11 shrink-0 self-center rounded-md px-3 py-2.5 text-xs font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:min-h-10 sm:px-3.5"
+                  className="m-1 shrink-0 self-center rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition"
                   style={{
                     background: saved ? "var(--accent-dim)" : "var(--accent)",
                     color: saved ? "var(--accent)" : "var(--accent-ink)",

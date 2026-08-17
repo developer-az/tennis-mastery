@@ -143,12 +143,12 @@ function FootRuler({
         fill="rgba(197,232,90,0.22)"
         rx="1"
       />
-      <line x1={x} y1={sy(0)} x2={x} y2={sy(maxFt / M_TO_FT)} stroke="rgba(232,239,233,0.5)" strokeWidth="1.4" />
+      <line x1={x} y1={sy(0)} x2={x} y2={sy(maxFt / M_TO_FT)} stroke="color-mix(in srgb, var(--foreground) 45%, transparent)" strokeWidth="1.4" />
       {ticks.map((ft) => {
         const y = sy(ft / M_TO_FT);
         return (
           <g key={ft}>
-            <line x1={x} y1={y} x2={x + 7} y2={y} stroke="rgba(232,239,233,0.55)" strokeWidth="1" />
+            <line x1={x} y1={y} x2={x + 7} y2={y} stroke="color-mix(in srgb, var(--foreground) 50%, transparent)" strokeWidth="1" />
             <text x={x - 3} y={y + 3} textAnchor="end" fill="var(--muted)" fontSize="6.5">
               {ft} ft
             </text>
@@ -298,7 +298,7 @@ export function LaunchAngleVisual({
           </linearGradient>
         </defs>
         <rect x="8" y={plot.ground} width="284" height="14" fill={`url(#court-${uid})`} opacity="0.7" />
-        <line x1="12" y1={plot.ground} x2="292" y2={plot.ground} stroke="rgba(247,245,238,0.4)" strokeWidth="1.4" />
+        <line x1="12" y1={plot.ground} x2="292" y2={plot.ground} stroke="color-mix(in srgb, var(--foreground) 35%, transparent)" strokeWidth="1.4" />
 
         <FootRuler x={22} sy={sy} loM={z.heightLoM} hiM={z.heightHiM} />
 
@@ -307,10 +307,10 @@ export function LaunchAngleVisual({
           y1={plot.ground - 16}
           x2={baseX}
           y2={plot.ground}
-          stroke="#f4f1ea"
+          stroke="var(--foreground)"
           strokeWidth="2"
         />
-        <text x={baseX} y={plot.ground + 12} textAnchor="middle" fill="#f4f1ea" fontSize="6.5">
+        <text x={baseX} y={plot.ground + 12} textAnchor="middle" fill="var(--foreground)" fontSize="6.5">
           baseline
         </text>
 
@@ -324,7 +324,7 @@ export function LaunchAngleVisual({
             y1={tapeY}
             x2={netPx - 5 + i * 1.6}
             y2={plot.ground - 2}
-            stroke="rgba(232,239,233,0.28)"
+            stroke="color-mix(in srgb, var(--foreground) 28%, transparent)"
             strokeWidth="0.45"
           />
         ))}
@@ -529,7 +529,7 @@ export function SwingPathVisual({
             <stop offset="100%" stopColor="#141414" />
           </linearGradient>
         </defs>
-        <line x1="18" y1={ground} x2="246" y2={ground} stroke="rgba(232,239,233,0.35)" strokeWidth="1.4" />
+        <line x1="18" y1={ground} x2="246" y2={ground} stroke="color-mix(in srgb, var(--foreground) 35%, transparent)" strokeWidth="1.4" />
         <text x="72" y={ground + 12} fill="var(--muted)" fontSize="6.5">
           0 ft
         </text>
@@ -733,7 +733,7 @@ export function ForehandGripBevelVisual({
                 y1={cy + inner * Math.sin(a0)}
                 x2={p0x}
                 y2={p0y}
-                stroke="rgba(232,239,233,0.18)"
+                stroke="color-mix(in srgb, var(--foreground) 18%, transparent)"
                 strokeWidth="0.8"
               />
               {active ? (
@@ -768,7 +768,7 @@ export function ForehandGripBevelVisual({
             </g>
           );
         })}
-        <circle cx={cx} cy={cy} r="14" fill="#0e1814" stroke="rgba(232,239,233,0.25)" strokeWidth="1" />
+        <circle cx={cx} cy={cy} r="14" fill="#0e1814" stroke="color-mix(in srgb, var(--foreground) 25%, transparent)" strokeWidth="1" />
         <text x={cx} y={cy - 2} textAnchor="middle" fill="var(--foreground)" fontSize="9">
           butt
         </text>
@@ -853,7 +853,7 @@ export function FaceAngleAtContactVisual({
           y1="148"
           x2="200"
           y2="148"
-          stroke="rgba(232,239,233,0.2)"
+          stroke="color-mix(in srgb, var(--foreground) 22%, transparent)"
           strokeWidth="1.2"
         />
         <text x="168" y="144" fill="var(--muted)" fontSize="8">
@@ -864,7 +864,7 @@ export function FaceAngleAtContactVisual({
           y1={cy - 40}
           x2={cx}
           y2={cy + 34}
-          stroke="rgba(232,239,233,0.3)"
+          stroke="color-mix(in srgb, var(--foreground) 30%, transparent)"
           strokeWidth="1.2"
           strokeDasharray="3 3"
         />
@@ -921,7 +921,7 @@ export function FaceAngleAtContactVisual({
           y1={throatY}
           x2={buttX}
           y2={buttY}
-          stroke="rgba(232,239,233,0.55)"
+          stroke="color-mix(in srgb, var(--foreground) 50%, transparent)"
           strokeWidth="3.2"
           strokeLinecap="round"
         />

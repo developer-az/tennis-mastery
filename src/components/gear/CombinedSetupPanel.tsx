@@ -112,7 +112,7 @@ export function CombinedSetupPanel({
               key={tab}
               type="button"
               onClick={() => go(tab)}
-              className="rounded-md px-3 py-1.5 text-xs text-[var(--foreground)] transition hover:bg-white/5"
+              className="rounded-md px-3 py-1.5 text-xs text-[var(--foreground)] transition hover:bg-[var(--overlay-hover)]"
               style={{ boxShadow: "0 0 0 1px var(--line)" }}
             >
               {label}
@@ -151,7 +151,7 @@ export function CombinedSetupPanel({
             <button
               type="button"
               onClick={() => go("lead-tape")}
-              className="rounded-md px-4 py-2 text-xs transition hover:bg-white/5"
+              className="rounded-md px-4 py-2 text-xs transition hover:bg-[var(--overlay-hover)]"
               style={{ boxShadow: "0 0 0 1px var(--line)" }}
             >
               Tune
@@ -847,7 +847,7 @@ function Chip({
       className={`rounded-md px-2.5 py-1.5 text-xs transition ${
         active
           ? "bg-[var(--accent-dim)] text-[var(--accent)]"
-          : "text-[var(--muted)] hover:bg-white/5 hover:text-[var(--foreground)]"
+          : "text-[var(--muted)] hover:bg-[var(--overlay-hover)] hover:text-[var(--foreground)]"
       }`}
       style={active ? undefined : { boxShadow: "0 0 0 1px var(--line)" }}
     >
@@ -875,7 +875,7 @@ function PieceCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex gap-3 rounded-md border border-[var(--line)] bg-black/15 p-3 text-left transition hover:border-[var(--accent)]/40 hover:bg-white/[0.03]"
+      className="flex gap-3 rounded-md border border-[var(--line)] bg-[var(--bg-scene)] p-3 text-left transition hover:border-[var(--accent)]/40 hover:bg-[var(--overlay-hover)]"
     >
       {thumb}
       <div className="min-w-0 flex-1">
