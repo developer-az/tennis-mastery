@@ -37,9 +37,9 @@ export function PlayerFitBadges({ racket }: { racket: RacketProfile }) {
 
       {/* Visual feel strip — power / spin / control as color bars */}
       <div className="mt-4 grid grid-cols-3 gap-2" aria-hidden>
-        <FeelChip label="Power" value={racket.power} color="#f4a261" />
-        <FeelChip label="Spin" value={racket.spin} color="#7dd3fc" />
-        <FeelChip label="Control" value={racket.control} color="#c8f560" />
+        <FeelChip label="Power" value={racket.power} color="var(--chart-power)" />
+        <FeelChip label="Spin" value={racket.spin} color="var(--chart-spin)" />
+        <FeelChip label="Control" value={racket.control} color="var(--chart-control)" />
       </div>
     </section>
   );
@@ -68,7 +68,7 @@ function FeelChip({
       <p className="mt-1 font-[family-name:var(--font-display)] text-xl tabular-nums tracking-tight">
         {value}
       </p>
-      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/10">
+      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--foreground)_12%,transparent)]">
         <div
           className="h-full rounded-full transition-[width] duration-500"
           style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: color }}

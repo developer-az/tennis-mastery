@@ -12,6 +12,8 @@ import {
   formatFt,
   NET_HEIGHT_M,
 } from "@/lib/equipment/ballFlight";
+import type { ThemeColors } from "@/lib/theme/colors";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 /** Compress court depth so the baseline-to-net slice fits the camera; heights stay in meters. */
 const SCENE_BASELINE_Z = 2.55;
@@ -21,32 +23,45 @@ function courtZ(fromBaselineM: number) {
   return SCENE_BASELINE_Z - fromBaselineM * XZ;
 }
 
-function CourtSlice() {
+function CourtDiorama({ colors }: { colors: ThemeColors }) {
   const netH = NET_HEIGHT_M;
   return (
     <group>
+      {/* Outer apron */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <planeGeometry args={[8, 14]} />
-        <meshLambertMaterial color="#1a3328" />
+        <planeGeometry args={[10, 16]} />
+        <meshLambertMaterial color={colors.bgScene} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0.4]}>
-        <planeGeometry args={[8.23, 10]} />
-        <meshLambertMaterial color="#2d6a4f" />
+      {/* Playing surface */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0.35]}>
+        <planeGeometry args={[8.23, 11]} />
+        <meshLambertMaterial color={colors.court} />
+      </mesh>
+      {/* Texture-ish service boxes via subtle overlays */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, courtZ(6.4) / 2]}>
+        <planeGeometry args={[8.23, 0.02]} />
+        <meshBasicMaterial color="#f4f1ea" transparent opacity={0.55} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, SCENE_BASELINE_Z]}>
-        <planeGeometry args={[8.23, 0.06]} />
-        <meshBasicMaterial color="#f4f1ea" />
+        <planeGeometry args={[8.23, 0.055]} />
+        <meshBasicMaterial color="#f7f7f2" />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, courtZ(6.4)]}>
         <planeGeometry args={[8.23, 0.04]} />
         <meshBasicMaterial color="#f4f1ea" />
       </mesh>
+      {/* Center service line stub */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.007, courtZ(3.2)]}>
+        <planeGeometry args={[0.04, 6.4 * XZ]} />
+        <meshBasicMaterial color="#f4f1ea" transparent opacity={0.7} />
+      </mesh>
+      {/* Net */}
       <mesh position={[0, netH / 2, 0]}>
         <boxGeometry args={[8.8, netH, 0.035]} />
-        <meshLambertMaterial color="#eceae4" transparent opacity={0.22} />
+        <meshLambertMaterial color="#eceae4" transparent opacity={0.28} />
       </mesh>
       <mesh position={[0, netH, 0]}>
-        <boxGeometry args={[9.0, 0.025, 0.03]} />
+        <boxGeometry args={[9.0, 0.028, 0.032]} />
         <meshBasicMaterial color="#f7f7f2" />
       </mesh>
       <mesh position={[4.4, netH / 2, 0]}>
@@ -61,17 +76,21 @@ function CourtSlice() {
   );
 }
 
-/** Stance at the baseline — feet only. Face/racket live in the 2D side view. */
-function BaselineStance() {
+/** Optional silhouette billboard at baseline */
+function StanceBillboard({ colors }: { colors: ThemeColors }) {
   return (
-    <group position={[0, 0, SCENE_BASELINE_Z]}>
-      <mesh position={[-0.12, 0.04, 0.04]}>
-        <boxGeometry args={[0.08, 0.04, 0.22]} />
-        <meshLambertMaterial color="#1e3329" />
+    <group position={[0, 0.85, SCENE_BASELINE_Z + 0.05]}>
+      <mesh position={[0, 0, 0]}>
+        <planeGeometry args={[0.55, 1.55]} />
+        <meshBasicMaterial color={colors.silhouette} transparent opacity={0.55} side={THREE.DoubleSide} />
       </mesh>
-      <mesh position={[0.12, 0.04, -0.02]}>
-        <boxGeometry args={[0.08, 0.04, 0.22]} />
-        <meshLambertMaterial color="#1e3329" />
+      <mesh position={[-0.14, -0.78, 0.02]}>
+        <boxGeometry args={[0.1, 0.05, 0.24]} />
+        <meshLambertMaterial color={colors.silhouetteRim} />
+      </mesh>
+      <mesh position={[0.14, -0.78, -0.02]}>
+        <boxGeometry args={[0.1, 0.05, 0.24]} />
+        <meshLambertMaterial color={colors.silhouetteRim} />
       </mesh>
     </group>
   );
@@ -81,10 +100,12 @@ function LaunchWedge({
   contactY,
   contactZ,
   launchDeg,
+  accent,
 }: {
   contactY: number;
   contactZ: number;
   launchDeg: number;
+  accent: string;
 }) {
   const len = 0.85;
   const rad = THREE.MathUtils.degToRad(launchDeg);
@@ -100,17 +121,17 @@ function LaunchWedge({
   return (
     <group>
       <Line points={[origin, horiz]} color="#8aa396" lineWidth={1} dashed dashSize={0.05} gapSize={0.04} />
-      <Line points={[origin, leave]} color="#c8f560" lineWidth={2} />
-      <Line points={arc} color="#c8f560" lineWidth={1.4} />
+      <Line points={[origin, leave]} color={accent} lineWidth={2} />
+      <Line points={arc} color={accent} lineWidth={1.4} />
       <mesh position={[0, contactY, contactZ]}>
         <sphereGeometry args={[0.028, 12, 12]} />
-        <meshStandardMaterial color="#c8f560" emissive="#5a6a10" emissiveIntensity={0.35} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.25} />
       </mesh>
     </group>
   );
 }
 
-function BallFlight({ points }: { points: THREE.Vector3[] }) {
+function BallFlight({ points, accent }: { points: THREE.Vector3[]; accent: string }) {
   const ball = useRef<THREE.Mesh>(null);
   const curve = useMemo(() => new THREE.CatmullRomCurve3(points, false, "catmullrom", 0), [points]);
 
@@ -122,7 +143,7 @@ function BallFlight({ points }: { points: THREE.Vector3[] }) {
 
   return (
     <group>
-      <Line points={points} color="#c8f560" lineWidth={1.8} transparent opacity={0.9} />
+      <Line points={points} color={accent} lineWidth={1.8} transparent opacity={0.9} />
       <mesh ref={ball} position={points[0]}>
         <sphereGeometry args={[BALL_RADIUS_M, 16, 16]} />
         <meshStandardMaterial
@@ -134,6 +155,15 @@ function BallFlight({ points }: { points: THREE.Vector3[] }) {
         />
       </mesh>
     </group>
+  );
+}
+
+function ThemeClear({ colors }: { colors: ThemeColors }) {
+  return (
+    <>
+      <color attach="background" args={[colors.bgScene]} />
+      <fog attach="fog" args={[colors.bgScene, 8, 18]} />
+    </>
   );
 }
 
@@ -152,6 +182,8 @@ export function SetupFlightCanvas({
   outFrontM: number;
   faceClosedDeg?: number;
 }) {
+  const { colors: sceneColors } = useTheme();
+
   const traj = useMemo(
     () =>
       computeBallTrajectory({
@@ -163,8 +195,10 @@ export function SetupFlightCanvas({
       }),
     [launchDeg, flight.netClearIn, flight.topspin, contactHeightM, outFrontM],
   );
-  void pathDeg;
-  void faceClosedDeg;
+
+  // Path/face used for caption coaching language (physics path from launch only).
+  const pathNote = pathDeg >= 28 ? "steep low→high" : pathDeg >= 18 ? "modern drive path" : "flatter path";
+  const faceNote = faceClosedDeg >= 12 ? "face closed past vertical" : "face near vertical";
 
   const contactZ = courtZ(outFrontM);
 
@@ -172,8 +206,13 @@ export function SetupFlightCanvas({
     return traj.points.map((p) => new THREE.Vector3(0, p.y, courtZ(outFrontM + p.x)));
   }, [traj.points, outFrontM]);
 
+  const accent = sceneColors.accent;
+
   return (
-    <div className="relative h-[280px] w-full overflow-hidden rounded-md bg-[#07140f] md:h-[340px]">
+    <div
+      className="relative h-[280px] w-full overflow-hidden rounded-md md:h-[340px]"
+      style={{ background: sceneColors.bgScene }}
+    >
       <Canvas
         dpr={[1, 1.6]}
         gl={{
@@ -183,21 +222,25 @@ export function SetupFlightCanvas({
           stencil: false,
         }}
         onCreated={({ gl }) => {
-          gl.setClearColor(new THREE.Color("#07140f"));
+          gl.setClearColor(new THREE.Color(sceneColors.bgScene));
           gl.toneMapping = THREE.ACESFilmicToneMapping;
         }}
       >
         <PerspectiveCamera makeDefault position={[4.6, 1.25, 1.15]} fov={34} />
         <Suspense fallback={null}>
-          <color attach="background" args={["#07140f"]} />
-          <fog attach="fog" args={["#07140f", 8, 18]} />
-          <ambientLight intensity={0.5} />
+          <ThemeClear colors={sceneColors} />
+          <ambientLight intensity={0.55} />
           <hemisphereLight args={["#d5ead8", "#1a3328", 0.5]} />
-          <directionalLight position={[4, 8, 3]} intensity={1.2} />
-          <CourtSlice />
-          <BaselineStance />
-          <LaunchWedge contactY={contactHeightM} contactZ={contactZ} launchDeg={launchDeg} />
-          <BallFlight points={points} />
+          <directionalLight position={[4, 8, 3]} intensity={1.15} />
+          <CourtDiorama colors={sceneColors} />
+          <StanceBillboard colors={sceneColors} />
+          <LaunchWedge
+            contactY={contactHeightM}
+            contactZ={contactZ}
+            launchDeg={launchDeg}
+            accent={accent}
+          />
+          <BallFlight points={points} accent={accent} />
           <OrbitControls
             enablePan={false}
             target={[0, 0.85, 0.9]}
@@ -208,13 +251,18 @@ export function SetupFlightCanvas({
           />
         </Suspense>
       </Canvas>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#07140f] via-[#07140f]/70 to-transparent px-3 pb-2.5 pt-10">
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-10"
+        style={{
+          background: `linear-gradient(to top, ${sceneColors.bgScene}, color-mix(in srgb, ${sceneColors.bgScene} 70%, transparent), transparent)`,
+        }}
+      >
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
           Court view — clean hit
         </p>
         <p className="mt-0.5 text-xs tabular-nums text-[var(--muted)]">
           Baseline → contact {formatFt(outFrontM)} out · {launchDeg.toFixed(1)}° leave · +{traj.netClearIn.toFixed(1)}″
-          over net
+          over 3.0 ft tape · {pathNote} · {faceNote}
         </p>
       </div>
     </div>

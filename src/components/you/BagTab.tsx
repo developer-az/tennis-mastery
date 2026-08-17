@@ -53,7 +53,7 @@ export function BagTab({
 
       {setup.stringId && (
         <label className="block">
-          <span className="mb-1 block text-[11px] uppercase tracking-wider text-[var(--muted)]">
+          <span className="sf-label mb-1 block">
             Tension (lbs)
           </span>
           <input
@@ -65,13 +65,13 @@ export function BagTab({
               const n = Number(e.target.value);
               if (Number.isFinite(n)) setTension(n);
             }}
-            className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
           />
         </label>
       )}
 
       <div>
-        <p className="mb-2 text-[11px] uppercase tracking-wider text-[var(--muted)]">Handle size</p>
+        <p className="sf-label mb-2">Handle size</p>
         <div className="flex flex-wrap gap-2">
           {GRIP_SIZES.map((g) => (
             <button
@@ -89,7 +89,7 @@ export function BagTab({
                     : "transparent",
                 color:
                   setup.gripSize === g.code || profile.grips.targetSize === g.code
-                    ? "#0b1a14"
+                    ? "var(--accent-ink)"
                     : "var(--foreground)",
                 boxShadow:
                   setup.gripSize === g.code || profile.grips.targetSize === g.code
@@ -104,14 +104,14 @@ export function BagTab({
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-[11px] uppercase tracking-wider text-[var(--muted)]">
+        <span className="sf-label mb-1 block">
           Grip build
         </span>
         <input
           value={buildNote}
           onChange={(e) => setBuildNote(e.target.value)}
           onBlur={() => setGrips({ targetBuildNote: buildNote })}
-          className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+          className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
         />
       </label>
 
@@ -184,7 +184,7 @@ function Row({
       className="flex w-full items-center justify-between gap-3 rounded-md border border-[var(--line)] px-4 py-3 text-left"
     >
       <span>
-        <span className="block text-[10px] uppercase tracking-wider text-[var(--muted)]">{label}</span>
+        <span className="sf-label block">{label}</span>
         <span className="mt-0.5 block text-sm">{value ?? `Add ${label.toLowerCase()}`}</span>
       </span>
       <span className="text-xs text-[var(--accent)]">Search</span>

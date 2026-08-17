@@ -45,7 +45,7 @@ export function AccountabilityStrip() {
   return (
     <div className="mb-4 space-y-2">
       {lockMsg && (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-100">
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-[var(--amber)]">
           {lockMsg}{" "}
           <Link href="/you" className="underline underline-offset-2">
             Resolve

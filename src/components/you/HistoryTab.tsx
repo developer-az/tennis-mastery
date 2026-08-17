@@ -75,7 +75,7 @@ export function HistoryTab() {
         <h3 className="font-[family-name:var(--font-display)] text-lg">One lever</h3>
         <div className="mt-2 flex flex-wrap gap-2">
           <select
-            className="flex-1 rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm"
+            className="flex-1 rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm"
             value={problem}
             onChange={(e) => setProblem(e.target.value as ProblemId)}
           >
@@ -88,7 +88,7 @@ export function HistoryTab() {
           <button
             type="button"
             onClick={() => startLeverWorkflow(problem)}
-            className="rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[#0b1a14]"
+            className="rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-[var(--accent-ink)]"
           >
             Rank levers
           </button>
@@ -131,25 +131,25 @@ export function HistoryTab() {
             placeholder="What changed"
             value={decChange}
             onChange={(e) => setDecChange(e.target.value)}
-            className="rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+            className="rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
           />
           <input
             placeholder="Reason"
             value={decReason}
             onChange={(e) => setDecReason(e.target.value)}
-            className="rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+            className="rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
           />
           <input
             placeholder="Prediction"
             value={decPrediction}
             onChange={(e) => setDecPrediction(e.target.value)}
-            className="rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+            className="rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
           />
         </div>
         {decError && <p className="mt-2 text-sm text-red-300">{decError}</p>}
         <button
           type="button"
-          className="mt-3 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1a14]"
+          className="mt-3 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)]"
           onClick={() => {
             const res = logDecision({
               setupSummary: summary,
@@ -173,7 +173,7 @@ export function HistoryTab() {
         <ul className="mt-4 space-y-3">
           {profile.decisions.map((d) => (
             <li key={d.id} className="border border-[var(--line)] px-3 py-2 text-sm">
-              <p className="text-[10px] uppercase text-[var(--muted)]">
+              <p className="sf-label">
                 {new Date(d.createdAt).toLocaleDateString()} · {d.lever} · {d.result}
               </p>
               <p className="font-medium">{d.changeSummary}</p>
@@ -191,7 +191,7 @@ export function HistoryTab() {
                         [d.id]: { note: e.target.value, body: p[d.id]?.body ?? "" },
                       }))
                     }
-                    className="w-full rounded-md border border-[var(--line)] bg-black/20 px-2 py-1.5 text-xs"
+                    className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-2 py-1.5 text-xs"
                   />
                   <input
                     placeholder="Body read (required)"
@@ -202,7 +202,7 @@ export function HistoryTab() {
                         [d.id]: { note: p[d.id]?.note ?? "", body: e.target.value },
                       }))
                     }
-                    className="w-full rounded-md border border-[var(--line)] bg-black/20 px-2 py-1.5 text-xs"
+                    className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-2 py-1.5 text-xs"
                   />
                   <div className="flex flex-wrap gap-1">
                     {RESULTS.map((r) => (

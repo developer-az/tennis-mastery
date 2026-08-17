@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Source_Sans_3, IBM_Plex_Mono } from "next/font/google";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import "./globals.css";
 
 const display = Outfit({
@@ -30,15 +31,24 @@ export const metadata: Metadata = {
     "Professional tennis biomechanics and gear molding. Scrub elite stroke models in 3D, build your bag, and keep every change accountable.",
 };
 
+/** Inline script avoids flash before React hydrates theme from localStorage / prefers-color-scheme. */
+const themeBoot = `(function(){try{var k='strokeform-theme';var s=localStorage.getItem(k);var m=s==='light'||s==='dark'?s:(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',m);document.documentElement.style.colorScheme=m;}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
       className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
+      </head>
       <body className="flex h-dvh flex-col overflow-hidden font-sans">
-        <AppHeader />
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+        <ThemeProvider>
+          <AppHeader />
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+        </ThemeProvider>
       </body>
     </html>
   );

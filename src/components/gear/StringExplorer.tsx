@@ -1,7 +1,7 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
-import type { StringProfile } from "@/types/equipment";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
+import type { EquipmentTab, StringProfile } from "@/types/equipment";
 import {
   GAUGE_FILTER_OPTIONS,
   gaugeLabel,
@@ -27,7 +27,8 @@ import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToS
 
 type TensionFilter = "all" | "soft" | "mid" | "firm" | "target";
 
-export function StringExplorer({ strings }: { strings: StringProfile[] }) {
+export function StringExplorer({ strings, onSelectTab }: { strings: StringProfile[]; onSelectTab?: (tab: EquipmentTab) => void; }) {
+  void onSelectTab;
   const setup = useGearStore((s) => s.setup);
   const setString = useGearStore((s) => s.setString);
   const setTensionStore = useGearStore((s) => s.setTension);
@@ -143,7 +144,8 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
       )
     : null;
   const inSetup = selected != null && selected.id === setup.stringId;
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const detailRef = useRef<HTMLDivElement>(null);
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
   const saveStringRow = (s: StringProfile) => {
     const t = tensionById[s.id] ?? s.recommendedTensionLbs;
@@ -194,9 +196,9 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
       : [];
 
   return (
-    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-6">
       <div className="order-1 space-y-3 lg:space-y-4">
-        <div className="sticky top-0 z-20 -mx-1 space-y-2 bg-[var(--background)]/95 px-1 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <div className="space-y-2">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -206,28 +208,14 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
             enterKeyHint="search"
             autoCapitalize="off"
             autoCorrect="off"
-            className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-3 text-base outline-none focus:border-[var(--accent)] sm:py-2.5 sm:text-sm"
+            className="w-full rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
           />
-          <button
-            type="button"
-            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-[var(--muted)]"
-            style={{ boxShadow: "0 0 0 1px var(--line)" }}
-            onClick={() => setFiltersOpen((o) => !o)}
-            aria-expanded={filtersOpen}
-          >
-            <span>Filters</span>
-            <span className="text-xs">{filtersOpen ? "Hide" : "Show"}</span>
-          </button>
-          <div
-            className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${
-              filtersOpen ? "" : "hidden"
-            }`}
-          >
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
             <select
               value={material}
               onChange={(e) => setMaterial(e.target.value)}
               aria-label="Material"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">All materials</option>
               <option value="poly">Poly family (poly + co-poly)</option>
@@ -242,7 +230,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               value={shape}
               onChange={(e) => setShape(e.target.value)}
               aria-label="Shape"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">Any shape</option>
               <option value="round">Round</option>
@@ -257,7 +245,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               value={gaugeFilter}
               onChange={(e) => setGaugeFilter(e.target.value)}
               aria-label="Gauge"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">Any gauge</option>
               {GAUGE_FILTER_OPTIONS.map((g) => (
@@ -270,7 +258,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               value={tensionFilter}
               onChange={(e) => setTensionFilter(e.target.value as TensionFilter)}
               aria-label="Tension band"
-              className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+              className="sf-select w-full"
             >
               <option value="all">Any tension band</option>
               <option value="soft">Soft rec. (≤50 lbs)</option>
@@ -305,18 +293,25 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
           <div
             className="rounded-md px-3 py-3 text-sm leading-relaxed"
             style={{
-              background: "rgba(125,211,252,0.06)",
-              boxShadow: "inset 0 0 0 1px rgba(125,211,252,0.25)",
+              background: "color-mix(in srgb, var(--chart-spin) 8%, transparent)",
+              boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--chart-spin) 28%, transparent)",
             }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-300">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sky)]">
               Category · {filtered.length} match
               {filtered.length === 1 ? "" : "es"}
             </p>
             <p className="mt-2 text-[var(--foreground)]/90">
               {stringCategoryBlurb(categoryMaterial, categoryGauge, shape)}
             </p>
-            <ul className="mt-3 max-h-48 space-y-1.5 overflow-y-auto text-xs text-[var(--muted)]">
+            <button
+              type="button"
+              className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[var(--chart-spin)]"
+              onClick={() => setCategoryOpen((o) => !o)}
+            >
+              {categoryOpen ? "Hide matches" : "Show matching beds"}
+            </button>
+            <ul className={`mt-3 max-h-48 space-y-1.5 overflow-y-auto text-xs text-[var(--muted)] ${categoryOpen ? "" : "hidden"}`}>
               {[...filtered]
                 .sort((a, b) => b.spin - a.spin)
                 .slice(0, 12)
@@ -325,7 +320,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                     <button
                       type="button"
                       onClick={() => setSelectedId(s.id)}
-                      className="text-left transition hover:text-sky-300"
+                      className="text-left transition hover:text-[var(--sky)]"
                     >
                       {s.brand} {s.name}
                       <span className="tabular-nums text-[var(--foreground)]/60">
@@ -360,10 +355,17 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               <li key={s.id} className="flex items-stretch gap-0.5">
                 <button
                   type="button"
-                  onClick={() => setSelectedId(s.id)}
+                  onClick={() => {
+                    setSelectedId(s.id);
+                    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+                      requestAnimationFrame(() =>
+                        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                      );
+                    }
+                  }}
                   aria-pressed={active}
-                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-3 text-left transition sm:gap-3 ${
-                    active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
+                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left transition sm:gap-3 ${
+                    active ? "bg-[var(--accent-dim)]" : "hover:bg-[var(--overlay-hover)]"
                   }`}
                 >
                   <EquipmentThumb
@@ -375,7 +377,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                     <span className="flex flex-wrap items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
                       {s.brand} {s.name}
                       {saved ? (
-                        <span className="rounded bg-sky-400/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-sky-300">
+                        <span className="rounded bg-[var(--sky)]/15 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-[var(--sky)]">
                           Setup
                         </span>
                       ) : null}
@@ -388,10 +390,10 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                       </span>
                     </span>
                     <span className="hidden flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] tabular-nums text-[var(--foreground)]/70 sm:flex">
-                      <span style={{ color: "#7dd3fc" }}>Sp {s.spin}</span>
-                      <span style={{ color: "#c8f560" }}>Ctl {s.control}</span>
-                      <span style={{ color: "#f4a261" }}>Pwr {s.power}</span>
-                      <span style={{ color: "#e9c46a" }}>Dur {s.durability}</span>
+                      <span style={{ color: "var(--chart-spin)" }}>Sp {s.spin}</span>
+                      <span style={{ color: "var(--chart-control)" }}>Ctl {s.control}</span>
+                      <span style={{ color: "var(--chart-power)" }}>Pwr {s.power}</span>
+                      <span style={{ color: "var(--chart-comfort)" }}>Dur {s.durability}</span>
                       <span>Tm {s.tensionMaintenance}</span>
                       <span>Stf {stringStiffness(s)}</span>
                     </span>
@@ -405,9 +407,9 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                   }}
                   className="m-1.5 min-h-11 shrink-0 self-center rounded-md px-3 py-2.5 text-xs font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:min-h-10 sm:px-3.5"
                   style={{
-                    background: saved ? "rgba(125,211,252,0.12)" : "var(--accent)",
-                    color: saved ? "#7dd3fc" : "#0b1a14",
-                    boxShadow: saved ? "0 0 0 1px #7dd3fc" : "none",
+                    background: saved ? "color-mix(in srgb, var(--chart-spin) 14%, transparent)" : "var(--accent)",
+                    color: saved ? "var(--chart-spin)" : "var(--accent-ink)",
+                    boxShadow: saved ? "0 0 0 1px var(--chart-spin)" : "none",
                   }}
                   aria-label={
                     saved
@@ -430,7 +432,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
 
       {selected && selectedOutcome && (
         <div
-          className="order-2 space-y-6 lg:space-y-8"
+          ref={detailRef} className="order-2 scroll-mt-16 space-y-6 lg:space-y-8"
           key={selected.id}
           style={{ animation: "rise 0.45s ease-out both" }}
         >
@@ -441,7 +443,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
               size="lg"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-300">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--sky)]">
                 {materialLabel(selected.material)} · {shapeLabel(selected.shape)}
               </p>
               <h3 className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
@@ -455,7 +457,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                 <span
                   className="rounded-md px-2.5 py-1 font-medium tabular-nums"
                   style={{
-                    color: "#c8f560",
+                    color: "var(--chart-control)",
                     background: "color-mix(in srgb, #c8f560 12%, transparent)",
                     boxShadow: "inset 0 0 0 1px color-mix(in srgb, #c8f560 40%, transparent)",
                   }}
@@ -480,9 +482,9 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                 onClick={() => saveStringRow(selected)}
                 className="mt-4 min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
                 style={{
-                  background: inSetup ? "rgba(125,211,252,0.12)" : "var(--accent)",
-                  color: inSetup ? "#7dd3fc" : "#0b1a14",
-                  boxShadow: inSetup ? "0 0 0 1px #7dd3fc" : "none",
+                  background: inSetup ? "color-mix(in srgb, var(--chart-spin) 14%, transparent)" : "var(--accent)",
+                  color: inSetup ? "var(--chart-spin)" : "var(--accent-ink)",
+                  boxShadow: inSetup ? "0 0 0 1px var(--chart-spin)" : "none",
                 }}
               >
                 {inSetup ? "Saved in my setup" : "Save to my setup"}
@@ -494,17 +496,17 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
 
           <ScoreGrid
             scores={[
-              { label: "Spin @ setup", value: selectedOutcome.spin, accent: "#7dd3fc" },
+              { label: "Spin @ setup", value: selectedOutcome.spin, accent: "var(--chart-spin)" },
               { label: "Control @ setup", value: selectedOutcome.control },
-              { label: "Power @ setup", value: selectedOutcome.power, accent: "#f4a261" },
-              { label: "Comfort @ setup", value: selectedOutcome.comfort, accent: "#e9c46a" },
-              { label: "Durability @ gauge", value: selectedOutcome.durability, accent: "#f4a261" },
+              { label: "Power @ setup", value: selectedOutcome.power, accent: "var(--chart-power)" },
+              { label: "Comfort @ setup", value: selectedOutcome.comfort, accent: "var(--chart-comfort)" },
+              { label: "Durability @ gauge", value: selectedOutcome.durability, accent: "var(--chart-power)" },
               {
                 label: "Tension maintenance",
                 value: selected.tensionMaintenance,
-                accent: "#e9c46a",
+                accent: "var(--chart-comfort)",
               },
-              { label: "Stiffness feel", value: selectedOutcome.stiffness, accent: "#e8efe9" },
+              { label: "Stiffness feel", value: selectedOutcome.stiffness, accent: "var(--muted)" },
             ]}
           />
 
@@ -513,7 +515,7 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
             if (alts.length === 0) return null;
             return (
               <section className="border-t border-[var(--line)] pt-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
                   Similar feel — shop substitutes
                 </p>
                 <p className="mt-1 text-xs text-[var(--muted)]">
@@ -529,12 +531,12 @@ export function StringExplorer({ strings }: { strings: StringProfile[] }) {
                       <button
                         type="button"
                         onClick={() => setSelectedId(a.string.id)}
-                        className="min-w-0 text-left transition hover:text-sky-300"
+                        className="min-w-0 text-left transition hover:text-[var(--sky)]"
                       >
                         <span className="font-[family-name:var(--font-display)] tracking-tight">
                           {a.string.brand} {a.string.name}
                         </span>
-                        <span className="ml-2 text-[11px] tabular-nums text-sky-300/80">
+                        <span className="ml-2 text-[11px] tabular-nums text-[var(--sky)]">
                           {a.score}%
                         </span>
                         <span className="mt-0.5 block text-[11px] text-[var(--muted)]">
@@ -727,13 +729,13 @@ function CompareColumn({
   return (
     <div className="space-y-3 border-t border-[var(--line)] pt-3">
       <p className="text-sm font-medium">{label}</p>
-      <ScoreMeter label="Spin" value={spin} accent="#7dd3fc" />
+      <ScoreMeter label="Spin" value={spin} accent="var(--chart-spin)" />
       <ScoreMeter label="Control" value={control} />
-      <ScoreMeter label="Power" value={power} accent="#f4a261" />
-      <ScoreMeter label="Comfort" value={comfort} accent="#e9c46a" />
-      <ScoreMeter label="Durability" value={durability} accent="#f4a261" />
-      <ScoreMeter label="Stiffness" value={stiffness} accent="#e8efe9" />
-      <ScoreMeter label="Tension maint." value={tensionMaint} accent="#e9c46a" />
+      <ScoreMeter label="Power" value={power} accent="var(--chart-power)" />
+      <ScoreMeter label="Comfort" value={comfort} accent="var(--chart-comfort)" />
+      <ScoreMeter label="Durability" value={durability} accent="var(--chart-power)" />
+      <ScoreMeter label="Stiffness" value={stiffness} accent="var(--muted)" />
+      <ScoreMeter label="Tension maint." value={tensionMaint} accent="var(--chart-comfort)" />
     </div>
   );
 }

@@ -76,7 +76,7 @@ export function SetupDials({
 
       {outcome ? (
         <p className="mt-2 text-[11px] leading-relaxed text-[var(--muted)]">
-          <span className="text-sky-300/90">Science — </span>
+          <span className="text-[var(--sky)]">Science — </span>
           {outcome.dwellHint} {outcome.launchHint}
           {string && setup.tensionLbs != null
             ? ` Midpoint ${string.recommendedTensionLbs} lbs; ±2 lbs is a clean A/B step.`

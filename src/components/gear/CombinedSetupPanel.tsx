@@ -15,15 +15,18 @@ import { EquipmentThumb } from "./EquipmentThumb";
 import { InBandImproveSection } from "./InBandImproveSection";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 import { LeadTapeRacketDiagram } from "./LeadTapeRacketDiagram";
+import { gripImageUrl, racketImageUrl, stringImageUrl } from "@/lib/equipment/media/urls";
 
 export function CombinedSetupPanel({
   rackets,
   strings,
   grips,
+  onSelectTab,
 }: {
   rackets: RacketProfile[];
   strings: StringProfile[];
   grips: GripProfile[];
+  onSelectTab?: (tab: EquipmentTab) => void;
 }) {
   const setup = useGearStore((s) => s.setup);
   const setTab = useGearStore((s) => s.setTab);
@@ -66,10 +69,8 @@ export function CombinedSetupPanel({
   );
 
   const go = (tab: EquipmentTab) => {
-    setTab(tab);
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", tab);
-    window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}`);
+    if (onSelectTab) onSelectTab(tab);
+    else setTab(tab);
   };
 
   const tapeByZone = useMemo(() => {
@@ -111,7 +112,7 @@ export function CombinedSetupPanel({
               key={tab}
               type="button"
               onClick={() => go(tab)}
-              className="rounded-md px-3 py-1.5 text-xs text-[var(--foreground)] transition hover:bg-white/5"
+              className="rounded-md px-3 py-1.5 text-xs text-[var(--foreground)] transition hover:bg-[var(--overlay-hover)]"
               style={{ boxShadow: "0 0 0 1px var(--line)" }}
             >
               {label}
@@ -143,14 +144,14 @@ export function CombinedSetupPanel({
           <div className="flex shrink-0 flex-wrap gap-2">
             <Link
               href="/lab"
-              className="rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-medium text-[#0b1a14] transition hover:brightness-110"
+              className="rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-medium text-[var(--accent-ink)] transition hover:brightness-110"
             >
               Lab
             </Link>
             <button
               type="button"
               onClick={() => go("lead-tape")}
-              className="rounded-md px-4 py-2 text-xs transition hover:bg-white/5"
+              className="rounded-md px-4 py-2 text-xs transition hover:bg-[var(--overlay-hover)]"
               style={{ boxShadow: "0 0 0 1px var(--line)" }}
             >
               Tune
@@ -173,7 +174,7 @@ export function CombinedSetupPanel({
             thumb={
               setup.racketSlug ? (
                 <EquipmentThumb
-                  src={`/api/equipment/rackets/${setup.racketSlug}/image`}
+                  src={racketImageUrl({ slug: setup.racketSlug })}
                   alt={setup.racketLabel ?? "Racket"}
                   size="md"
                 />
@@ -193,7 +194,7 @@ export function CombinedSetupPanel({
             thumb={
               setup.stringId ? (
                 <EquipmentThumb
-                  src={`/api/equipment/strings/${setup.stringId}/image`}
+                  src={stringImageUrl({ id: setup.stringId })}
                   alt={setup.stringLabel ?? "String"}
                   size="md"
                 />
@@ -213,7 +214,7 @@ export function CombinedSetupPanel({
             thumb={
               setup.gripId ? (
                 <EquipmentThumb
-                  src={`/api/equipment/grips/${setup.gripId}/image`}
+                  src={gripImageUrl({ id: setup.gripId })}
                   alt={gripStackLabel ?? "Grip"}
                   size="md"
                 />
@@ -289,11 +290,78 @@ export function CombinedSetupPanel({
         />
       </div>
 
+
+      {(insight.scores.power != null || insight.scores.comfort != null) && (
+        <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+            Molded scores
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Frame + string + grip + tape. Deltas vs stock frame.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(
+              [
+                ["Power", insight.scores.power, insight.stockScores.power, insight.scoreDeltas.total.power, "var(--chart-power)"],
+                ["Spin", insight.scores.spin, insight.stockScores.spin, insight.scoreDeltas.total.spin, "var(--chart-spin)"],
+                ["Control", insight.scores.control, insight.stockScores.control, insight.scoreDeltas.total.control, "var(--chart-control)"],
+                ["Comfort", insight.scores.comfort, insight.stockScores.comfort, insight.scoreDeltas.total.comfort, "var(--chart-comfort)"],
+              ] as const
+            ).map(([label, v, stock, delta, color]) => (
+              <div key={label}>
+                <p className="text-[10px] uppercase tracking-[0.14em]" style={{ color }}>
+                  {label}
+                </p>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--foreground)_12%,transparent)]">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-500"
+                    style={{
+                      width: `${Math.max(0, Math.min(100, v ?? 0))}%`,
+                      background: color,
+                    }}
+                  />
+                </div>
+                <p className="mt-1 font-[family-name:var(--font-display)] text-xl tabular-nums tracking-tight">
+                  {v ?? "—"}
+                  {stock != null && Math.abs(delta) >= 0.5 ? (
+                    <span className="ml-1.5 text-xs text-[var(--muted)]">
+                      {stock}
+                      <span style={{ color }}>
+                        {" "}
+                        {delta > 0 ? "+" : ""}
+                        {Math.round(delta)}
+                      </span>
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+            ))}
+          </div>
+          {(insight.hasString || insight.hasGrip || insight.hasTape) && (
+            <p className="mt-3 text-[11px] tabular-nums text-[var(--muted)]">
+              Shifts — string P/S/C{" "}
+              {fmtDelta(insight.scoreDeltas.string.power)}/
+              {fmtDelta(insight.scoreDeltas.string.spin)}/
+              {fmtDelta(insight.scoreDeltas.string.control)}
+              {" · "}grip{" "}
+              {fmtDelta(insight.scoreDeltas.grip.power)}/
+              {fmtDelta(insight.scoreDeltas.grip.spin)}/
+              {fmtDelta(insight.scoreDeltas.grip.control)}
+              {" · "}tape{" "}
+              {fmtDelta(insight.scoreDeltas.tape.power)}/
+              {fmtDelta(insight.scoreDeltas.tape.spin)}/
+              {fmtDelta(insight.scoreDeltas.tape.control)}
+            </p>
+          )}
+        </div>
+      )}
+
       <InBandImproveSection plan={insight.inBand} />
 
       <details className="group space-y-6">
-        <summary className="cursor-pointer text-sm text-[var(--muted)] hover:text-[var(--foreground)]">
-          How this was calculated
+        <summary className="cursor-pointer list-none text-sm text-[var(--muted)] hover:text-[var(--foreground)] [&::-webkit-details-marker]:hidden">
+          <span className="underline-offset-2 group-open:text-[var(--foreground)]">Deep coaching &amp; flight visuals</span>
+          <span className="ml-2 text-[10px] uppercase tracking-[0.12em] opacity-70">expand</span>
         </summary>
         <div className="mt-4 space-y-6">
 
@@ -426,7 +494,7 @@ export function CombinedSetupPanel({
                 {insight.forehand.avoid}
               </p>
               <p className="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">
-                <span className="text-sky-300/90">Science — </span>
+                <span className="text-[var(--sky)]">Science — </span>
                 Grip sets face lean; path loads spin. Opening the face sends the ball up without
                 adding drop — that’s how clean hits sail long.
               </p>
@@ -436,71 +504,6 @@ export function CombinedSetupPanel({
       ) : null}
 
       {/* Delta breakdown moved to the compact header */}
-
-      {(insight.scores.power != null || insight.scores.comfort != null) && (
-        <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
-            Molded scores
-          </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">
-            Frame + string + grip + tape. Deltas vs stock frame.
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {(
-              [
-                ["Power", insight.scores.power, insight.stockScores.power, insight.scoreDeltas.total.power, "#f4a261"],
-                ["Spin", insight.scores.spin, insight.stockScores.spin, insight.scoreDeltas.total.spin, "#7dd3fc"],
-                ["Control", insight.scores.control, insight.stockScores.control, insight.scoreDeltas.total.control, "#c8f560"],
-                ["Comfort", insight.scores.comfort, insight.stockScores.comfort, insight.scoreDeltas.total.comfort, "#e9c46a"],
-              ] as const
-            ).map(([label, v, stock, delta, color]) => (
-              <div key={label}>
-                <p className="text-[10px] uppercase tracking-[0.14em]" style={{ color }}>
-                  {label}
-                </p>
-                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/5">
-                  <div
-                    className="h-full rounded-full transition-[width] duration-500"
-                    style={{
-                      width: `${Math.max(0, Math.min(100, v ?? 0))}%`,
-                      background: color,
-                    }}
-                  />
-                </div>
-                <p className="mt-1 font-[family-name:var(--font-display)] text-xl tabular-nums tracking-tight">
-                  {v ?? "—"}
-                  {stock != null && Math.abs(delta) >= 0.5 ? (
-                    <span className="ml-1.5 text-xs text-[var(--muted)]">
-                      {stock}
-                      <span style={{ color }}>
-                        {" "}
-                        {delta > 0 ? "+" : ""}
-                        {Math.round(delta)}
-                      </span>
-                    </span>
-                  ) : null}
-                </p>
-              </div>
-            ))}
-          </div>
-          {(insight.hasString || insight.hasGrip || insight.hasTape) && (
-            <p className="mt-3 text-[11px] tabular-nums text-[var(--muted)]">
-              Shifts — string P/S/C{" "}
-              {fmtDelta(insight.scoreDeltas.string.power)}/
-              {fmtDelta(insight.scoreDeltas.string.spin)}/
-              {fmtDelta(insight.scoreDeltas.string.control)}
-              {" · "}grip{" "}
-              {fmtDelta(insight.scoreDeltas.grip.power)}/
-              {fmtDelta(insight.scoreDeltas.grip.spin)}/
-              {fmtDelta(insight.scoreDeltas.grip.control)}
-              {" · "}tape{" "}
-              {fmtDelta(insight.scoreDeltas.tape.power)}/
-              {fmtDelta(insight.scoreDeltas.tape.spin)}/
-              {fmtDelta(insight.scoreDeltas.tape.control)}
-            </p>
-          )}
-        </div>
-      )}
 
       {insight.tuneTips.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
@@ -514,12 +517,12 @@ export function CombinedSetupPanel({
             {insight.tuneTips.map((tip) => {
               const accent =
                 tip.score === "spin"
-                  ? "#7dd3fc"
+                  ? "var(--chart-spin)"
                   : tip.score === "power"
-                    ? "#f4a261"
+                    ? "var(--chart-power)"
                     : tip.score === "comfort"
-                      ? "#e9c46a"
-                      : "#c8f560";
+                      ? "var(--chart-comfort)"
+                      : "var(--chart-control)";
               const verdictLabel =
                 tip.verdict === "low"
                   ? "Room to raise"
@@ -560,7 +563,7 @@ export function CombinedSetupPanel({
                       </ul>
                       {tip.tapeRaise?.length ? (
                         <>
-                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-300">
+                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--sky)]">
                             Lead tape — raise
                           </p>
                           <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -582,7 +585,7 @@ export function CombinedSetupPanel({
                       </ul>
                       {tip.tapeLower?.length ? (
                         <>
-                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-300/80">
+                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--sky)]">
                             Lead tape — lower
                           </p>
                           <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -599,13 +602,13 @@ export function CombinedSetupPanel({
                     {tip.tradeoff}
                   </p>
                   <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--foreground)]/70">
-                    <span className="text-sky-300/90">Science — </span>
+                    <span className="text-[var(--sky)]">Science — </span>
                     {tip.science}
                   </p>
                   <button
                     type="button"
                     onClick={() => go("lead-tape")}
-                    className="mt-2 text-[11px] font-medium text-sky-300"
+                    className="mt-2 text-[11px] font-medium text-[var(--sky)]"
                   >
                     Open lead tape lab →
                   </button>
@@ -662,7 +665,7 @@ export function CombinedSetupPanel({
 
       {insight.scienceNotes.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
             What your numbers mean
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
@@ -670,7 +673,7 @@ export function CombinedSetupPanel({
           </p>
           <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-[var(--foreground)]/85">
             {insight.scienceNotes.map((n) => (
-              <li key={n} className="border-l-2 border-sky-400/40 pl-3">
+              <li key={n} className="border-l-2 border-[var(--sky)]/40 pl-3">
                 {n}
               </li>
             ))}
@@ -702,7 +705,7 @@ export function CombinedSetupPanel({
 
       {stringAlts.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
             Similar string feel — shop around
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
@@ -718,7 +721,7 @@ export function CombinedSetupPanel({
                 <div className="min-w-0">
                   <p className="font-[family-name:var(--font-display)] tracking-tight">
                     {a.string.brand} {a.string.name}
-                    <span className="ml-2 text-[11px] tabular-nums text-sky-300/90">
+                    <span className="ml-2 text-[11px] tabular-nums text-[var(--sky)]">
                       {a.score}% match
                     </span>
                   </p>
@@ -730,8 +733,8 @@ export function CombinedSetupPanel({
                     void navigator.clipboard?.writeText(a.shopQuery);
                     go("strings");
                   }}
-                  className="shrink-0 rounded-md px-2.5 py-1.5 text-[11px] text-sky-300"
-                  style={{ boxShadow: "0 0 0 1px rgba(125,211,252,0.35)" }}
+                  className="shrink-0 rounded-md px-2.5 py-1.5 text-[11px] text-[var(--sky)]"
+                  style={{ boxShadow: "0 0 0 1px color-mix(in srgb, var(--sky) 40%, transparent)" }}
                   title="Copy shop search and open Strings"
                 >
                   Copy “{a.shopQuery}”
@@ -844,7 +847,7 @@ function Chip({
       className={`rounded-md px-2.5 py-1.5 text-xs transition ${
         active
           ? "bg-[var(--accent-dim)] text-[var(--accent)]"
-          : "text-[var(--muted)] hover:bg-white/5 hover:text-[var(--foreground)]"
+          : "text-[var(--muted)] hover:bg-[var(--overlay-hover)] hover:text-[var(--foreground)]"
       }`}
       style={active ? undefined : { boxShadow: "0 0 0 1px var(--line)" }}
     >
@@ -872,11 +875,11 @@ function PieceCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex gap-3 rounded-md border border-[var(--line)] bg-black/15 p-3 text-left transition hover:border-[var(--accent)]/40 hover:bg-white/[0.03]"
+      className="flex gap-3 rounded-md border border-[var(--line)] bg-[var(--bg-scene)] p-3 text-left transition hover:border-[var(--accent)]/40 hover:bg-[var(--overlay-hover)]"
     >
       {thumb}
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">{label}</p>
+        <p className="sf-label">{label}</p>
         <p className={`mt-0.5 truncate text-sm ${filled ? "text-[var(--foreground)]" : "text-[var(--muted)]"}`}>
           {title}
         </p>

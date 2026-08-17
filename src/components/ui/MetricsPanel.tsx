@@ -21,7 +21,7 @@ function Metric({
 }) {
   return (
     <div className="border-t border-[var(--line)] pt-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--label)]">
         {label}
       </p>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight text-[var(--foreground)]">
@@ -156,7 +156,7 @@ function SetupBridge({
 
   return (
     <div
-      className="rounded-md border border-[var(--line)] bg-black/20 p-3"
+      className="rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] p-3"
       style={{ boxShadow: "inset 0 0 0 1px rgba(200,245,96,0.06)" }}
     >
       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">

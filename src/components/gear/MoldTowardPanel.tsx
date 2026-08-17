@@ -116,23 +116,17 @@ export function MoldTowardPanel({
   };
 
   return (
-    <section
-      className="space-y-4 rounded-md border border-[var(--line)] bg-black/15 p-4"
-      style={{ animation: "rise 0.4s ease-out both" }}
-    >
+    <section className="space-y-3 rounded-md border border-[var(--line)] bg-[var(--panel)] p-4">
       <header>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
-          Mold toward a target
+        <p className="text-[10px] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+          Match a frame
         </p>
-        <h4 className="mt-1 font-[family-name:var(--font-display)] text-xl tracking-tight">
-          Pro feel on a budget frame
+        <h4 className="mt-1 font-[family-name:var(--font-display)] text-lg tracking-tight">
+          Copy a target with tape
         </h4>
-        <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-          Pick a target mold (often a pro&apos;s retail frame). We estimate lead-tape on{" "}
-          <span className="text-[var(--foreground)]/85">
-            {stock.brand} {stock.model}
-          </span>{" "}
-          to close weight / SW / balance — and list lighter alternatives you can customize instead.
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Search a pro or retail mold. We place tape on {stock.brand} {stock.model} to close weight,
+          swingweight, and balance.
         </p>
       </header>
 
@@ -144,7 +138,7 @@ export function MoldTowardPanel({
           placeholder="Search Prestige Pro, Alcaraz, CX 200…"
           inputMode="search"
           enterKeyHint="search"
-          className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+          className="w-full rounded-md border border-[var(--line)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
         />
       </label>
 
@@ -160,7 +154,7 @@ export function MoldTowardPanel({
                 disabled={isStock}
                 onClick={() => setTargetSlug(r.slug)}
                 className={`flex w-full flex-col gap-0.5 px-2 py-2.5 text-left text-sm transition disabled:opacity-40 ${
-                  active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
+                  active ? "bg-[var(--accent-dim)]" : "hover:bg-[var(--overlay-hover)]"
                 }`}
               >
                 <span className="font-[family-name:var(--font-display)] tracking-tight">
@@ -221,7 +215,7 @@ export function MoldTowardPanel({
               <button
                 type="button"
                 onClick={() => onApplyPlan(plan)}
-                className="min-h-11 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1a14] transition hover:brightness-110"
+                className="min-h-11 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)] transition hover:brightness-110"
               >
                 Apply tape plan to My setup
               </button>

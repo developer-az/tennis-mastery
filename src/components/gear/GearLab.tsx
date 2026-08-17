@@ -13,46 +13,15 @@ import { GripExplorer } from "./GripExplorer";
 import { LeadTapeLab } from "./LeadTapeLab";
 import { AccountabilityStrip } from "./AccountabilityStrip";
 
-const TABS: { id: EquipmentTab; label: string; blurb: string }[] = [
-  {
-    id: "overview",
-    label: "My setup",
-    blurb:
-      "Dial tension, gauge, and grip size here. See molded launch, string substitutes you can shop, and honest pros/cons — then jump to lead tape to mold toward a pro frame on a budget.",
-  },
-  {
-    id: "rackets",
-    label: "Rackets",
-    blurb:
-      "Launch angle, swing path, and playing style for modern frames. Filter by brand, style, weight, head size, and pattern — compare to your tested setup, then save your frame.",
-  },
-  {
-    id: "strings",
-    label: "Strings",
-    blurb:
-      "Find poly 1.30 or any material/gauge/shape bucket, learn the category, then compare beds to what you have already hit with. Tension and gauge move the scores.",
-  },
-  {
-    id: "grips",
-    label: "Grips",
-    blurb:
-      "Overgrips and replacement grips — tack, cushion, sweat feel, plus your frame’s L0–L5 grip size. Dial size anytime under My setup.",
-  },
-  {
-    id: "lead-tape",
-    label: "Lead tape",
-    blurb:
-      "Mold your frame toward a pro or target retail setup — calculated tip/handle plans — or place tape by hand and watch SW, balance, launch, and path shift live.",
-  },
+const TABS: { id: EquipmentTab; label: string; short: string }[] = [
+  { id: "overview", label: "Setup", short: "Setup" },
+  { id: "rackets", label: "Rackets", short: "Frames" },
+  { id: "strings", label: "Strings", short: "Strings" },
+  { id: "grips", label: "Grips", short: "Grips" },
+  { id: "lead-tape", label: "Lead tape", short: "Tape" },
 ];
 
-const TAB_IDS = new Set<EquipmentTab>([
-  "overview",
-  "rackets",
-  "strings",
-  "grips",
-  "lead-tape",
-]);
+const TAB_IDS = new Set<EquipmentTab>(TABS.map((t) => t.id));
 
 export function GearLab({
   rackets,
@@ -79,40 +48,41 @@ export function GearLab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const selectTab = (id: EquipmentTab) => {
+  const selectTab = (id: EquipmentTab, extra?: Record<string, string | null>) => {
     setTab(id);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", id);
+    if (extra) {
+      for (const [k, v] of Object.entries(extra)) {
+        if (v == null) params.delete(k);
+        else params.set(k, v);
+      }
+    }
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:px-10 md:py-10">
-      <header className="mb-6 border-b border-[var(--line)] pb-6">
-        <p className="sf-kicker">Gear lab</p>
-        <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight md:text-4xl">
-          Build and mold your bag
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
-          Compare retail frames and beds to what you already hit with. Dial tension and gauge, place
-          lead tape, and keep every change tied to the same mold physics.
-        </p>
+    <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 md:px-10 md:py-8">
+      <header className="mb-3 flex flex-wrap items-end justify-between gap-3 md:mb-4">
+        <div>
+          <p className="sf-kicker">Gear lab</p>
+          <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight md:text-3xl">
+            Your bag
+          </h1>
+        </div>
+        <MySetupBar onSelectTab={selectTab} />
       </header>
 
-      <MySetupBar onSelectTab={selectTab} />
       <AccountabilityStrip />
-      <div className="mb-4">
-        <SetupDials strings={strings} compact hideStringDials={tab === "strings"} />
-      </div>
 
-      <div
-        className="sticky top-0 z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:backdrop-blur-none"
-      >
-        <div
-          className="relative z-20 flex gap-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] sm:overflow-visible [&::-webkit-scrollbar]:hidden"
-          role="tablist"
-          aria-label="Equipment category"
-        >
+      {tab === "overview" || tab === "strings" || tab === "grips" ? (
+        <div className="mb-3">
+          <SetupDials strings={strings} compact hideStringDials={false} />
+        </div>
+      ) : null}
+
+      <div className="sticky top-0 z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 backdrop-blur md:static md:mx-0 md:bg-transparent md:px-0 md:backdrop-blur-none">
+        <div className="sf-tab-track" role="tablist" aria-label="Equipment category">
           {TABS.map((t) => {
             const active = tab === t.id;
             return (
@@ -135,56 +105,44 @@ export function GearLab({
                     selectTab(TABS[(idx - 1 + TABS.length) % TABS.length].id);
                   }
                 }}
-                className={`relative z-20 shrink-0 cursor-pointer px-3.5 py-3.5 text-sm font-medium tracking-[0.03em] transition sm:px-4 ${
-                  active
-                    ? "text-[var(--foreground)]"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
+                className="sf-tab"
               >
-                {t.label}
-                <span
-                  className={`absolute inset-x-3 bottom-0 h-px ${
-                    active ? "bg-[var(--accent)]" : "bg-transparent"
-                  }`}
-                  aria-hidden
-                />
+                <span className="sm:hidden">{t.short}</span>
+                <span className="hidden sm:inline">{t.label}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className="relative z-10 mt-8">
+      <div className="relative z-10 mt-4 md:mt-6">
         {tab === "overview" ? (
-          <div
-            id="gear-panel-overview"
-            role="tabpanel"
-            aria-labelledby="gear-tab-overview"
-          >
-            <CombinedSetupPanel rackets={rackets} strings={strings} grips={grips} />
+          <div id="gear-panel-overview" role="tabpanel" aria-labelledby="gear-tab-overview">
+            <CombinedSetupPanel
+              rackets={rackets}
+              strings={strings}
+              grips={grips}
+              onSelectTab={selectTab}
+            />
           </div>
         ) : null}
         {tab === "rackets" ? (
           <div id="gear-panel-rackets" role="tabpanel" aria-labelledby="gear-tab-rackets">
-            <RacketExplorer initialRackets={rackets} meta={racketMeta} />
+            <RacketExplorer initialRackets={rackets} meta={racketMeta} onSelectTab={selectTab} />
           </div>
         ) : null}
         {tab === "strings" ? (
           <div id="gear-panel-strings" role="tabpanel" aria-labelledby="gear-tab-strings">
-            <StringExplorer strings={strings} />
+            <StringExplorer strings={strings} onSelectTab={selectTab} />
           </div>
         ) : null}
         {tab === "grips" ? (
           <div id="gear-panel-grips" role="tabpanel" aria-labelledby="gear-tab-grips">
-            <GripExplorer grips={grips} />
+            <GripExplorer grips={grips} onSelectTab={selectTab} />
           </div>
         ) : null}
         {tab === "lead-tape" ? (
-          <div
-            id="gear-panel-lead-tape"
-            role="tabpanel"
-            aria-labelledby="gear-tab-lead-tape"
-          >
+          <div id="gear-panel-lead-tape" role="tabpanel" aria-labelledby="gear-tab-lead-tape">
             <LeadTapeLab rackets={rackets} />
           </div>
         ) : null}

@@ -128,7 +128,7 @@ export function SetupWizard({
                 <button
                   type="button"
                   onClick={next}
-                  className="mt-8 w-full rounded-md bg-[var(--accent)] py-3.5 text-sm font-medium text-[#0b1a14]"
+                  className="mt-8 w-full rounded-md bg-[var(--accent)] py-3.5 text-sm font-medium text-[var(--accent-ink)]"
                 >
                   Let’s go
                 </button>
@@ -149,7 +149,7 @@ export function SetupWizard({
                   onChange={(e) => setNameDraft(e.target.value)}
                   onBlur={() => setDisplayName(nameDraft)}
                   placeholder="Your name"
-                  className="w-full rounded-md border border-[var(--line)] bg-black/20 px-4 py-3 text-base outline-none focus:border-[var(--accent)]"
+                  className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-4 py-3 text-base outline-none focus:border-[var(--accent)]"
                 />
                 <Primary onClick={() => { setDisplayName(nameDraft); next(); }}>Continue</Primary>
               </Step>
@@ -291,7 +291,7 @@ export function SetupWizard({
                   onClick={() => setPicker("racket")}
                   className="w-full rounded-md border border-[var(--line)] px-4 py-4 text-left"
                 >
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">Racket</p>
+                  <p className="sf-label">Racket</p>
                   <p className="mt-1 text-sm font-medium">
                     {setup.racketLabel ?? "Search and pick a frame"}
                   </p>
@@ -301,7 +301,7 @@ export function SetupWizard({
                   onClick={() => setPicker("string")}
                   className="mt-2 w-full rounded-md border border-[var(--line)] px-4 py-4 text-left"
                 >
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">String</p>
+                  <p className="sf-label">String</p>
                   <p className="mt-1 text-sm font-medium">
                     {setup.stringLabel
                       ? `${setup.stringLabel}${setup.tensionLbs != null ? ` @ ${setup.tensionLbs} lbs` : ""}`
@@ -347,7 +347,7 @@ export function SetupWizard({
                 <Link
                   href="/lab"
                   onClick={() => complete()}
-                  className="mt-8 block w-full rounded-md bg-[var(--accent)] py-3.5 text-center text-sm font-medium text-[#0b1a14]"
+                  className="mt-8 block w-full rounded-md bg-[var(--accent)] py-3.5 text-center text-sm font-medium text-[var(--accent-ink)]"
                 >
                   See it in Lab
                 </Link>
@@ -415,12 +415,12 @@ function Choice({
       className="w-full rounded-md px-4 py-3.5 text-left transition"
       style={{
         background: active ? "var(--accent)" : "transparent",
-        color: active ? "#0b1a14" : "var(--foreground)",
+        color: active ? "var(--accent-ink)" : "var(--foreground)",
         boxShadow: active ? "none" : "0 0 0 1px var(--line)",
       }}
     >
       <p className="text-sm font-medium">{title}</p>
-      <p className={`mt-0.5 text-xs ${active ? "text-[#0b1a14]/70" : "text-[var(--muted)]"}`}>
+      <p className={`mt-0.5 text-xs ${active ? "text-[var(--accent-ink)]/70" : "text-[var(--muted)]"}`}>
         {hint}
       </p>
     </button>
@@ -441,7 +441,7 @@ function Primary({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="mt-8 w-full rounded-md bg-[var(--accent)] py-3.5 text-sm font-medium text-[#0b1a14] disabled:opacity-40"
+      className="mt-8 w-full rounded-md bg-[var(--accent)] py-3.5 text-sm font-medium text-[var(--accent-ink)] disabled:opacity-40"
     >
       {children}
     </button>

@@ -26,21 +26,21 @@ export function GripFeelVisual({ grip }: { grip: GripProfile }) {
                 key={i}
                 points={`${40 - inset * 0.15},${20 - i} ${80 + inset * 0.15},${20 - i} ${95 + inset * 0.2},${50 - i * 0.3} ${95 + inset * 0.2},${110 + i * 0.2} 60,${130 + i * 0.4} ${25 - inset * 0.2},${110 + i * 0.2} ${25 - inset * 0.2},${50 - i * 0.3}`}
                 fill="none"
-                stroke={grip.kind === "overgrip" ? "#c8f560" : "#f4a261"}
+                stroke={grip.kind === "overgrip" ? "var(--chart-control)" : "var(--chart-power)"}
                 strokeOpacity={0.35 + i * 0.12}
                 strokeWidth="2"
               />
             );
           })}
-          <text x="60" y="78" textAnchor="middle" fill="#e8efe9" fontSize="11">
+          <text x="60" y="78" textAnchor="middle" fill="var(--foreground)" fontSize="11">
             {grip.thicknessMm.toFixed(2)} mm
           </text>
         </svg>
         <div className="flex-1 space-y-3">
           <ScoreMeter label="Tackiness" value={grip.tackiness} />
-          <ScoreMeter label="Cushion" value={grip.cushion} accent="#f4a261" />
-          <ScoreMeter label="Absorbency" value={grip.absorbency} accent="#7dd3fc" />
-          <ScoreMeter label="Durability" value={grip.durability} accent="#e9c46a" />
+          <ScoreMeter label="Cushion" value={grip.cushion} accent="var(--chart-power)" />
+          <ScoreMeter label="Absorbency" value={grip.absorbency} accent="var(--chart-spin)" />
+          <ScoreMeter label="Durability" value={grip.durability} accent="var(--chart-comfort)" />
         </div>
       </div>
       <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/90">{grip.feel}</p>

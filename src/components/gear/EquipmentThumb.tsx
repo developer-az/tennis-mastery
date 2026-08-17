@@ -12,34 +12,39 @@ export function EquipmentThumb({
 }) {
   const dim =
     size === "lg"
-      ? "h-36 w-28 sm:h-44 sm:w-32"
+      ? "h-44 w-32 sm:h-52 sm:w-36"
       : size === "md"
-        ? "h-20 w-16"
-        : "h-14 w-11";
+        ? "h-24 w-20"
+        : "h-16 w-12";
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- mixed TW JPEG redirects + SVG
-    <img
-      src={src}
-      alt={alt}
-      width={size === "lg" ? 128 : size === "md" ? 64 : 44}
-      height={size === "lg" ? 176 : size === "md" ? 80 : 56}
-      loading="lazy"
-      decoding="async"
-      className={`${dim} shrink-0 rounded-md object-contain object-center`}
-      style={{
-        background:
-          "linear-gradient(160deg, rgba(232,239,233,0.08), rgba(0,0,0,0.35))",
-        boxShadow: "inset 0 0 0 1px var(--line)",
-      }}
-      onError={(e) => {
-        const img = e.currentTarget;
-        if (img.dataset.fallback === "1") return;
-        if (src.includes("/api/equipment/") && !src.includes("format=svg")) {
-          img.dataset.fallback = "1";
-          img.src = `${src}${src.includes("?") ? "&" : "?"}format=svg`;
-        }
-      }}
-    />
+    <span className={`sf-thumb-well relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md ${dim}`}>
+      <span
+        className="absolute inset-0 animate-pulse bg-[color-mix(in_srgb,var(--foreground)_6%,transparent)]"
+        aria-hidden
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element -- mixed TW JPEG redirects + SVG */}
+      <img
+        src={src}
+        alt={alt}
+        width={size === "lg" ? 144 : size === "md" ? 72 : 48}
+        height={size === "lg" ? 192 : size === "md" ? 96 : 64}
+        loading="lazy"
+        decoding="async"
+        className={`relative z-[1] ${dim} object-contain object-center`}
+        onLoad={(e) => {
+          const sk = e.currentTarget.previousElementSibling;
+          if (sk instanceof HTMLElement) sk.style.display = "none";
+        }}
+        onError={(e) => {
+          const img = e.currentTarget;
+          if (img.dataset.fallback === "1") return;
+          if (src.includes("/api/equipment/") && !src.includes("format=svg")) {
+            img.dataset.fallback = "1";
+            img.src = `${src}${src.includes("?") ? "&" : "?"}format=svg`;
+          }
+        }}
+      />
+    </span>
   );
 }

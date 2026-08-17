@@ -179,28 +179,28 @@ export function derivePlayerFit(r: RacketProfile): PlayerFit {
 }
 
 const SKILL_COLOR: Record<SkillBand, string> = {
-  "Beginner-friendly": "#7dd3fc",
-  Intermediate: "#c8f560",
-  Advanced: "#f4a261",
-  "Tour / expert": "#e9c46a",
+  "Beginner-friendly": "var(--chart-spin)",
+  Intermediate: "var(--chart-control)",
+  Advanced: "var(--chart-power)",
+  "Tour / expert": "var(--chart-comfort)",
 };
 
 const ROLE_COLOR: Record<CourtRole, string> = {
-  "Heavy-spin baseliner": "#7dd3fc",
-  "Shape baseliner": "#7dd3fc",
-  "Precision baseliner": "#c8f560",
-  Counterpuncher: "#f4a261",
-  "First-strike power": "#f4a261",
-  "Serve & volley": "#e9c46a",
-  "Net-transition all-courter": "#c8f560",
-  "Balanced all-courter": "#e8efe9",
+  "Heavy-spin baseliner": "var(--chart-spin)",
+  "Shape baseliner": "var(--chart-spin)",
+  "Precision baseliner": "var(--chart-control)",
+  Counterpuncher: "var(--chart-power)",
+  "First-strike power": "var(--chart-power)",
+  "Serve & volley": "var(--chart-comfort)",
+  "Net-transition all-courter": "var(--chart-control)",
+  "Balanced all-courter": "var(--muted)",
 };
 
 const AXIS_COLOR: Record<FeelAxis, string> = {
-  "Power-oriented": "#f4a261",
-  "Control-oriented": "#c8f560",
-  "Spin-oriented": "#7dd3fc",
-  Balanced: "#e8efe9",
+  "Power-oriented": "var(--chart-power)",
+  "Control-oriented": "var(--chart-control)",
+  "Spin-oriented": "var(--chart-spin)",
+  Balanced: "var(--muted)",
 };
 
 export function playerFitBadges(r: RacketProfile): FitBadge[] {

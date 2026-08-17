@@ -20,7 +20,7 @@ const SetupFlightCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[260px] items-center justify-center rounded-md bg-[#07140f] text-xs text-[var(--muted)] md:h-[320px]">
+      <div className="flex h-[260px] items-center justify-center rounded-md bg-[var(--bg-scene)] text-xs text-[var(--muted)] md:h-[320px]">
         Loading flight…
       </div>
     ),
@@ -145,10 +145,10 @@ export function SetupVisualStory({
               faceClosedDeg={closed}
             />
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <MetricChip label="Plow" value={flight.plow} color="#e9c46a" />
-              <MetricChip label="Topspin" value={flight.topspin} color="#7dd3fc" />
-              <MetricChip label="Depth" value={flight.depth} color="#f4a261" />
-              <MetricChip label="Fly risk" value={flight.flyRisk} color="#e8efe9" />
+              <MetricChip label="Plow" value={flight.plow} color="var(--chart-comfort)" />
+              <MetricChip label="Topspin" value={flight.topspin} color="var(--chart-spin)" />
+              <MetricChip label="Depth" value={flight.depth} color="var(--chart-power)" />
+              <MetricChip label="Fly risk" value={flight.flyRisk} color="var(--foreground)" />
             </div>
             <LaunchAngleVisual
               degrees={launchDeg}
@@ -177,7 +177,7 @@ export function SetupVisualStory({
           />
           <div className="mt-4 mx-auto max-w-xs">
             <LeadTapeRacketDiagram pieces={pieces} interactive={false} />
-            <Link href="/gear?tab=lead-tape" className="mt-2 inline-block text-xs text-[var(--accent)]">
+            <Link href="/gear?tab=lead-tape" className="sf-text-link mt-2 inline-block">
               Customize tape →
             </Link>
           </div>
@@ -217,7 +217,7 @@ function Readout({
 }) {
   return (
     <div>
-      <p className="text-[9px] uppercase tracking-[0.14em] text-[var(--muted)]">{label}</p>
+      <p className="sf-label">{label}</p>
       <p className="mt-0.5 font-[family-name:var(--font-display)] text-xl tabular-nums tracking-tight">
         {value}
       </p>

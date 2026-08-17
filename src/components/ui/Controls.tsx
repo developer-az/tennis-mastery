@@ -74,7 +74,7 @@ export function PlayerStrokePicker() {
                 className="cursor-pointer rounded-md px-3 py-1.5 text-sm transition-colors duration-200 hover:brightness-110"
                 style={{
                   background: active ? "var(--accent)" : "transparent",
-                  color: active ? "#0b1a14" : "var(--foreground)",
+                  color: active ? "var(--accent-ink)" : "var(--foreground)",
                   boxShadow: active ? "none" : "0 0 0 1px var(--line)",
                   fontWeight: active ? 600 : 400,
                 }}
@@ -116,7 +116,7 @@ export function PlaybackControls() {
         <button
           type="button"
           onClick={togglePlaying}
-          className="flex h-10 w-10 items-center justify-center rounded-md bg-[var(--accent)] text-[#0b1a14] transition hover:brightness-110"
+          className="flex h-10 w-10 items-center justify-center rounded-md bg-[var(--accent)] text-[var(--accent-ink)] transition hover:brightness-110"
           aria-label={playing ? "Pause" : "Play"}
         >
           {playing ? (

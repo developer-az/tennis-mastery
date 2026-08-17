@@ -10,7 +10,7 @@ const FormCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full min-h-[420px] items-center justify-center bg-[#0b1a14] text-sm text-[var(--muted)]">
+      <div className="flex h-full min-h-[420px] items-center justify-center bg-[var(--accent-ink)] text-sm text-[var(--muted)]">
         Loading biomechanics viewport…
       </div>
     ),

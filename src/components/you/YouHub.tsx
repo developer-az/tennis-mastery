@@ -164,7 +164,7 @@ export function YouHub({
               {profile.constraints.filter((c) => c.active).map((c) => (
                 <span
                   key={c.id}
-                  className="border border-[var(--amber)]/40 px-2.5 py-1 text-xs text-amber-100/90"
+                  className="border border-[var(--amber)]/40 px-2.5 py-1 text-xs text-[var(--amber)]"
                 >
                   {c.label}
                 </span>
@@ -178,17 +178,17 @@ export function YouHub({
             <div className="sf-panel px-4 py-3.5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Bag</p>
+                  <p className="sf-label">Bag</p>
                   <p className="mt-0.5 text-sm">{hasAnyGear(setup) ? setupSummary(setup) : "No bag yet"}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <button type="button" onClick={() => setTab("bag")} className="text-xs font-medium text-[var(--accent)]">
+                  <button type="button" onClick={() => setTab("bag")} className="sf-text-link">
                     Tweak bag
                   </button>
-                  <Link href="/lab" className="text-xs font-medium text-[var(--accent)]">
+                  <Link href="/lab" className="sf-text-link">
                     Lab
                   </Link>
-                  <Link href="/gear?tab=lead-tape" className="text-xs font-medium text-[var(--accent)]">
+                  <Link href="/gear?tab=lead-tape" className="sf-text-link">
                     Tape
                   </Link>
                 </div>
@@ -264,7 +264,7 @@ export function YouHub({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="sf-panel px-3 py-3">
-      <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">{label}</p>
+      <p className="sf-label">{label}</p>
       <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold">{value}</p>
     </div>
   );

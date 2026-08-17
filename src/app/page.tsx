@@ -8,28 +8,8 @@ export default function Home() {
     <div className="flex flex-1 flex-col">
       <main className="flex-1">
         <section className="relative flex min-h-[min(88vh,860px)] flex-col justify-end overflow-hidden px-6 pb-16 pt-28 md:px-10 md:pb-24 lg:px-14">
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background: `
-                linear-gradient(100deg, rgba(6,17,13,0.15) 0%, rgba(6,17,13,0.72) 52%, rgba(6,17,13,0.94) 100%),
-                radial-gradient(ellipse 70% 60% at 72% 38%, rgba(31,92,67,0.55) 0%, transparent 62%),
-                radial-gradient(ellipse 45% 35% at 18% 78%, rgba(15,45,32,0.8) 0%, transparent 55%),
-                linear-gradient(180deg, #0a1812 0%, #06110d 100%)
-              `,
-            }}
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(238,243,239,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(238,243,239,0.5) 1px, transparent 1px)",
-              backgroundSize: "64px 64px",
-              maskImage: "radial-gradient(ellipse 80% 70% at 70% 40%, black, transparent)",
-            }}
-            aria-hidden
-          />
+          <div className="sf-hero-wash pointer-events-none absolute inset-0" aria-hidden />
+          <div className="sf-hero-grid pointer-events-none absolute inset-0" aria-hidden />
           <svg
             className="pointer-events-none absolute right-[-2%] top-[10%] hidden h-[72%] w-[58%] opacity-[0.22] lg:block"
             viewBox="0 0 400 500"
@@ -37,25 +17,25 @@ export default function Home() {
             aria-hidden
           >
             <rect x="48" y="28" width="304" height="444" stroke="currentColor" className="text-[var(--accent)]" strokeWidth="1.5" />
-            <line x1="88" y1="28" x2="88" y2="472" stroke="#eef3ef" strokeWidth="1" opacity="0.45" />
-            <line x1="312" y1="28" x2="312" y2="472" stroke="#eef3ef" strokeWidth="1" opacity="0.45" />
-            <line x1="48" y1="250" x2="352" y2="250" stroke="#eef3ef" strokeWidth="1.5" />
-            <line x1="88" y1="145" x2="312" y2="145" stroke="#eef3ef" strokeWidth="1" opacity="0.5" />
-            <line x1="88" y1="355" x2="312" y2="355" stroke="#eef3ef" strokeWidth="1" opacity="0.5" />
-            <line x1="200" y1="145" x2="200" y2="355" stroke="#eef3ef" strokeWidth="1" opacity="0.45" />
+            <line x1="88" y1="28" x2="88" y2="472" stroke="currentColor" className="text-[var(--foreground)]" strokeWidth="1" opacity="0.45" />
+            <line x1="312" y1="28" x2="312" y2="472" stroke="currentColor" className="text-[var(--foreground)]" strokeWidth="1" opacity="0.45" />
+            <line x1="48" y1="250" x2="352" y2="250" stroke="currentColor" className="text-[var(--foreground)]" strokeWidth="1.5" />
+            <line x1="88" y1="145" x2="312" y2="145" stroke="currentColor" className="text-[var(--foreground)]" strokeWidth="1" opacity="0.5" />
+            <line x1="88" y1="355" x2="312" y2="355" stroke="currentColor" className="text-[var(--foreground)]" strokeWidth="1" opacity="0.5" />
+            <line x1="200" y1="145" x2="200" y2="355" stroke="currentColor" className="text-[var(--foreground)]" strokeWidth="1" opacity="0.45" />
           </svg>
 
           <div className="relative z-10 mx-auto w-full max-w-[1400px]">
             <div className="max-w-2xl">
               <p className="sf-kicker sf-rise">Professional tennis intelligence</p>
               <p
-                className="sf-rise mt-5 font-[family-name:var(--font-display)] text-5xl font-semibold leading-[0.92] tracking-tight md:text-7xl lg:text-[5.5rem]"
+                className="sf-rise mt-5 font-[family-name:var(--font-display)] text-5xl font-semibold leading-[0.92] tracking-tight text-[var(--foreground)] md:text-7xl lg:text-[5.5rem]"
                 style={{ animationDelay: "0.06s" }}
               >
                 STROKEFORM
               </p>
               <h1
-                className="sf-rise mt-6 max-w-xl text-xl leading-snug text-[var(--foreground)]/92 md:text-2xl md:leading-snug"
+                className="sf-rise mt-6 max-w-xl text-xl leading-snug text-[var(--foreground)] md:text-2xl md:leading-snug"
                 style={{ animationDelay: "0.14s" }}
               >
                 Form and gear, built like a tour product — not a classroom demo.
@@ -72,7 +52,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-y border-[var(--line)] bg-[#050c09]/80">
+        <section className="border-y border-[var(--line)] bg-[var(--bg-sunken)]/80">
           <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-px bg-[var(--line)] md:grid-cols-4">
             {[
               ["3D form lab", "Phase-scrubbed biomechanics"],
@@ -130,7 +110,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="athletes" className="border-t border-[var(--line)] bg-[#050c09]/50">
+        <section id="athletes" className="border-t border-[var(--line)] bg-[var(--bg-sunken)]/50">
           <div className="mx-auto w-full max-w-[1400px] px-6 py-20 md:px-10 md:py-24 lg:px-14">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -199,7 +179,7 @@ export default function Home() {
               },
               {
                 title: "Lead tape",
-                body: "Place tip, 3/9, throat, or handle mass and watch SW, balance, and leave change.",
+                body: "Place tip, 3/9, neck, or handle mass and watch SW, balance, and leave change.",
                 href: "/gear?tab=lead-tape",
               },
             ].map((item) => (

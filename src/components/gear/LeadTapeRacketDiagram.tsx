@@ -8,6 +8,52 @@ const VB_W = 200;
 const VB_H = 280;
 const ZONE_ORDER: LeadTapeZone[] = ["tip", "twelve", "three", "nine", "throat", "handle"];
 
+/**
+ * One evenodd silhouette: closed isometric head, open V-throat into a neck,
+ * then shaft + grip. Inner path is the stringbed hole.
+ */
+const FRAME_OUTER = [
+  "M 100 16",
+  "C 118 14 140 18 148 46",
+  "C 156 70 156 98 146 120",
+  "C 138 134 126 140 118 152",
+  "C 112 164 109 176 108 190",
+  "L 109 210",
+  "L 111 218",
+  "L 112 256",
+  "C 112 262 118 264 114 274",
+  "L 86 274",
+  "C 82 264 88 262 88 256",
+  "L 89 218",
+  "L 91 210",
+  "L 92 190",
+  "C 91 176 88 164 82 152",
+  "C 74 140 62 134 54 120",
+  "C 44 98 44 70 52 46",
+  "C 60 18 82 14 100 16",
+  "Z",
+].join(" ");
+
+const STRINGBED = [
+  "M 100 26",
+  "C 116 24 132 28 138 52",
+  "C 144 74 144 96 136 114",
+  "C 128 126 112 128 100 128",
+  "C 88 128 72 126 64 114",
+  "C 56 96 56 74 62 52",
+  "C 68 28 84 24 100 26",
+  "Z",
+].join(" ");
+
+/** Open throat — the V under the hoop; without this hole the neck reads as a yoke. */
+const THROAT_GAP = [
+  "M 86 134",
+  "L 114 134",
+  "L 106 176",
+  "L 94 176",
+  "Z",
+].join(" ");
+
 export function LeadTapeRacketDiagram({
   pieces,
   selectedZone = null,
@@ -36,9 +82,14 @@ export function LeadTapeRacketDiagram({
       >
         <defs>
           <linearGradient id={`ltGraphite-${uid}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#3a3a3a" />
-            <stop offset="40%" stopColor="#161616" />
-            <stop offset="100%" stopColor="#2a2a2a" />
+            <stop offset="0%" stopColor="#5e5e5e" />
+            <stop offset="40%" stopColor="#1a1a1a" />
+            <stop offset="100%" stopColor="#2f2f2f" />
+          </linearGradient>
+          <linearGradient id={`ltMetal-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#e8eaed" />
+            <stop offset="55%" stopColor="#9aa3ab" />
+            <stop offset="100%" stopColor="#5c656e" />
           </linearGradient>
           <linearGradient id={`ltGrip-${uid}`} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#2a1c14" />
@@ -46,55 +97,67 @@ export function LeadTapeRacketDiagram({
             <stop offset="100%" stopColor="#2a1c14" />
           </linearGradient>
           <clipPath id={`ltBed-${uid}`}>
-            <ellipse cx="100" cy="86" rx="52" ry="64" />
+            <path d={STRINGBED} />
+          </clipPath>
+          <clipPath id={`ltHandle-${uid}`}>
+            <rect x="88" y="216" width="24" height="44" rx="3" />
           </clipPath>
         </defs>
-        <rect width={VB_W} height={VB_H} fill="#07140f" rx="4" />
 
-        {/* Handle / grip */}
-        <rect x="91" y="198" width="18" height="58" rx="4" fill={`url(#ltGrip-${uid})`} />
-        {[206, 214, 222, 230, 238, 246].map((y) => (
-          <line key={y} x1="92" y1={y} x2="108" y2={y} stroke="rgba(0,0,0,0.35)" strokeWidth="1" />
-        ))}
-        <rect x="88" y="254" width="24" height="10" rx="3" fill="#111" stroke="#3a3a3a" strokeWidth="0.8" />
-
-        {/* Shaft + throat */}
         <path
-          d="M94 168 L96 200 L104 200 L106 168 Z"
-          fill="#1a1a1a"
-          stroke="#2e2e2e"
-          strokeWidth="1"
+          d={`${FRAME_OUTER} ${STRINGBED} ${THROAT_GAP}`}
+          fill={`url(#ltGraphite-${uid})`}
+          fillRule="evenodd"
         />
-        <path
-          d="M78 148 Q100 168 122 148 L112 168 Q100 176 88 168 Z"
-          fill="#141414"
-          stroke="#2a2a2a"
-          strokeWidth="1.2"
-        />
+        <path d={STRINGBED} fill="none" stroke="#2a4a3a" strokeWidth="1.2" />
 
-        {/* Stringbed */}
-        <g clipPath={`url(#ltBed-${uid})`} opacity="0.7">
+        <g clipPath={`url(#ltBed-${uid})`} opacity="0.48">
           {Array.from({ length: 16 }).map((_, i) => {
-            const x = 52 + (i + 0.5) * (96 / 16);
-            return <line key={`m${i}`} x1={x} y1="22" x2={x} y2="150" stroke="#c8c8c0" strokeWidth="0.55" />;
+            const x = 62 + (i + 0.5) * (76 / 16);
+            return (
+              <line
+                key={`m${i}`}
+                x1={x}
+                y1="26"
+                x2={x}
+                y2="128"
+                stroke="var(--foreground)"
+                strokeWidth="0.4"
+              />
+            );
           })}
           {Array.from({ length: 19 }).map((_, i) => {
-            const y = 24 + (i + 0.5) * (124 / 19);
-            return <line key={`c${i}`} x1="48" y1={y} x2="152" y2={y} stroke="#c8c8c0" strokeWidth="0.5" />;
+            const y = 28 + (i + 0.5) * (100 / 19);
+            return (
+              <line
+                key={`c${i}`}
+                x1="60"
+                y1={y}
+                x2="140"
+                y2={y}
+                stroke="var(--foreground)"
+                strokeWidth="0.35"
+              />
+            );
           })}
         </g>
 
-        {/* Graphite hoop */}
-        <ellipse
-          cx="100"
-          cy="86"
-          rx="58"
-          ry="70"
-          fill="none"
-          stroke={`url(#ltGraphite-${uid})`}
-          strokeWidth="11"
-        />
-        <ellipse cx="100" cy="86" rx="51.5" ry="63.5" fill="none" stroke="#2d4a3c" strokeWidth="1.2" opacity="0.7" />
+        <g clipPath={`url(#ltHandle-${uid})`}>
+          <rect x="88" y="216" width="24" height="44" fill={`url(#ltGrip-${uid})`} />
+          {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+            <line
+              key={`g${i}`}
+              x1="89"
+              y1={222 + i * 5.5}
+              x2="111"
+              y2={222 + i * 5.5}
+              stroke="#1a120c"
+              strokeWidth="0.55"
+              opacity="0.4"
+            />
+          ))}
+        </g>
+        <ellipse cx="100" cy="271.5" rx="13" ry="2.2" fill="#0a0a0a" />
 
         {ZONE_ORDER.map((id) => {
           const z = LEAD_TAPE_ZONES[id];
@@ -102,40 +165,43 @@ export function LeadTapeRacketDiagram({
           const cy = z.y * VB_H;
           const massHere = massByZone[id] ?? 0;
           const selected = selectedZone === id;
-          const hitR = interactive ? 16 : 11;
+          const vertical = id === "three" || id === "nine";
+          const w = id === "throat" ? 20 : vertical ? 6 : 20;
+          const h = id === "throat" ? 7.5 : vertical ? 20 : 6.5;
+          const labelX = vertical ? cx + (id === "three" ? 12 : -12) : cx;
+          const labelY = vertical ? cy + 4 : cy + 14;
+          const fill = massHere > 0
+            ? `url(#ltMetal-${uid})`
+            : selected
+              ? "color-mix(in srgb, var(--accent) 38%, transparent)"
+              : "color-mix(in srgb, var(--foreground) 14%, transparent)";
+          const stroke = selected
+            ? "var(--accent)"
+            : massHere > 0
+              ? "#3a3a3a"
+              : "color-mix(in srgb, var(--foreground) 30%, transparent)";
           return (
             <g
               key={id}
               style={{ cursor: interactive ? "pointer" : "default" }}
               onClick={interactive ? () => onZoneClick?.(id) : undefined}
             >
-              <circle
-                cx={cx}
-                cy={cy}
-                r={hitR}
-                fill={selected ? "rgba(200,245,96,0.22)" : massHere > 0 ? "rgba(244,162,97,0.18)" : "rgba(232,239,233,0.04)"}
-                stroke={selected ? "#c8f560" : massHere > 0 ? "#f4a261" : "rgba(232,239,233,0.28)"}
-                strokeWidth={selected ? 2 : 1.2}
+              <rect
+                x={cx - w / 2}
+                y={cy - h / 2}
+                width={w}
+                height={h}
+                rx="1.3"
+                fill={fill}
+                stroke={stroke}
+                strokeWidth={selected ? 1.6 : 0.85}
               />
-              {massHere > 0 ? (
-                <rect
-                  x={cx - 9}
-                  y={cy - 3.5}
-                  width="18"
-                  height="7"
-                  rx="1"
-                  fill="#111"
-                  stroke="#f4a261"
-                  strokeWidth="0.6"
-                  transform={id === "three" || id === "nine" ? `rotate(90 ${cx} ${cy})` : undefined}
-                />
-              ) : null}
               <text
-                x={cx}
-                y={cy + (massHere > 0 ? 14 : 3)}
+                x={labelX}
+                y={labelY}
                 textAnchor="middle"
-                fill={selected ? "#c8f560" : "#e8efe9"}
-                fontSize="7"
+                fill={selected ? "var(--accent)" : "var(--label)"}
+                fontSize="8"
                 fontWeight="600"
               >
                 {massHere > 0 ? `${massHere}g` : shortZone(id)}
@@ -146,9 +212,9 @@ export function LeadTapeRacketDiagram({
       </svg>
       <p className="mt-2 text-center text-xs text-[var(--muted)]">
         {interactive
-          ? "Tap 12, 3, 9, throat, or handle to place the selected strip."
+          ? "Tap 12, 3, 9, neck, or handle."
           : totalG > 0
-            ? `${totalG.toFixed(1)} g lead on this hoop`
+            ? `${totalG.toFixed(1)} g on this hoop`
             : "No tape"}
       </p>
     </div>
@@ -166,7 +232,7 @@ function shortZone(id: LeadTapeZone): string {
     case "tip":
       return "tip";
     case "throat":
-      return "yoke";
+      return "neck";
     case "handle":
       return "grip";
   }
