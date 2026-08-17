@@ -25,7 +25,7 @@ const ZONE_PLAIN: Record<LeadTapeZone, string> = {
   twelve: "12 o’clock — more plow",
   three: "3 o’clock — more stable",
   nine: "9 o’clock — more stable",
-  throat: "Throat — a bit more control",
+  throat: "Neck — a bit more control",
   handle: "Handle — quicker whip",
 };
 
@@ -115,7 +115,7 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
             {baseRacket.brand} {baseRacket.model}
           </h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Tap the hoop to add mass. Tip/12 adds plow; 3 and 9 add stability; handle speeds the whip.
+            Tap the hoop to add mass. Tip/12 adds plow; 3 and 9 add stability; neck solidifies; handle speeds the whip.
           </p>
         </header>
 

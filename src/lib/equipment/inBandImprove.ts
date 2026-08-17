@@ -573,7 +573,7 @@ function collectCandidates(input: {
         id: `tape-throat-${mass}`,
         family: "tape-throat",
         extra: [createLeadTapePiece(mass, "throat")],
-        action: `Add ${mass} g at the throat / yoke`,
+        action: `Add ${mass} g at the neck`,
         why: "Near the balance point — solidifies the hoop with little SW and little launch change. The ‘more connected’ dose without the 12 o’clock tax.",
         science:
           "Throat: modest power/control/comfort (+0.45 / +0.35 / +0.25 per gram), small SW because r ≈ 42 cm in m·r².",

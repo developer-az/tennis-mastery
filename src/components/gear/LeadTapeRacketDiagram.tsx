@@ -8,7 +8,7 @@ const VB_W = 200;
 const VB_H = 280;
 const ZONE_ORDER: LeadTapeZone[] = ["tip", "twelve", "three", "nine", "throat", "handle"];
 
-/** Clean hoop map — tape as metallic strips on real zone slots. */
+/** Modern isometric frame — open-throat pillars into a neck, not a closed yoke. */
 export function LeadTapeRacketDiagram({
   pieces,
   selectedZone = null,
@@ -37,9 +37,10 @@ export function LeadTapeRacketDiagram({
       >
         <defs>
           <linearGradient id={`ltGraphite-${uid}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#5a5a5a" />
-            <stop offset="40%" stopColor="#1c1c1c" />
-            <stop offset="100%" stopColor="#2e2e2e" />
+            <stop offset="0%" stopColor="#6a6a6a" />
+            <stop offset="38%" stopColor="#1a1a1a" />
+            <stop offset="72%" stopColor="#2c2c2c" />
+            <stop offset="100%" stopColor="#4a4a4a" />
           </linearGradient>
           <linearGradient id={`ltMetal-${uid}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#e8eaed" />
@@ -52,27 +53,86 @@ export function LeadTapeRacketDiagram({
             <stop offset="100%" stopColor="#2a1c14" />
           </linearGradient>
           <clipPath id={`ltBed-${uid}`}>
-            <ellipse cx="100" cy="86" rx="50" ry="62" />
+            <rect x="52" y="26" width="96" height="108" rx="36" ry="40" />
           </clipPath>
         </defs>
 
-        <rect x="91" y="196" width="18" height="58" rx="3" fill={`url(#ltGrip-${uid})`} />
-        <path d="M88 252 L100 250 L112 252 L110 264 L90 264 Z" fill="#111" />
-        <path d="M94 166 L96 198 L104 198 L106 166 Z" fill="#1a1a1a" />
-        <path d="M78 146 Q100 166 122 146 L112 166 Q100 174 88 166 Z" fill="#161616" />
-
-        <g clipPath={`url(#ltBed-${uid})`} opacity="0.55">
+        <g clipPath={`url(#ltBed-${uid})`} opacity="0.5">
           {Array.from({ length: 16 }).map((_, i) => {
-            const x = 52 + (i + 0.5) * (96 / 16);
-            return <line key={`m${i}`} x1={x} y1="24" x2={x} y2="148" stroke="var(--foreground)" strokeWidth="0.4" />;
+            const x = 54 + (i + 0.5) * (92 / 16);
+            return <line key={`m${i}`} x1={x} y1="26" x2={x} y2="134" stroke="var(--foreground)" strokeWidth="0.4" />;
           })}
           {Array.from({ length: 19 }).map((_, i) => {
-            const y = 26 + (i + 0.5) * (120 / 19);
-            return <line key={`c${i}`} x1="50" y1={y} x2="150" y2={y} stroke="var(--foreground)" strokeWidth="0.35" />;
+            const y = 28 + (i + 0.5) * (104 / 19);
+            return <line key={`c${i}`} x1="52" y1={y} x2="148" y2={y} stroke="var(--foreground)" strokeWidth="0.35" />;
           })}
         </g>
+        <rect
+          x="52"
+          y="26"
+          width="96"
+          height="108"
+          rx="36"
+          ry="40"
+          fill="none"
+          stroke="color-mix(in srgb, var(--foreground) 18%, transparent)"
+          strokeWidth="0.6"
+        />
 
-        <ellipse cx="100" cy="86" rx="56" ry="68" fill="none" stroke={`url(#ltGraphite-${uid})`} strokeWidth="11" />
+        {/* Open-throat isometric hoop: beam continues into two pillars, no closed yoke. */}
+        <path
+          d="M 93 182
+             C 72 164 50 146 44 118
+             C 38 90 42 58 62 34
+             C 76 16 90 13 100 13
+             C 110 13 124 16 138 34
+             C 158 58 162 90 156 118
+             C 150 146 128 164 107 182"
+          fill="none"
+          stroke={`url(#ltGraphite-${uid})`}
+          strokeWidth="9.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M 96 176
+             C 78 160 58 144 52 120
+             C 46 94 50 66 66 42
+             C 78 24 90 22 100 22
+             C 110 22 122 24 134 42
+             C 150 66 154 94 148 120
+             C 142 144 122 160 104 176"
+          fill="none"
+          stroke="#2a4a3a"
+          strokeWidth="1.2"
+          opacity="0.7"
+        />
+
+        {/* Neck bridge — where the pillars meet the shaft */}
+        <path
+          d="M 90 174 C 90 170 110 170 110 174 L 108 188 C 108 192 92 192 92 188 Z"
+          fill={`url(#ltGraphite-${uid})`}
+        />
+        <path
+          d="M 95 186 L 105 186 L 103.5 206 L 96.5 206 Z"
+          fill="#1a1a1a"
+        />
+
+        <rect x="90" y="204" width="20" height="50" rx="3.5" fill={`url(#ltGrip-${uid})`} />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <line
+            key={`g${i}`}
+            x1="91"
+            y1={212 + i * 7}
+            x2="109"
+            y2={212 + i * 7}
+            stroke="#1a120c"
+            strokeWidth="0.6"
+            opacity="0.45"
+          />
+        ))}
+        <path d="M 86 252 L 100 250 L 114 252 L 112 266 L 88 266 Z" fill="#111" />
+        <ellipse cx="100" cy="265.5" rx="12" ry="2.2" fill="#0a0a0a" />
 
         {ZONE_ORDER.map((id) => {
           const z = LEAD_TAPE_ZONES[id];
@@ -81,8 +141,9 @@ export function LeadTapeRacketDiagram({
           const massHere = massByZone[id] ?? 0;
           const selected = selectedZone === id;
           const vertical = id === "three" || id === "nine";
-          const w = vertical ? 7 : 26;
-          const h = vertical ? 26 : 7;
+          const w = id === "throat" ? 22 : vertical ? 6.5 : 24;
+          const h = id === "throat" ? 8 : vertical ? 24 : 6.5;
+          const labelDy = vertical ? 22 : 15;
           return (
             <g
               key={id}
@@ -102,12 +163,18 @@ export function LeadTapeRacketDiagram({
                       ? "color-mix(in srgb, var(--accent) 35%, transparent)"
                       : "color-mix(in srgb, var(--foreground) 10%, transparent)"
                 }
-                stroke={selected ? "var(--accent)" : massHere > 0 ? "#3a3a3a" : "color-mix(in srgb, var(--foreground) 22%, transparent)"}
+                stroke={
+                  selected
+                    ? "var(--accent)"
+                    : massHere > 0
+                      ? "#3a3a3a"
+                      : "color-mix(in srgb, var(--foreground) 22%, transparent)"
+                }
                 strokeWidth={selected ? 1.6 : 0.8}
               />
               <text
                 x={cx}
-                y={cy + (vertical ? 22 : 16)}
+                y={cy + labelDy}
                 textAnchor="middle"
                 fill={selected ? "var(--accent)" : "var(--muted)"}
                 fontSize="8"
@@ -121,7 +188,7 @@ export function LeadTapeRacketDiagram({
       </svg>
       <p className="mt-2 text-center text-xs text-[var(--muted)]">
         {interactive
-          ? "Tap 12, 3, 9, throat, or handle."
+          ? "Tap 12, 3, 9, neck, or handle."
           : totalG > 0
             ? `${totalG.toFixed(1)} g on this hoop`
             : "No tape"}
@@ -141,7 +208,7 @@ function shortZone(id: LeadTapeZone): string {
     case "tip":
       return "tip";
     case "throat":
-      return "yoke";
+      return "neck";
     case "handle":
       return "grip";
   }

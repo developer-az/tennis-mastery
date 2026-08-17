@@ -35,6 +35,13 @@
   --chart-fill: rgba(90, 143, 40, 0.14);
   --silhouette: #1a3328;
   --silhouette-rim: #2d4a3c;
+  --hero-wash:
+    linear-gradient(100deg, rgba(243, 246, 244, 0.15) 0%, rgba(238, 243, 240, 0.55) 52%, rgba(226, 234, 228, 0.92) 100%),
+    radial-gradient(ellipse 70% 60% at 72% 38%, rgba(45, 106, 79, 0.16) 0%, transparent 62%),
+    radial-gradient(ellipse 45% 35% at 18% 78%, rgba(90, 143, 40, 0.1) 0%, transparent 55%),
+    linear-gradient(180deg, #eef3f0 0%, #e4ebe6 100%);
+  --hero-grid: rgba(13, 31, 24, 0.45);
+  --hero-grid-opacity: 0.12;
 }
 
 [data-theme="dark"] {
@@ -67,6 +74,13 @@
   --chart-fill: rgba(197, 232, 90, 0.2);
   --silhouette: #9eb5a8;
   --silhouette-rim: #c5d4cc;
+  --hero-wash:
+    linear-gradient(100deg, rgba(6, 17, 13, 0.15) 0%, rgba(6, 17, 13, 0.72) 52%, rgba(6, 17, 13, 0.94) 100%),
+    radial-gradient(ellipse 70% 60% at 72% 38%, rgba(31, 92, 67, 0.55) 0%, transparent 62%),
+    radial-gradient(ellipse 45% 35% at 18% 78%, rgba(15, 45, 32, 0.8) 0%, transparent 55%),
+    linear-gradient(180deg, #0a1812 0%, #06110d 100%);
+  --hero-grid: rgba(238, 243, 239, 0.5);
+  --hero-grid-opacity: 0.07;
 }
 
 @theme inline {
@@ -215,17 +229,17 @@ input[type="range"]::-webkit-slider-thumb {
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
-/* Cinematic court surfaces stay night — lock type/buttons so light theme cannot invert them. */
-.sf-on-court {
-  color: #eef3ef;
-  --foreground: #eef3ef;
-  --muted: #b7c6bc;
-  --accent: #c5e85a;
-  --accent-fg: #0a160f;
-  --accent-ink: #0a160f;
-  --line: rgba(238, 243, 239, 0.16);
-  --line-strong: rgba(238, 243, 239, 0.3);
-  --overlay-hover: rgba(255, 255, 255, 0.08);
+.sf-hero-wash {
+  background: var(--hero-wash);
+}
+
+.sf-hero-grid {
+  opacity: var(--hero-grid-opacity);
+  background-image:
+    linear-gradient(var(--hero-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hero-grid) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 70% at 70% 40%, black, transparent);
 }
 
 .sf-select {

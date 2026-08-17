@@ -99,7 +99,7 @@ export function RacketFrame3D({
 
       <Strings />
 
-      {/* Throat / yoke */}
+      {/* Open throat pillars into the neck */}
       <mesh position={[-0.028, 0.355, 0]} rotation={[0, 0, 0.38]}>
         <cylinderGeometry args={[0.007, 0.009, 0.09, 12]} />
         <meshStandardMaterial color="#1a1a1a" metalness={0.55} roughness={0.32} />

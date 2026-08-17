@@ -4,11 +4,11 @@ import { useId, useMemo } from "react";
 import type { FlightMetrics } from "@/lib/equipment/setupSynthesis";
 import { healthyBandsFor, type ScoreKey } from "@/lib/equipment/inBandImprove";
 
-const AXES: { key: ScoreKey; label: string }[] = [
-  { key: "power", label: "Power" },
-  { key: "spin", label: "Spin" },
-  { key: "control", label: "Control" },
-  { key: "comfort", label: "Comfort" },
+const AXES: { key: ScoreKey; label: string; colorVar: string }[] = [
+  { key: "power", label: "Power", colorVar: "var(--chart-power)" },
+  { key: "spin", label: "Spin", colorVar: "var(--chart-spin)" },
+  { key: "control", label: "Control", colorVar: "var(--chart-control)" },
+  { key: "comfort", label: "Comfort", colorVar: "var(--chart-comfort)" },
 ];
 
 type ScoreBag = Record<ScoreKey, number | null>;
@@ -27,7 +27,7 @@ function poly(cx: number, cy: number, rs: number[], n: number) {
     .join(" ");
 }
 
-/** Layered current-vs-stock radar + metric cards. */
+/** Layered current-vs-stock radar beside healthy-band / molded / stock bars. */
 export function SetupStatsChart({
   scores,
   stock,
@@ -57,13 +57,14 @@ export function SetupStatsChart({
         Your numbers
       </h2>
       <p className="mt-1 max-w-xl text-xs text-[var(--muted)]">
-        This bag vs stock frame. Soft ring = healthy band for {role || "this mold"}.
+        Radar is this bag vs stock. Bars: track = healthy band for {role || "this mold"}; needle =
+        molded; ghost tick = stock.
       </p>
 
       {!hasScores ? (
         <p className="mt-6 text-sm text-[var(--muted)]">Save a racket to plot power, spin, control, and comfort.</p>
       ) : (
-        <div className="mt-5 grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="mt-5 grid items-center gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <div>
             <svg viewBox="0 0 240 248" className="mx-auto h-auto w-full max-w-[280px]" role="img" aria-label="Setup radar">
               <defs>
@@ -75,7 +76,12 @@ export function SetupStatsChart({
               {[0.33, 0.66, 1].map((t) => (
                 <polygon
                   key={t}
-                  points={poly(cx, cy, AXES.map(() => maxR * t), n)}
+                  points={poly(
+                    cx,
+                    cy,
+                    AXES.map(() => maxR * t),
+                    n,
+                  )}
                   fill="none"
                   stroke="color-mix(in srgb, var(--foreground) 12%, transparent)"
                   strokeWidth="1"
@@ -149,47 +155,112 @@ export function SetupStatsChart({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="space-y-5">
             {AXES.map((a) => {
               const v = scores[a.key];
               const s = stock[a.key];
+              const band = bands[a.key];
               const d = v != null && s != null ? v - s : null;
+              const inBand = v != null && v >= band.low && v <= band.high;
               return (
-                <div key={a.key} className="rounded-xl border border-[var(--line)] bg-[var(--panel-raised)] px-3 py-3">
-                  <p className="text-[11px] text-[var(--muted)]">{a.label}</p>
-                  <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tabular-nums tracking-tight">
-                    {v ?? "—"}
-                  </p>
-                  <p className="mt-0.5 text-xs tabular-nums text-[var(--muted)]">
-                    {d != null && Math.abs(d) >= 0.5 ? (
-                      <>
-                        {d > 0 ? "+" : ""}
-                        {Math.round(d)} vs stock
-                      </>
-                    ) : (
-                      "vs stock"
-                    )}
-                  </p>
+                <div key={a.key}>
+                  <div className="mb-2 flex items-baseline justify-between gap-2">
+                    <p
+                      className="text-[11px] font-semibold uppercase tracking-[0.14em]"
+                      style={{ color: a.colorVar }}
+                    >
+                      {a.label}
+                      {inBand ? (
+                        <span className="ml-2 text-[10px] font-normal tracking-normal text-[var(--muted)]">
+                          in band
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="text-sm tabular-nums">
+                      <span className="font-[family-name:var(--font-display)] text-lg">{v ?? "—"}</span>
+                      {d != null && Math.abs(d) >= 0.5 ? (
+                        <span className="ml-1.5 text-[11px] text-[var(--muted)]">
+                          stock {s} ({d > 0 ? "+" : ""}
+                          {Math.round(d)})
+                        </span>
+                      ) : null}
+                    </p>
+                  </div>
+                  <div className="relative h-3 rounded-sm bg-[color-mix(in_srgb,var(--foreground)_6%,transparent)]">
+                    <div
+                      className="absolute inset-y-0 rounded-sm opacity-35"
+                      style={{
+                        left: `${band.low}%`,
+                        width: `${Math.max(0, band.high - band.low)}%`,
+                        background: a.colorVar,
+                      }}
+                    />
+                    {s != null ? (
+                      <div
+                        className="absolute top-0 z-[1] h-full w-0.5 bg-[var(--muted)] opacity-70"
+                        style={{ left: `calc(${Math.max(0, Math.min(100, s))}% - 1px)` }}
+                        title={`Stock ${s}`}
+                      />
+                    ) : null}
+                    {v != null ? (
+                      <div
+                        className="absolute top-1/2 z-[2] h-5 w-1.5 -translate-y-1/2 rounded-sm shadow-sm"
+                        style={{
+                          left: `calc(${Math.max(0, Math.min(100, v))}% - 3px)`,
+                          background: a.colorVar,
+                        }}
+                        title={`Molded ${v}`}
+                      />
+                    ) : null}
+                  </div>
+                  <div className="mt-1 flex justify-between text-[9px] tabular-nums text-[var(--muted)]">
+                    <span>{band.low}</span>
+                    <span>{band.high}</span>
+                  </div>
                 </div>
               );
             })}
-            {flight ? (
-              <>
-                <div className="rounded-xl border border-[var(--line)] px-3 py-3">
-                  <p className="text-[11px] text-[var(--muted)]">Net clear</p>
-                  <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tabular-nums">
-                    +{flight.netClearIn.toFixed(1)}″
-                  </p>
-                </div>
-                <div className="rounded-xl border border-[var(--line)] px-3 py-3">
-                  <p className="text-[11px] text-[var(--muted)]">Depth</p>
-                  <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tabular-nums">{flight.depth}</p>
-                </div>
-              </>
-            ) : null}
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-2 w-6 rounded-sm bg-[var(--chart-control)] opacity-40" />
+                Healthy band
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-3 w-1.5 rounded-sm bg-[var(--chart-control)]" />
+                Molded
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-2 w-0.5 bg-[var(--muted)]" />
+                Stock
+              </span>
+            </div>
           </div>
         </div>
       )}
+
+      {hasScores && flight ? (
+        <div className="mt-6 grid grid-cols-2 gap-2 border-t border-[var(--line)] pt-4 sm:grid-cols-4">
+          {(
+            [
+              ["Plow", flight.plow, "var(--chart-comfort)"],
+              ["Topspin", flight.topspin, "var(--chart-spin)"],
+              ["Depth", flight.depth, "var(--chart-power)"],
+              ["Fly risk", flight.flyRisk, "var(--foreground)"],
+            ] as const
+          ).map(([label, v, color]) => (
+            <div key={label}>
+              <p className="text-[9px] uppercase tracking-[0.12em] text-[var(--muted)]">{label}</p>
+              <p
+                className="mt-0.5 font-[family-name:var(--font-display)] text-lg tabular-nums"
+                style={{ color }}
+              >
+                {v}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

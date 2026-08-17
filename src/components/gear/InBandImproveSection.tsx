@@ -30,7 +30,7 @@ const FAMILY_LABEL: Record<LeverFamily, string> = {
   "tape-12": "Tape · 12 / tip",
   "tape-39": "Tape · 3 & 9",
   "tape-handle": "Tape · handle",
-  "tape-throat": "Tape · throat",
+  "tape-throat": "Tape · neck",
 };
 
 function fmtDelta(n: number): string {
@@ -123,7 +123,7 @@ export function InBandImproveSection({
       </h2>
       <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--muted)]">
         High-level customizing is choosing a <em>channel</em> — stringbed COR, swingweight
-        (12 / tip), twistweight (paired 3 & 9), recoil / head-light (handle), or yoke mass —
+        (12 / tip), twistweight (paired 3 & 9), recoil / head-light (handle), or neck mass —
         not stacking bumper lead. Each move is modeled with the same mold equations (Cross
         &amp; Lindsey / TWU bed response; Brody polar moment; SW ≈ m·r²). A lever is legal
         only if every score already in-band stays in-band, fly-risk stays ≤ {FLY_RISK_CAP} if
