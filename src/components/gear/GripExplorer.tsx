@@ -562,9 +562,9 @@ function GripCompareColumn({
         </p>
       </div>
       <ScoreMeter label="Tackiness" value={grip.tackiness} />
-      <ScoreMeter label="Cushion" value={grip.cushion} accent="#f4a261" />
-      <ScoreMeter label="Absorbency" value={grip.absorbency} accent="#7dd3fc" />
-      <ScoreMeter label="Durability" value={grip.durability} accent="#e9c46a" />
+      <ScoreMeter label="Cushion" value={grip.cushion} accent="var(--chart-power)" />
+      <ScoreMeter label="Absorbency" value={grip.absorbency} accent="var(--chart-spin)" />
+      <ScoreMeter label="Durability" value={grip.durability} accent="var(--chart-comfort)" />
       <p className="text-xs tabular-nums text-[var(--muted)]">
         Thickness {grip.thicknessMm.toFixed(2)} mm
       </p>

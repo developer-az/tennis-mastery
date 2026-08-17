@@ -11,10 +11,10 @@ import type {
 import { DEPTH_FLOOR, FLY_RISK_CAP } from "@/lib/equipment/inBandImprove";
 
 const SCORE_COLOR: Record<ScoreKey, string> = {
-  power: "#f4a261",
-  spin: "#7dd3fc",
+  power: "var(--chart-power)",
+  spin: "var(--chart-spin)",
   control: "var(--chart-control)",
-  comfort: "#e9c46a",
+  comfort: "var(--chart-comfort)",
 };
 
 const SCORE_LABEL: Record<ScoreKey, string> = {
@@ -91,7 +91,7 @@ function ScoreShiftGrid({
               <span
                 className="text-[11px] font-medium"
                 style={{
-                  color: lost ? "#f4a261" : Math.abs(d) < 0.15 ? "var(--muted)" : SCORE_COLOR[k],
+                  color: lost ? "var(--chart-power)" : Math.abs(d) < 0.15 ? "var(--muted)" : SCORE_COLOR[k],
                 }}
               >
                 {fmtDelta(d)}
@@ -162,7 +162,7 @@ export function InBandImproveSection({
               </div>
 
               {s.current != null ? (
-                <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-white/5">
+                <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--foreground)_12%,transparent)]">
                   <div
                     className="absolute inset-y-0 opacity-25"
                     style={{
@@ -243,12 +243,12 @@ export function InBandImproveSection({
                           ) : null}
                         </p>
                         <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--foreground)]/70">
-                          <span className="text-sky-300/90">Science — </span>
+                          <span className="text-[var(--sky)]">Science — </span>
                           {lev.science}
                         </p>
                         <Link
                           href={leverHref(lev.family)}
-                          className="mt-1.5 inline-block text-[11px] font-medium text-sky-300"
+                          className="mt-1.5 inline-block text-[11px] font-medium text-[var(--sky)]"
                         >
                           {lev.family.startsWith("tape") ? "Place it in tape lab →" : "Set it on the bed →"}
                         </Link>

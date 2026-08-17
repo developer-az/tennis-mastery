@@ -297,7 +297,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
               boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--chart-spin) 28%, transparent)",
             }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-300">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sky)]">
               Category · {filtered.length} match
               {filtered.length === 1 ? "" : "es"}
             </p>
@@ -320,7 +320,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                     <button
                       type="button"
                       onClick={() => setSelectedId(s.id)}
-                      className="text-left transition hover:text-sky-300"
+                      className="text-left transition hover:text-[var(--sky)]"
                     >
                       {s.brand} {s.name}
                       <span className="tabular-nums text-[var(--foreground)]/60">
@@ -377,7 +377,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                     <span className="flex flex-wrap items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
                       {s.brand} {s.name}
                       {saved ? (
-                        <span className="rounded bg-sky-400/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-sky-300">
+                        <span className="rounded bg-[var(--sky)]/15 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-[var(--sky)]">
                           Setup
                         </span>
                       ) : null}
@@ -390,10 +390,10 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                       </span>
                     </span>
                     <span className="hidden flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] tabular-nums text-[var(--foreground)]/70 sm:flex">
-                      <span style={{ color: "#7dd3fc" }}>Sp {s.spin}</span>
+                      <span style={{ color: "var(--chart-spin)" }}>Sp {s.spin}</span>
                       <span style={{ color: "var(--chart-control)" }}>Ctl {s.control}</span>
-                      <span style={{ color: "#f4a261" }}>Pwr {s.power}</span>
-                      <span style={{ color: "#e9c46a" }}>Dur {s.durability}</span>
+                      <span style={{ color: "var(--chart-power)" }}>Pwr {s.power}</span>
+                      <span style={{ color: "var(--chart-comfort)" }}>Dur {s.durability}</span>
                       <span>Tm {s.tensionMaintenance}</span>
                       <span>Stf {stringStiffness(s)}</span>
                     </span>
@@ -407,9 +407,9 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                   }}
                   className="m-1.5 min-h-11 shrink-0 self-center rounded-md px-3 py-2.5 text-xs font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:min-h-10 sm:px-3.5"
                   style={{
-                    background: saved ? "rgba(125,211,252,0.12)" : "var(--accent)",
-                    color: saved ? "#7dd3fc" : "var(--accent-ink)",
-                    boxShadow: saved ? "0 0 0 1px #7dd3fc" : "none",
+                    background: saved ? "color-mix(in srgb, var(--chart-spin) 14%, transparent)" : "var(--accent)",
+                    color: saved ? "var(--chart-spin)" : "var(--accent-ink)",
+                    boxShadow: saved ? "0 0 0 1px var(--chart-spin)" : "none",
                   }}
                   aria-label={
                     saved
@@ -443,7 +443,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
               size="lg"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-300">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--sky)]">
                 {materialLabel(selected.material)} · {shapeLabel(selected.shape)}
               </p>
               <h3 className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
@@ -482,9 +482,9 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                 onClick={() => saveStringRow(selected)}
                 className="mt-4 min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
                 style={{
-                  background: inSetup ? "rgba(125,211,252,0.12)" : "var(--accent)",
-                  color: inSetup ? "#7dd3fc" : "var(--accent-ink)",
-                  boxShadow: inSetup ? "0 0 0 1px #7dd3fc" : "none",
+                  background: inSetup ? "color-mix(in srgb, var(--chart-spin) 14%, transparent)" : "var(--accent)",
+                  color: inSetup ? "var(--chart-spin)" : "var(--accent-ink)",
+                  boxShadow: inSetup ? "0 0 0 1px var(--chart-spin)" : "none",
                 }}
               >
                 {inSetup ? "Saved in my setup" : "Save to my setup"}
@@ -496,17 +496,17 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
 
           <ScoreGrid
             scores={[
-              { label: "Spin @ setup", value: selectedOutcome.spin, accent: "#7dd3fc" },
+              { label: "Spin @ setup", value: selectedOutcome.spin, accent: "var(--chart-spin)" },
               { label: "Control @ setup", value: selectedOutcome.control },
-              { label: "Power @ setup", value: selectedOutcome.power, accent: "#f4a261" },
-              { label: "Comfort @ setup", value: selectedOutcome.comfort, accent: "#e9c46a" },
-              { label: "Durability @ gauge", value: selectedOutcome.durability, accent: "#f4a261" },
+              { label: "Power @ setup", value: selectedOutcome.power, accent: "var(--chart-power)" },
+              { label: "Comfort @ setup", value: selectedOutcome.comfort, accent: "var(--chart-comfort)" },
+              { label: "Durability @ gauge", value: selectedOutcome.durability, accent: "var(--chart-power)" },
               {
                 label: "Tension maintenance",
                 value: selected.tensionMaintenance,
-                accent: "#e9c46a",
+                accent: "var(--chart-comfort)",
               },
-              { label: "Stiffness feel", value: selectedOutcome.stiffness, accent: "#e8efe9" },
+              { label: "Stiffness feel", value: selectedOutcome.stiffness, accent: "var(--muted)" },
             ]}
           />
 
@@ -515,7 +515,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
             if (alts.length === 0) return null;
             return (
               <section className="border-t border-[var(--line)] pt-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
                   Similar feel — shop substitutes
                 </p>
                 <p className="mt-1 text-xs text-[var(--muted)]">
@@ -531,12 +531,12 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                       <button
                         type="button"
                         onClick={() => setSelectedId(a.string.id)}
-                        className="min-w-0 text-left transition hover:text-sky-300"
+                        className="min-w-0 text-left transition hover:text-[var(--sky)]"
                       >
                         <span className="font-[family-name:var(--font-display)] tracking-tight">
                           {a.string.brand} {a.string.name}
                         </span>
-                        <span className="ml-2 text-[11px] tabular-nums text-sky-300/80">
+                        <span className="ml-2 text-[11px] tabular-nums text-[var(--sky)]">
                           {a.score}%
                         </span>
                         <span className="mt-0.5 block text-[11px] text-[var(--muted)]">
@@ -729,13 +729,13 @@ function CompareColumn({
   return (
     <div className="space-y-3 border-t border-[var(--line)] pt-3">
       <p className="text-sm font-medium">{label}</p>
-      <ScoreMeter label="Spin" value={spin} accent="#7dd3fc" />
+      <ScoreMeter label="Spin" value={spin} accent="var(--chart-spin)" />
       <ScoreMeter label="Control" value={control} />
-      <ScoreMeter label="Power" value={power} accent="#f4a261" />
-      <ScoreMeter label="Comfort" value={comfort} accent="#e9c46a" />
-      <ScoreMeter label="Durability" value={durability} accent="#f4a261" />
-      <ScoreMeter label="Stiffness" value={stiffness} accent="#e8efe9" />
-      <ScoreMeter label="Tension maint." value={tensionMaint} accent="#e9c46a" />
+      <ScoreMeter label="Power" value={power} accent="var(--chart-power)" />
+      <ScoreMeter label="Comfort" value={comfort} accent="var(--chart-comfort)" />
+      <ScoreMeter label="Durability" value={durability} accent="var(--chart-power)" />
+      <ScoreMeter label="Stiffness" value={stiffness} accent="var(--muted)" />
+      <ScoreMeter label="Tension maint." value={tensionMaint} accent="var(--chart-comfort)" />
     </div>
   );
 }

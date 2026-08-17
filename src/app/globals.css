@@ -9,7 +9,8 @@
   --panel-raised: #ffffff;
   --bg-sunken: #e8eeea;
   --bg-scene: #dce8e0;
-  --muted: #5a6f64;
+  --muted: #3d5248;
+  --label: #2a3d34;
   --line: rgba(13, 31, 24, 0.1);
   --line-strong: rgba(13, 31, 24, 0.18);
   --accent: #5a8f28;
@@ -51,7 +52,8 @@
   --panel-raised: #12241c;
   --bg-sunken: #06110d;
   --bg-scene: #07150f;
-  --muted: #8b9e92;
+  --muted: #9aada3;
+  --label: #c8d5ce;
   --line: rgba(238, 243, 239, 0.1);
   --line-strong: rgba(238, 243, 239, 0.18);
   --accent: #c5e85a;
@@ -86,6 +88,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-label: var(--label);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-display: var(--font-display);
@@ -184,6 +189,25 @@ h3,
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--accent);
+}
+
+/* Card eyebrows — always ink-on-paper, never a dark-mode wash. */
+.sf-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.sf-text-link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.sf-text-link:hover {
+  filter: brightness(1.08);
 }
 
 .sf-rule {

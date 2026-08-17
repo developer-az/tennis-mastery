@@ -312,7 +312,7 @@ export function CombinedSetupPanel({
                 <p className="text-[10px] uppercase tracking-[0.14em]" style={{ color }}>
                   {label}
                 </p>
-                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/5">
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--foreground)_12%,transparent)]">
                   <div
                     className="h-full rounded-full transition-[width] duration-500"
                     style={{
@@ -494,7 +494,7 @@ export function CombinedSetupPanel({
                 {insight.forehand.avoid}
               </p>
               <p className="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">
-                <span className="text-sky-300/90">Science — </span>
+                <span className="text-[var(--sky)]">Science — </span>
                 Grip sets face lean; path loads spin. Opening the face sends the ball up without
                 adding drop — that’s how clean hits sail long.
               </p>
@@ -563,7 +563,7 @@ export function CombinedSetupPanel({
                       </ul>
                       {tip.tapeRaise?.length ? (
                         <>
-                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-300">
+                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--sky)]">
                             Lead tape — raise
                           </p>
                           <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -585,7 +585,7 @@ export function CombinedSetupPanel({
                       </ul>
                       {tip.tapeLower?.length ? (
                         <>
-                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-300/80">
+                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--sky)]">
                             Lead tape — lower
                           </p>
                           <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -602,13 +602,13 @@ export function CombinedSetupPanel({
                     {tip.tradeoff}
                   </p>
                   <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--foreground)]/70">
-                    <span className="text-sky-300/90">Science — </span>
+                    <span className="text-[var(--sky)]">Science — </span>
                     {tip.science}
                   </p>
                   <button
                     type="button"
                     onClick={() => go("lead-tape")}
-                    className="mt-2 text-[11px] font-medium text-sky-300"
+                    className="mt-2 text-[11px] font-medium text-[var(--sky)]"
                   >
                     Open lead tape lab →
                   </button>
@@ -665,7 +665,7 @@ export function CombinedSetupPanel({
 
       {insight.scienceNotes.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
             What your numbers mean
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
@@ -673,7 +673,7 @@ export function CombinedSetupPanel({
           </p>
           <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-[var(--foreground)]/85">
             {insight.scienceNotes.map((n) => (
-              <li key={n} className="border-l-2 border-sky-400/40 pl-3">
+              <li key={n} className="border-l-2 border-[var(--sky)]/40 pl-3">
                 {n}
               </li>
             ))}
@@ -705,7 +705,7 @@ export function CombinedSetupPanel({
 
       {stringAlts.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
             Similar string feel — shop around
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
@@ -721,7 +721,7 @@ export function CombinedSetupPanel({
                 <div className="min-w-0">
                   <p className="font-[family-name:var(--font-display)] tracking-tight">
                     {a.string.brand} {a.string.name}
-                    <span className="ml-2 text-[11px] tabular-nums text-sky-300/90">
+                    <span className="ml-2 text-[11px] tabular-nums text-[var(--sky)]">
                       {a.score}% match
                     </span>
                   </p>
@@ -733,8 +733,8 @@ export function CombinedSetupPanel({
                     void navigator.clipboard?.writeText(a.shopQuery);
                     go("strings");
                   }}
-                  className="shrink-0 rounded-md px-2.5 py-1.5 text-[11px] text-sky-300"
-                  style={{ boxShadow: "0 0 0 1px rgba(125,211,252,0.35)" }}
+                  className="shrink-0 rounded-md px-2.5 py-1.5 text-[11px] text-[var(--sky)]"
+                  style={{ boxShadow: "0 0 0 1px color-mix(in srgb, var(--sky) 40%, transparent)" }}
                   title="Copy shop search and open Strings"
                 >
                   Copy “{a.shopQuery}”
@@ -879,7 +879,7 @@ function PieceCard({
     >
       {thumb}
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">{label}</p>
+        <p className="sf-label">{label}</p>
         <p className={`mt-0.5 truncate text-sm ${filled ? "text-[var(--foreground)]" : "text-[var(--muted)]"}`}>
           {title}
         </p>

@@ -417,8 +417,8 @@ export function RacketExplorer({
                     </span>
                     <span className="hidden flex-wrap gap-1.5 pt-0.5 sm:flex">
                       <MiniTag label={fit.skill} color="var(--chart-control)" />
-                      <MiniTag label={fit.courtRole} color="#7dd3fc" />
-                      <MiniTag label={fit.feelAxis} color="#f4a261" />
+                      <MiniTag label={fit.courtRole} color="var(--chart-spin)" />
+                      <MiniTag label={fit.feelAxis} color="var(--chart-power)" />
                     </span>
                   </span>
                 </button>
@@ -577,10 +577,10 @@ export function RacketExplorer({
 
           <ScoreGrid
             scores={[
-              { label: "Power", value: selected.power, accent: "#f4a261" },
-              { label: "Spin", value: selected.spin, accent: "#7dd3fc" },
+              { label: "Power", value: selected.power, accent: "var(--chart-power)" },
+              { label: "Spin", value: selected.spin, accent: "var(--chart-spin)" },
               { label: "Control", value: selected.control },
-              { label: "Comfort", value: selected.comfort, accent: "#e9c46a" },
+              { label: "Comfort", value: selected.comfort, accent: "var(--chart-comfort)" },
             ]}
           />
 
@@ -623,10 +623,10 @@ export function RacketExplorer({
                     <p className="font-[family-name:var(--font-display)] text-sm tracking-tight">
                       {r.brand} {r.model}
                     </p>
-                    <ScoreMeter label="Power" value={r.power} accent="#f4a261" />
-                    <ScoreMeter label="Spin" value={r.spin} accent="#7dd3fc" />
+                    <ScoreMeter label="Power" value={r.power} accent="var(--chart-power)" />
+                    <ScoreMeter label="Spin" value={r.spin} accent="var(--chart-spin)" />
                     <ScoreMeter label="Control" value={r.control} />
-                    <ScoreMeter label="Comfort" value={r.comfort} accent="#e9c46a" />
+                    <ScoreMeter label="Comfort" value={r.comfort} accent="var(--chart-comfort)" />
                     <p className="text-xs tabular-nums text-[var(--muted)]">
                       Launch {r.idealLaunchAngleDeg}° · Path {r.idealSwingPathDeg}°
                     </p>

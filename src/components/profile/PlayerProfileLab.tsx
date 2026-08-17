@@ -82,7 +82,7 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm outline-none focus:border-[var(--accent)] ${props.className ?? ""}`}
+      className={`w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)] ${props.className ?? ""}`}
     />
   );
 }
@@ -91,7 +91,7 @@ function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       {...props}
-      className={`w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm outline-none focus:border-[var(--accent)] ${props.className ?? ""}`}
+      className={`w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)] ${props.className ?? ""}`}
     />
   );
 }
@@ -223,14 +223,14 @@ export function PlayerProfileLab() {
         </div>
       </div>
 
-      <p className="rounded-md border border-[var(--line)] bg-black/20 px-4 py-3 text-xs leading-relaxed text-[var(--muted)]">
+      <p className="rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-4 py-3 text-xs leading-relaxed text-[var(--muted)]">
         Coaching-grade models, not Hawk-Eye. Logged real-world feedback outweighs spec-derived
         predictions. After every change, give your body&apos;s read — the app is here to make you
         a better observer of yourself, not to replace feel with math.
       </p>
 
       {lockMsg && (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-[var(--amber)]">
           {lockMsg}
         </p>
       )}
@@ -249,7 +249,7 @@ export function PlayerProfileLab() {
               className={`rounded-md border px-4 py-3 text-sm ${
                 f.severity === "block" || f.severity === "hard"
                   ? "border-red-400/40 bg-red-500/10"
-                  : "border-[var(--line)] bg-black/20 text-[var(--muted)]"
+                  : "border-[var(--line)] bg-[var(--bg-sunken)] text-[var(--muted)]"
               }`}
             >
               <span className="font-medium text-[var(--foreground)]">{f.title}.</span> {f.detail}
@@ -461,7 +461,7 @@ export function PlayerProfileLab() {
           <div className="min-w-[200px] flex-1">
             <FieldLabel>What&apos;s broken?</FieldLabel>
             <select
-              className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm"
               value={problem}
               onChange={(e) => setProblem(e.target.value as ProblemId)}
             >
@@ -541,7 +541,7 @@ export function PlayerProfileLab() {
           <div>
             <FieldLabel>Lever</FieldLabel>
             <select
-              className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm"
               value={decLever}
               onChange={(e) => setDecLever(e.target.value as LeverKind)}
             >
@@ -707,7 +707,7 @@ export function PlayerProfileLab() {
           <div>
             <FieldLabel>Overall feel</FieldLabel>
             <select
-              className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm"
               value={overallFeel}
               onChange={(e) => setOverallFeel(e.target.value as SessionFeel)}
             >
@@ -734,7 +734,7 @@ export function PlayerProfileLab() {
               <label key={area} className="text-xs">
                 <span className="mr-1 text-[var(--muted)]">{area}</span>
                 <select
-                  className="rounded border border-[var(--line)] bg-black/20 px-1 py-1"
+                  className="rounded border border-[var(--line)] bg-[var(--bg-sunken)] px-1 py-1"
                   value={bodyCheck[area] ?? ""}
                   onChange={(e) => {
                     const v = e.target.value as
@@ -920,7 +920,7 @@ export function PlayerProfileLab() {
                     {p.sharedSwingweight ?? "?"} · grip: {p.sharedGripBuild}
                   </p>
                   {matchHints.length > 0 && (
-                    <p className="mt-1 text-xs text-amber-200">
+                    <p className="mt-1 text-xs text-[var(--amber)]">
                       Current Gear setup: {matchHints.join("; ")}
                     </p>
                   )}

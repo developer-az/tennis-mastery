@@ -250,7 +250,7 @@ export function SetupStatsChart({
             ] as const
           ).map(([label, v, color]) => (
             <div key={label}>
-              <p className="text-[9px] uppercase tracking-[0.12em] text-[var(--muted)]">{label}</p>
+              <p className="sf-label">{label}</p>
               <p
                 className="mt-0.5 font-[family-name:var(--font-display)] text-lg tabular-nums"
                 style={{ color }}

@@ -149,7 +149,7 @@ export function SetupWizard({
                   onChange={(e) => setNameDraft(e.target.value)}
                   onBlur={() => setDisplayName(nameDraft)}
                   placeholder="Your name"
-                  className="w-full rounded-md border border-[var(--line)] bg-black/20 px-4 py-3 text-base outline-none focus:border-[var(--accent)]"
+                  className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-4 py-3 text-base outline-none focus:border-[var(--accent)]"
                 />
                 <Primary onClick={() => { setDisplayName(nameDraft); next(); }}>Continue</Primary>
               </Step>
@@ -291,7 +291,7 @@ export function SetupWizard({
                   onClick={() => setPicker("racket")}
                   className="w-full rounded-md border border-[var(--line)] px-4 py-4 text-left"
                 >
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">Racket</p>
+                  <p className="sf-label">Racket</p>
                   <p className="mt-1 text-sm font-medium">
                     {setup.racketLabel ?? "Search and pick a frame"}
                   </p>
@@ -301,7 +301,7 @@ export function SetupWizard({
                   onClick={() => setPicker("string")}
                   className="mt-2 w-full rounded-md border border-[var(--line)] px-4 py-4 text-left"
                 >
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">String</p>
+                  <p className="sf-label">String</p>
                   <p className="mt-1 text-sm font-medium">
                     {setup.stringLabel
                       ? `${setup.stringLabel}${setup.tensionLbs != null ? ` @ ${setup.tensionLbs} lbs` : ""}`

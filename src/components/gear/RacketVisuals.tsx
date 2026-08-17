@@ -552,7 +552,7 @@ function FlightGauge({
       <p className="text-[9px] uppercase tracking-[0.12em]" style={{ color }}>
         {label}
       </p>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--foreground)_12%,transparent)]">
         <div
           className="h-full rounded-full transition-[width] duration-500"
           style={{ width: `${value}%`, background: color }}

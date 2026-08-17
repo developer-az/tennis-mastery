@@ -177,7 +177,7 @@ export function SetupVisualStory({
           />
           <div className="mt-4 mx-auto max-w-xs">
             <LeadTapeRacketDiagram pieces={pieces} interactive={false} />
-            <Link href="/gear?tab=lead-tape" className="mt-2 inline-block text-xs text-[var(--accent)]">
+            <Link href="/gear?tab=lead-tape" className="sf-text-link mt-2 inline-block">
               Customize tape →
             </Link>
           </div>
@@ -217,7 +217,7 @@ function Readout({
 }) {
   return (
     <div>
-      <p className="text-[9px] uppercase tracking-[0.14em] text-[var(--muted)]">{label}</p>
+      <p className="sf-label">{label}</p>
       <p className="mt-0.5 font-[family-name:var(--font-display)] text-xl tabular-nums tracking-tight">
         {value}
       </p>

@@ -46,9 +46,9 @@ export function TensionCurve({
       </p>
       <svg viewBox="0 0 200 110" className="mb-4 h-auto w-full" aria-hidden>
         <line x1="0" y1="100" x2="200" y2="100" stroke="rgba(232,239,233,0.15)" />
-        <polyline points={points.pwr} fill="none" stroke="#f4a261" strokeWidth="1.5" />
+        <polyline points={points.pwr} fill="none" stroke="var(--chart-power)" strokeWidth="1.5" />
         <polyline points={points.ctrl} fill="none" stroke="var(--chart-control)" strokeWidth="1.5" />
-        <polyline points={points.spn} fill="none" stroke="#7dd3fc" strokeWidth="1.5" />
+        <polyline points={points.spn} fill="none" stroke="var(--chart-spin)" strokeWidth="1.5" />
         <line
           x1={markerX}
           y1="0"
@@ -58,24 +58,24 @@ export function TensionCurve({
           strokeDasharray="3 3"
           style={{ transition: "all 0.25s ease" }}
         />
-        <text x="4" y="12" fill="#f4a261" fontSize="8">
+        <text x="4" y="12" fill="var(--chart-power)" fontSize="8">
           power
         </text>
         <text x="48" y="12" fill="var(--chart-control)" fontSize="8">
           control
         </text>
-        <text x="96" y="12" fill="#7dd3fc" fontSize="8">
+        <text x="96" y="12" fill="var(--chart-spin)" fontSize="8">
           spin
         </text>
       </svg>
 
       <div className="grid gap-3">
-        <ScoreMeter label="Power @ tension/gauge" value={outcome.power} accent="#f4a261" />
+        <ScoreMeter label="Power @ tension/gauge" value={outcome.power} accent="var(--chart-power)" />
         <ScoreMeter label="Control @ tension/gauge" value={outcome.control} />
-        <ScoreMeter label="Spin potential @ tension/gauge" value={outcome.spin} accent="#7dd3fc" />
-        <ScoreMeter label="Comfort @ tension/gauge" value={outcome.comfort} accent="#e9c46a" />
-        <ScoreMeter label="Stiffness feel" value={outcome.stiffness} accent="#e8efe9" />
-        <ScoreMeter label="Durability @ gauge" value={outcome.durability} accent="#f4a261" />
+        <ScoreMeter label="Spin potential @ tension/gauge" value={outcome.spin} accent="var(--chart-spin)" />
+        <ScoreMeter label="Comfort @ tension/gauge" value={outcome.comfort} accent="var(--chart-comfort)" />
+        <ScoreMeter label="Stiffness feel" value={outcome.stiffness} accent="var(--muted)" />
+        <ScoreMeter label="Durability @ gauge" value={outcome.durability} accent="var(--chart-power)" />
       </div>
 
       <div className="mt-4 space-y-2 border-t border-[var(--line)] pt-4 text-sm">
@@ -100,7 +100,7 @@ export function SpinPotentialRing({ value }: { value: number }) {
           cy="54"
           r={r}
           fill="none"
-          stroke="#7dd3fc"
+          stroke="var(--chart-spin)"
           strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={c}
@@ -112,7 +112,7 @@ export function SpinPotentialRing({ value }: { value: number }) {
           x="54"
           y="58"
           textAnchor="middle"
-          fill="#e8efe9"
+          fill="var(--muted)"
           fontSize="22"
           fontFamily="var(--font-display)"
         >
@@ -120,7 +120,7 @@ export function SpinPotentialRing({ value }: { value: number }) {
         </text>
       </svg>
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-300">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sky)]">
           Spin potential
         </p>
         <p className="mt-1 max-w-[14rem] text-xs leading-relaxed text-[var(--muted)]">

@@ -161,7 +161,7 @@ export function GearPickerSheet({
           enterKeyHint="search"
           autoCapitalize="off"
           autoCorrect="off"
-          className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-3 text-base outline-none focus:border-[var(--accent)]"
+          className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-3 text-base outline-none focus:border-[var(--accent)]"
         />
         <ul className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto">
           {results.length === 0 ? (

@@ -56,19 +56,19 @@ export function AfterPlayTab() {
       )}
 
       <label className="block">
-        <span className="mb-1 block text-[11px] uppercase tracking-wider text-[var(--muted)]">
+        <span className="sf-label mb-1 block">
           Hours
         </span>
         <input
           value={hours}
           onChange={(e) => setHours(e.target.value)}
           inputMode="decimal"
-          className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+          className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
         />
       </label>
 
       <div>
-        <p className="mb-2 text-[11px] uppercase tracking-wider text-[var(--muted)]">How it felt</p>
+        <p className="sf-label mb-2">How it felt</p>
         <div className="flex flex-wrap gap-2">
           {FEELS.map((f) => (
             <button
@@ -89,19 +89,19 @@ export function AfterPlayTab() {
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-[11px] uppercase tracking-wider text-[var(--muted)]">
+        <span className="sf-label mb-1 block">
           What broke down
         </span>
         <input
           value={broke}
           onChange={(e) => setBroke(e.target.value)}
           placeholder="Framing on the BH, grip slip…"
-          className="w-full rounded-md border border-[var(--line)] bg-black/20 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+          className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
         />
       </label>
 
       <div>
-        <p className="mb-2 text-[11px] uppercase tracking-wider text-[var(--muted)]">Body</p>
+        <p className="sf-label mb-2">Body</p>
         <div className="grid gap-2 sm:grid-cols-3">
           <BodySelect label="Arm" value={arm} onChange={setArm} />
           <BodySelect label="Hand" value={hand} onChange={setHand} />
@@ -151,7 +151,7 @@ export function AfterPlayTab() {
 
       {profile.sessions.slice(0, 5).map((s) => (
         <div key={s.id} className="border border-[var(--line)] px-3 py-2 text-sm">
-          <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
+          <p className="sf-label">
             {new Date(s.createdAt).toLocaleDateString()} · {s.overallFeel} · +{s.hoursOnBed}h
           </p>
           <p className="text-[var(--muted)]">{s.brokeDown || s.setupSummary}</p>
@@ -172,11 +172,11 @@ function BodySelect({
 }) {
   return (
     <label className="text-xs">
-      <span className="mb-1 block text-[var(--muted)]">{label}</span>
+      <span className="sf-label mb-1 block">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as BodyPick | "")}
-        className="w-full rounded-md border border-[var(--line)] bg-black/20 px-2 py-2"
+        className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-2 py-2"
       >
         <option value="">—</option>
         <option value="ok">ok</option>

@@ -15,7 +15,7 @@ export function ScoreMeter({
         <span className="text-[var(--muted)]">{label}</span>
         <span className="font-mono tabular-nums text-[var(--foreground)]">{value}</span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+      <div className="h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--foreground)_12%,transparent)]">
         <div
           className="h-full rounded-full transition-[width] duration-500 ease-out"
           style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: accent }}
