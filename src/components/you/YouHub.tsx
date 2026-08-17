@@ -94,27 +94,25 @@ export function YouHub({
   const preview = gripPreviewLine(profile.grips.forehand);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8 md:py-10">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8 md:py-12">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-6">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
-            Your court
-          </p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl tracking-tight">
+          <p className="sf-kicker">Your court</p>
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight md:text-4xl">
             {name}
           </h1>
         </div>
         <button
           type="button"
           onClick={() => restartOnboarding()}
-          className="text-xs text-[var(--muted)] hover:text-[var(--foreground)]"
+          className="sf-btn-ghost text-xs tracking-[0.06em]"
         >
           Redo setup
         </button>
       </div>
 
       <div
-        className="mt-6 flex gap-1 overflow-x-auto pb-1"
+        className="mt-0 flex gap-0 overflow-x-auto border-b border-[var(--line)]"
         role="tablist"
         aria-label="You"
       >
@@ -132,13 +130,19 @@ export function YouHub({
             role="tab"
             aria-selected={tab === id}
             onClick={() => setTab(id)}
-            className={`shrink-0 rounded-md px-3.5 py-2 text-sm ${
+            className={`relative shrink-0 px-4 py-3.5 text-sm font-medium tracking-[0.03em] transition ${
               tab === id
-                ? "bg-[var(--accent)] font-medium text-[#0b1a14]"
-                : "text-[var(--muted)] hover:bg-white/5"
+                ? "text-[var(--foreground)]"
+                : "text-[var(--muted)] hover:text-[var(--foreground)]"
             }`}
           >
             {label}
+            <span
+              className={`absolute inset-x-3 bottom-0 h-px ${
+                tab === id ? "bg-[var(--accent)]" : "bg-transparent"
+              }`}
+              aria-hidden
+            />
           </button>
         ))}
       </div>
@@ -148,20 +152,19 @@ export function YouHub({
           <div className="space-y-6">
             <div className="flex flex-wrap items-center gap-2">
               {profile.grips.forehand && (
-                <span className="rounded-md bg-[var(--accent-dim)] px-2.5 py-1 text-xs text-[var(--accent)]">
+                <span className="border border-[var(--accent)]/35 bg-[var(--accent-dim)] px-2.5 py-1 text-xs text-[var(--accent)]">
                   FH {fhGripLabel(profile.grips.forehand)}
                 </span>
               )}
               {profile.grips.backhand && (
-                <span className="rounded-md px-2.5 py-1 text-xs" style={{ boxShadow: "0 0 0 1px var(--line)" }}>
+                <span className="border border-[var(--line)] px-2.5 py-1 text-xs text-[var(--muted)]">
                   BH set
                 </span>
               )}
               {profile.constraints.filter((c) => c.active).map((c) => (
                 <span
                   key={c.id}
-                  className="rounded-md px-2.5 py-1 text-xs text-amber-100"
-                  style={{ boxShadow: "0 0 0 1px rgba(244,162,97,0.35)" }}
+                  className="border border-[var(--amber)]/40 px-2.5 py-1 text-xs text-amber-100/90"
                 >
                   {c.label}
                 </span>
@@ -172,20 +175,20 @@ export function YouHub({
             </div>
             {preview ? <p className="text-sm text-[var(--muted)]">{preview}</p> : null}
 
-            <div className="border border-[var(--line)] bg-[var(--panel)]/70 px-4 py-3">
+            <div className="sf-panel px-4 py-3.5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">Bag</p>
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Bag</p>
                   <p className="mt-0.5 text-sm">{hasAnyGear(setup) ? setupSummary(setup) : "No bag yet"}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <button type="button" onClick={() => setTab("bag")} className="text-xs text-[var(--accent)]">
+                  <button type="button" onClick={() => setTab("bag")} className="text-xs font-medium text-[var(--accent)]">
                     Tweak bag
                   </button>
-                  <Link href="/lab" className="text-xs text-[var(--accent)]">
+                  <Link href="/lab" className="text-xs font-medium text-[var(--accent)]">
                     Lab
                   </Link>
-                  <Link href="/gear?tab=lead-tape" className="text-xs text-[var(--accent)]">
+                  <Link href="/gear?tab=lead-tape" className="text-xs font-medium text-[var(--accent)]">
                     Tape
                   </Link>
                 </div>
@@ -229,7 +232,7 @@ export function YouHub({
             <button
               type="button"
               onClick={() => setTab("play")}
-              className="w-full rounded-md bg-[var(--accent)] py-3 text-sm font-medium text-[#0b1a14]"
+              className="sf-btn sf-btn-primary w-full"
             >
               Log last session
             </button>
@@ -237,7 +240,7 @@ export function YouHub({
             {patterns.length > 0 && (
               <div className="space-y-2">
                 {patterns.map((p) => (
-                  <p key={p.id} className="border border-[var(--line)] px-3 py-2 text-sm">
+                  <p key={p.id} className="sf-panel px-3 py-2.5 text-sm">
                     <span className="font-medium">{p.title}.</span>{" "}
                     <span className="text-[var(--muted)]">{p.detail}</span>
                   </p>
@@ -260,9 +263,9 @@ export function YouHub({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-[var(--line)] bg-[var(--panel)]/50 px-3 py-3">
-      <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">{label}</p>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-xl">{value}</p>
+    <div className="sf-panel px-3 py-3">
+      <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">{label}</p>
+      <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold">{value}</p>
     </div>
   );
 }

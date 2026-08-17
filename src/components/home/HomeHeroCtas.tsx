@@ -18,22 +18,15 @@ export function HomeHeroCtas() {
   const returning = hydrated && (onboardingComplete || profileLooksStarted(profile));
 
   return (
-    <div
-      className="mt-8 flex flex-wrap gap-3"
-      style={{ animation: "rise 0.9s ease-out 0.32s both" }}
-    >
-      <Link
-        href="/you"
-        className="rounded-md bg-[var(--accent)] px-6 py-3 font-medium text-[#0b1a14] transition hover:brightness-110"
-      >
-        {returning ? "Your court" : "Set up your game"}
+    <div className="sf-rise mt-9 flex flex-wrap gap-3" style={{ animationDelay: "0.28s" }}>
+      <Link href="/you" className="sf-btn sf-btn-primary">
+        {returning ? "Open your court" : "Start your setup"}
       </Link>
-      <Link
-        href="/lab"
-        className="rounded-md px-6 py-3 text-[var(--foreground)] transition hover:bg-white/5"
-        style={{ boxShadow: "0 0 0 1px var(--line)" }}
-      >
-        Open lab
+      <Link href="/lab" className="sf-btn sf-btn-secondary">
+        Explore the lab
+      </Link>
+      <Link href="/gear" className="sf-btn sf-btn-ghost">
+        Browse gear
       </Link>
     </div>
   );

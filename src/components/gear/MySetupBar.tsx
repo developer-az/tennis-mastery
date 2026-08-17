@@ -27,10 +27,12 @@ export function MySetupBar({
     <button
       type="button"
       onClick={() => go("overview")}
-      className="mb-4 flex w-full items-center justify-between gap-3 rounded-md border border-[var(--line)] bg-[var(--panel)]/80 px-3 py-2 text-left text-sm"
+      className="mb-4 flex w-full items-center justify-between gap-3 border border-[var(--line)] bg-[var(--panel)]/90 px-4 py-3 text-left text-sm transition hover:border-[var(--line-strong)]"
     >
       <span className="min-w-0 truncate text-[var(--foreground)]/90">{setupSummary(setup)}</span>
-      <span className="shrink-0 text-xs text-[var(--accent)]">Overview</span>
+      <span className="shrink-0 text-[11px] font-semibold tracking-[0.1em] text-[var(--accent)] uppercase">
+        Overview
+      </span>
     </button>
   );
 }

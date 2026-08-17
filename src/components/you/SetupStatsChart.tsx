@@ -52,11 +52,9 @@ export function SetupStatsChart({
   const hasScores = AXES.some((a) => scores[a.key] != null);
 
   return (
-    <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
-        Molded setup
-      </p>
-      <h2 className="mt-1.5 font-[family-name:var(--font-display)] text-xl tracking-tight md:text-2xl">
+    <div className="sf-panel p-5 md:p-6">
+      <p className="sf-kicker">Molded setup</p>
+      <h2 className="mt-2 font-[family-name:var(--font-display)] text-xl font-semibold tracking-tight md:text-2xl">
         Your numbers
       </h2>
       <p className="mt-1 max-w-xl text-xs text-[var(--muted)]">
