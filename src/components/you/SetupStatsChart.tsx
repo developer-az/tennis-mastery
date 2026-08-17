@@ -60,8 +60,7 @@ export function SetupStatsChart({
         Your numbers
       </h2>
       <p className="mt-1 max-w-xl text-xs text-[var(--muted)]">
-        Lime is this bag. The tick on each spoke is the healthy band for {role || "this mold"} — a target
-        window, not a max and not a grade of the frame.
+        Power, spin, control, comfort for this bag. Soft ticks = healthy band for {role || "this mold"}.
       </p>
 
       {!hasScores ? (

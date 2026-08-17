@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     "Explore elite tennis biomechanics in 3D. Joint angles, kinetic-chain timing, spin, and racket-path data mapped onto interactive player models.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
