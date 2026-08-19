@@ -11,6 +11,7 @@ import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { fhGripLabel, gripPreviewLine } from "@/lib/player/onboarding";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
 import { InBandImproveSection } from "@/components/gear/InBandImproveSection";
+import { SyncStatusPill } from "@/components/auth/SyncStatusPill";
 import { strikeZoneForFrame } from "@/components/gear/RacketVisuals";
 import { SetupVisualStory } from "./SetupVisualStory";
 import { BagTab } from "./BagTab";
@@ -102,13 +103,16 @@ export function YouHub({
             {name}
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={() => restartOnboarding()}
-          className="sf-btn-ghost text-xs tracking-[0.06em]"
-        >
-          Redo setup
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          <SyncStatusPill />
+          <button
+            type="button"
+            onClick={() => restartOnboarding()}
+            className="sf-btn-ghost text-xs tracking-[0.06em]"
+          >
+            Redo setup
+          </button>
+        </div>
       </div>
 
       <div

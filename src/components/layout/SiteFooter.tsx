@@ -32,6 +32,11 @@ export function SiteFooter({ note }: { note?: string }) {
                 Gear lab
               </Link>
             </li>
+            <li>
+              <Link href="/account" className="text-[var(--foreground)]/85 transition hover:text-[var(--accent)]">
+                Account
+              </Link>
+            </li>
           </ul>
         </div>
         <div>

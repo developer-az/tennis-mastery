@@ -315,3 +315,72 @@ input[type="range"]::-webkit-slider-thumb {
   height: 2px;
   background: var(--accent);
 }
+
+/* Account / auth — Tennis Warehouse–style retail forms */
+.sf-auth-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
+  padding: 1.75rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .sf-auth-card {
+    padding: 2rem 2.25rem;
+  }
+}
+
+.sf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sf-field-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--label);
+}
+
+.sf-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9375rem;
+  color: var(--foreground);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sf-input::placeholder {
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+.sf-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.sf-input-error {
+  border-color: var(--danger);
+}
+
+.sf-field-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.sf-field-error {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--danger);
+}
+
+.sf-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+}
