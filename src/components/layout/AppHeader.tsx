@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { SyncStatusPill } from "@/components/auth/SyncStatusPill";
+import { authDisplayLabel, useAuthStore } from "@/store/authStore";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 const LINKS = [
   { href: "/you", label: "You", match: (p: string) => p === "/you" || p.startsWith("/profile") },
@@ -13,6 +16,15 @@ const LINKS = [
 export function AppHeader() {
   const pathname = usePathname() ?? "/";
   const isHome = pathname === "/";
+  const isAccount = pathname.startsWith("/account");
+
+  const initialized = useAuthStore((s) => s.initialized);
+  const user = useAuthStore((s) => s.user);
+  const account = useAuthStore((s) => s.account);
+  const cloudReady = isSupabaseConfigured();
+
+  const accountHref = user ? "/account" : "/account/login";
+  const accountLabel = user ? authDisplayLabel(account, user) : "Sign in";
 
   return (
     <header className="sticky top-0 z-50 shrink-0 border-b border-[var(--line)] bg-[var(--body-top)]/92 backdrop-blur-md">
@@ -65,6 +77,27 @@ export function AppHeader() {
               </Link>
             ) : null}
           </nav>
+
+          {initialized && !isAccount ? (
+            <Link
+              href={accountHref}
+              className={`hidden max-w-[120px] truncate px-2 py-2 text-[12px] font-semibold tracking-[0.04em] sm:inline-block md:max-w-[140px] ${
+                user
+                  ? "text-[var(--foreground)] hover:text-[var(--accent)]"
+                  : "text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
+              title={cloudReady ? accountLabel : "Local court — sign in when cloud is configured"}
+            >
+              {user ? accountLabel : "Sign in"}
+            </Link>
+          ) : null}
+
+          {user ? (
+            <span className="hidden lg:inline-flex">
+              <SyncStatusPill compact />
+            </span>
+          ) : null}
+
           <ThemeToggle />
         </div>
       </div>

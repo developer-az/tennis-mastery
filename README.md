@@ -19,7 +19,20 @@ Strokeform maps published tennis biomechanics (joint angles, kinetic-chain timin
 - **Next.js** (App Router) + TypeScript
 - **React Three Fiber** + Drei for the 3D viewport
 - **Zustand** for lab state
+- **Supabase** (optional) for accounts + cloud sync
 - Keyframed joint kinematics interpolated with smoothstep
+
+## Data & accounts
+
+**Today:** player profile, bag, sessions, and decisions live in **browser localStorage** (`strokeform-player-profile-v1`, `strokeform-my-setup`). No server database is required to use the app.
+
+**Optional cloud:** connect [Supabase](https://supabase.com) to enable Tennis Warehouse–style sign-in and cross-device sync:
+
+1. Create a Supabase project and run `supabase/migrations/001_strokeform_accounts.sql`
+2. Copy `.env.example` → `.env.local` and set `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. Enable email auth in Supabase dashboard
+
+Account pages: `/account/login`, `/account/create`, `/account`. Without env vars the UI still works — data stays local and a guest path is offered.
 
 ## Develop
 

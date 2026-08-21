@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Source_Sans_3, IBM_Plex_Mono } from "next/font/google";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import "./globals.css";
 
@@ -46,8 +47,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="flex h-dvh flex-col overflow-hidden font-sans">
         <ThemeProvider>
-          <AppHeader />
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+          <AuthProvider>
+            <AppHeader />
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
