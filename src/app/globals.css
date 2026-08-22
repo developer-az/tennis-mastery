@@ -446,6 +446,26 @@ input[type="range"]::-webkit-slider-thumb {
   background: var(--overlay-hover);
 }
 
+.sf-trust-block {
+  padding: 0.85rem 1rem;
+  background: color-mix(in srgb, var(--bg-sunken) 85%, transparent);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.sf-trust-block-compact {
+  padding: 0.75rem 0.85rem;
+}
+
+.sf-trust-source-row {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+
+.sf-trust-source-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
 .sf-trust-seal {
   min-width: 4.5rem;
   padding: 0.5rem 0.75rem;

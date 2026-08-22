@@ -211,6 +211,8 @@ export function YouHub({
                 forehand={insight.forehand}
                 pieces={setup.leadTape?.pieces ?? []}
                 hasRacket={insight.hasRacket}
+                racket={racket}
+                string={string}
               />
             ) : (
               <div className="grid grid-cols-2 gap-3">

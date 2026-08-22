@@ -7,6 +7,8 @@ import {
   type FrameIntelligence,
   type FrameQuirk,
 } from "@/lib/equipment/strokeformIntel";
+import { IntelSkillLadder } from "./IntelSkillLadder";
+import { IntelTrustBlock } from "./IntelTrustBlock";
 
 function Meter({
   label,
@@ -48,10 +50,7 @@ function QuirkCard({ quirk }: { quirk: FrameQuirk }) {
         ? "var(--amber)"
         : "var(--accent)";
   return (
-    <article
-      className="sf-intel-quirk"
-      style={{ borderLeftColor: tone }}
-    >
+    <article className="sf-intel-quirk" style={{ borderLeftColor: tone }}>
       <div className="flex items-center gap-2">
         <span
           className="text-[10px] font-semibold tracking-[0.16em] uppercase"
@@ -63,65 +62,23 @@ function QuirkCard({ quirk }: { quirk: FrameQuirk }) {
       </div>
       <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">{quirk.meaning}</p>
       <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/90">
-        <span className="sf-label !normal-case !tracking-normal !text-[var(--accent)]">Coach · </span>
+        <span className="sf-label !normal-case !tracking-normal !text-[var(--accent)]">
+          Coach ·{" "}
+        </span>
         {quirk.coaching}
       </p>
     </article>
   );
 }
 
-function SkillLadder({ intel }: { intel: FrameIntelligence }) {
-  const { floor, ceiling, demand } = intel.skill;
-  return (
-    <div className="sf-intel-ladder">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="sf-label">Skill span</p>
-          <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight">
-            {floor}
-            <span className="mx-1 text-[var(--muted)]">→</span>
-            {ceiling}
-            <span className="ml-2 text-sm font-medium text-[var(--muted)]">/100</span>
-          </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">{intel.skill.label}</p>
-        </div>
-        <div className="text-right">
-          <p className="sf-label">Demand</p>
-          <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums">
-            {demand}
-          </p>
-        </div>
-      </div>
-      <div className="relative mt-5 h-2 bg-[color-mix(in_srgb,var(--foreground)_08%,transparent)]">
-        <div
-          className="absolute inset-y-0 bg-[var(--accent)]/35"
-          style={{ left: `${floor}%`, width: `${Math.max(2, ceiling - floor)}%` }}
-        />
-        <div
-          className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-[var(--accent)]"
-          style={{ left: `${floor}%` }}
-          title="Floor"
-        />
-        <div
-          className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-[var(--foreground)]"
-          style={{ left: `${ceiling}%` }}
-          title="Ceiling"
-        />
-      </div>
-      <div className="mt-2 flex justify-between text-[10px] tracking-[0.08em] text-[var(--muted)] uppercase">
-        <span>Entry</span>
-        <span>Competitive ceiling</span>
-      </div>
-    </div>
-  );
-}
-
 export function FrameIntelligencePanel({
   racket,
   liveCatalog = false,
+  compact = false,
 }: {
   racket: RacketProfile;
   liveCatalog?: boolean;
+  compact?: boolean;
 }) {
   const intel = useMemo(
     () => analyzeFrame(racket, { liveCatalog }),
@@ -129,25 +86,26 @@ export function FrameIntelligencePanel({
   );
 
   return (
-    <section className="sf-intel-panel sf-rise" aria-label="Strokeform frame intelligence">
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--line)] pb-5">
+    <section
+      className={`sf-intel-panel sf-rise${compact ? " !p-4 md:!p-5" : ""}`}
+      aria-label="Strokeform frame intelligence"
+    >
+      <header className="border-b border-[var(--line)] pb-5">
         <div className="min-w-0">
           <p className="sf-kicker">Strokeform intelligence</p>
-          <h3 className="mt-2 font-[family-name:var(--font-display)] text-xl font-semibold tracking-tight md:text-2xl">
+          <h3
+            className={`mt-2 font-[family-name:var(--font-display)] font-semibold tracking-tight ${
+              compact ? "text-lg md:text-xl" : "text-xl md:text-2xl"
+            }`}
+          >
             {intel.specialHeadline}
           </h3>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
             {intel.specialBody}
           </p>
         </div>
-        <div className="sf-trust-seal shrink-0 text-right">
-          <p className="sf-label">Trust</p>
-          <p className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold tabular-nums text-[var(--accent)]">
-            {intel.trustScore}
-          </p>
-          <p className="mt-1 text-[10px] tracking-[0.1em] text-[var(--muted)] uppercase">
-            Multi-source
-          </p>
+        <div className="mt-5">
+          <IntelTrustBlock sources={intel.sources} compact={compact} />
         </div>
       </header>
 
@@ -160,64 +118,65 @@ export function FrameIntelligencePanel({
         <span className="sf-intel-chip">{intel.skill.band}</span>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <SkillLadder intel={intel} />
+      <div className={`mt-6 grid gap-6 ${compact ? "" : "lg:grid-cols-[1.1fr_0.9fr]"}`}>
+        <IntelSkillLadder intel={intel} />
         <div className="grid grid-cols-2 gap-x-5 gap-y-4">
           <Meter label="Plow" value={intel.ratings.plow} color="var(--chart-power)" />
           <Meter label="Whip" value={intel.ratings.whip} color="var(--chart-spin)" />
           <Meter label="Forgiveness" value={intel.ratings.forgiveness} color="var(--chart-comfort)" />
           <Meter label="Spin ceiling" value={intel.ratings.spinCeiling} color="var(--chart-spin)" />
-          <Meter label="Directional honesty" value={intel.ratings.directionalHonesty} color="var(--chart-control)" />
+          <Meter
+            label="Directional honesty"
+            value={intel.ratings.directionalHonesty}
+            color="var(--chart-control)"
+          />
           <Meter label="Arm load" value={intel.ratings.armLoad} color="var(--danger)" />
         </div>
       </div>
 
-      <div className="mt-8">
-        <p className="sf-label">What makes this frame special</p>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          {intel.quirks.map((q) => (
-            <QuirkCard key={q.id} quirk={q} />
-          ))}
-        </div>
-      </div>
+      {!compact ? (
+        <>
+          <div className="mt-8">
+            <p className="sf-label">What makes this frame special</p>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {intel.quirks.map((q) => (
+                <QuirkCard key={q.id} quirk={q} />
+              ))}
+            </div>
+          </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        <div className="sf-intel-callout">
-          <p className="sf-label">String pairing</p>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/90">{intel.stringPairing}</p>
-        </div>
-        <div className="sf-intel-callout">
-          <p className="sf-label">Skip this if</p>
-          <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-[var(--muted)]">
-            {intel.skipIf.length ? (
-              intel.skipIf.map((s) => (
-                <li key={s} className="flex gap-2">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 bg-[var(--danger)]" aria-hidden />
-                  {s}
-                </li>
-              ))
-            ) : (
-              <li>No hard anti-fits flagged — still verify with a session log.</li>
-            )}
-          </ul>
-        </div>
-      </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <div className="sf-intel-callout">
+              <p className="sf-label">String pairing</p>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/90">
+                {intel.stringPairing}
+              </p>
+            </div>
+            <div className="sf-intel-callout">
+              <p className="sf-label">Skip this if</p>
+              <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-[var(--muted)]">
+                {intel.skipIf.length ? (
+                  intel.skipIf.map((s) => (
+                    <li key={s} className="flex gap-2">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 bg-[var(--danger)]" aria-hidden />
+                      {s}
+                    </li>
+                  ))
+                ) : (
+                  <li>No hard anti-fits flagged — still verify with a session log.</li>
+                )}
+              </ul>
+            </div>
+          </div>
 
-      {intel.tourSignal ? (
-        <p className="mt-5 text-xs leading-relaxed text-[var(--muted)]">{intel.tourSignal}</p>
+          {intel.tourSignal ? (
+            <p className="mt-5 text-xs leading-relaxed text-[var(--muted)]">{intel.tourSignal}</p>
+          ) : null}
+        </>
       ) : null}
-
-      <footer className="mt-6 border-t border-[var(--line)] pt-4">
-        <p className="sf-label mb-2">Sources aggregated</p>
-        <ul className="flex flex-wrap gap-2">
-          {intel.sources.map((s) => (
-            <li key={s.id} className="sf-source-chip" title={s.role}>
-              <span className="font-semibold text-[var(--foreground)]">{s.label}</span>
-              <span className="text-[var(--muted)]"> · {s.confidence}%</span>
-            </li>
-          ))}
-        </ul>
-      </footer>
     </section>
   );
 }
+
+/** Re-export for consumers that only need the analyzed object. */
+export type { FrameIntelligence };

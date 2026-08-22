@@ -189,6 +189,85 @@ function trustFromSources(sources: DataSourceCredit[]): number {
   return clamp(avg * 0.85 + breadth + 8);
 }
 
+const VERIFIED_SOURCE_IDS = new Set<DataSourceId>([
+  "racqix-specs",
+  "racqix-expert",
+  "tour-usage",
+  "tennis-warehouse-media",
+]);
+
+export type TrustTier = "high" | "solid" | "moderate" | "early";
+
+export interface TrustSummary {
+  score: number;
+  tier: TrustTier;
+  label: string;
+  headline: string;
+  detail: string;
+  verifiedCount: number;
+  modeledCount: number;
+}
+
+/** Plain-language breakdown of the aggregate trust score. */
+export function describeTrust(sources: DataSourceCredit[]): TrustSummary {
+  const score = trustFromSources(sources);
+  const verifiedCount = sources.filter((s) => VERIFIED_SOURCE_IDS.has(s.id)).length;
+  const modeledCount = sources.length - verifiedCount;
+
+  if (score >= 85) {
+    return {
+      score,
+      tier: "high",
+      label: "High confidence",
+      headline: "Specs verified, coaching layered on top",
+      detail:
+        verifiedCount >= 2
+          ? "Multiple independent sources back the numbers below. Strokeform adds quirk and skill-span reads on that base."
+          : "Core specs are verified; Strokeform models launch, quirks, and skill span from them.",
+      verifiedCount,
+      modeledCount,
+    };
+  }
+  if (score >= 70) {
+    return {
+      score,
+      tier: "solid",
+      label: "Solid confidence",
+      headline: "Good spec base — verify feel on court",
+      detail:
+        "Most ratings come from catalog specs plus Strokeform physics. Log a session if the mold feels off.",
+      verifiedCount,
+      modeledCount,
+    };
+  }
+  if (score >= 55) {
+    return {
+      score,
+      tier: "moderate",
+      label: "Moderate confidence",
+      headline: "Limited sources — treat as a starting read",
+      detail:
+        "Fewer verified inputs for this item. Use the quirks as hypotheses until you log real play.",
+      verifiedCount,
+      modeledCount,
+    };
+  }
+  return {
+    score,
+    tier: "early",
+    label: "Early read",
+    headline: "Mostly modeled — confirm with your bag",
+    detail:
+      "Strokeform is extrapolating from partial data. Pair with a session log before trusting the skill span.",
+    verifiedCount,
+    modeledCount,
+  };
+}
+
+export function isVerifiedSource(id: DataSourceId): boolean {
+  return VERIFIED_SOURCE_IDS.has(id);
+}
+
 function skillSpanOf(r: RacketProfile): SkillSpan {
   const fit = derivePlayerFit(r);
   const w = r.weightG ?? 300;

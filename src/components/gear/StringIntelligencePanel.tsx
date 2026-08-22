@@ -3,27 +3,44 @@
 import { useMemo } from "react";
 import type { StringProfile } from "@/types/equipment";
 import { analyzeString } from "@/lib/equipment/strokeformIntel";
+import { IntelTrustBlock } from "./IntelTrustBlock";
 
-export function StringIntelligencePanel({ string }: { string: StringProfile }) {
+export function StringIntelligencePanel({
+  string,
+  compact = false,
+}: {
+  string: StringProfile;
+  compact?: boolean;
+}) {
   const intel = useMemo(() => analyzeString(string), [string]);
 
   return (
-    <section className="sf-intel-panel" aria-label="Strokeform string intelligence">
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--line)] pb-4">
+    <section
+      className={`sf-intel-panel${compact ? " !p-4 md:!p-5" : ""}`}
+      aria-label="Strokeform string intelligence"
+    >
+      <header className="border-b border-[var(--line)] pb-4">
         <div>
           <p className="sf-kicker">Strokeform string lab</p>
-          <h3 className="mt-2 font-[family-name:var(--font-display)] text-lg font-semibold tracking-tight md:text-xl">
+          <h3
+            className={`mt-2 font-[family-name:var(--font-display)] font-semibold tracking-tight ${
+              compact ? "text-lg md:text-xl" : "text-lg md:text-xl"
+            }`}
+          >
             {intel.specialHeadline}
           </h3>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)]">{intel.specialBody}</p>
-        </div>
-        <div className="text-right">
-          <p className="sf-label">Trust</p>
-          <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums text-[var(--accent)]">
-            {intel.trustScore}
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)]">
+            {intel.specialBody}
           </p>
         </div>
+        <div className="mt-4">
+          <IntelTrustBlock sources={intel.sources} compact={compact} />
+        </div>
       </header>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className="sf-intel-chip sf-intel-chip-accent">{intel.familyRole}</span>
+      </div>
 
       <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-5">
         {(
@@ -48,28 +65,45 @@ export function StringIntelligencePanel({ string }: { string: StringProfile }) {
       </div>
 
       {intel.quirks.length ? (
-        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        <div className={`mt-5 grid gap-2 ${compact ? "" : "sm:grid-cols-2"}`}>
           {intel.quirks.map((q) => (
-            <article key={q.id} className="sf-intel-quirk" style={{ borderLeftColor: "var(--accent)" }}>
+            <article
+              key={q.id}
+              className="sf-intel-quirk"
+              style={{ borderLeftColor: "var(--accent)" }}
+            >
               <h4 className="text-sm font-semibold">{q.title}</h4>
               <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{q.meaning}</p>
+              {!compact ? (
+                <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/90">
+                  <span className="font-semibold text-[var(--accent)]">Coach · </span>
+                  {q.coaching}
+                </p>
+              ) : null}
             </article>
           ))}
         </div>
       ) : null}
 
-      <p className="mt-4 text-sm text-[var(--muted)]">
-        <span className="font-semibold text-[var(--foreground)]">Frame match · </span>
-        {intel.bestFrameMatch}
-      </p>
-
-      <ul className="mt-4 flex flex-wrap gap-2">
-        {intel.sources.map((s) => (
-          <li key={s.id} className="sf-source-chip" title={s.role}>
-            {s.label} · {s.confidence}%
-          </li>
-        ))}
-      </ul>
+      <div className={`mt-4 ${compact ? "space-y-3" : "grid gap-4 md:grid-cols-2"}`}>
+        <p className="text-sm text-[var(--muted)]">
+          <span className="font-semibold text-[var(--foreground)]">Frame match · </span>
+          {intel.bestFrameMatch}
+        </p>
+        {!compact && intel.skipIf.length ? (
+          <div className="sf-intel-callout">
+            <p className="sf-label">Skip this if</p>
+            <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-[var(--muted)]">
+              {intel.skipIf.map((s) => (
+                <li key={s} className="flex gap-2">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 bg-[var(--danger)]" aria-hidden />
+                  {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }
