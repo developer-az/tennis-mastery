@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import type { LeadTapePiece } from "@/types/equipment";
+import type { LeadTapePiece, RacketProfile, StringProfile } from "@/types/equipment";
 import type { FlightMetrics } from "@/lib/equipment/setupSynthesis";
 import type { ForehandMoldAdvice } from "@/lib/equipment/forehandMold";
 import { formatFt } from "@/lib/equipment/ballFlight";
@@ -13,6 +13,8 @@ import {
   type StrikeZoneHint,
 } from "@/components/gear/RacketVisuals";
 import { LeadTapeRacketDiagram } from "@/components/gear/LeadTapeRacketDiagram";
+import { FrameIntelligencePanel } from "@/components/gear/FrameIntelligencePanel";
+import { StringIntelligencePanel } from "@/components/gear/StringIntelligencePanel";
 import { SetupStatsChart } from "./SetupStatsChart";
 
 const SetupFlightCanvas = dynamic(
@@ -45,6 +47,8 @@ export function SetupVisualStory({
   forehand,
   pieces,
   hasRacket,
+  racket = null,
+  string = null,
 }: {
   scores: ScoreBag;
   stock: ScoreBag;
@@ -56,6 +60,8 @@ export function SetupVisualStory({
   forehand: ForehandMoldAdvice | null;
   pieces: LeadTapePiece[];
   hasRacket: boolean;
+  racket?: RacketProfile | null;
+  string?: StringProfile | null;
 }) {
   const closed = forehand?.face.closedDeg ?? 8;
   const hasFlight = launchDeg != null && flight != null;
@@ -94,6 +100,14 @@ export function SetupVisualStory({
           </p>
         ) : null}
       </section>
+
+      {racket ? (
+        <FrameIntelligencePanel racket={racket} compact />
+      ) : null}
+
+      {string ? (
+        <StringIntelligencePanel string={string} compact />
+      ) : null}
 
       {/* 1 — scores */}
       <SetupStatsChart scores={scores} stock={stock} role={role} flight={null} />

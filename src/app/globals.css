@@ -384,3 +384,95 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: not-allowed;
   filter: none;
 }
+
+/* Strokeform intelligence — production gear analysis */
+.sf-intel-panel {
+  background: color-mix(in srgb, var(--panel) 97%, transparent);
+  border: 1px solid var(--line);
+  padding: 1.35rem 1.25rem;
+  box-shadow: var(--shadow-soft);
+}
+
+@media (min-width: 768px) {
+  .sf-intel-panel {
+    padding: 1.75rem 1.75rem;
+  }
+}
+
+.sf-intel-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+  background: var(--overlay-hover);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.sf-intel-chip-accent {
+  color: var(--accent-fg);
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.sf-intel-quirk {
+  padding: 0.85rem 0.95rem;
+  border-left: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--bg-sunken) 80%, transparent);
+}
+
+.sf-intel-ladder {
+  padding: 1rem 1.1rem;
+  background: var(--bg-sunken);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.sf-intel-callout {
+  padding: 1rem 1.1rem;
+  box-shadow: inset 0 0 0 1px var(--line);
+  background: color-mix(in srgb, var(--panel-raised) 90%, transparent);
+}
+
+.sf-source-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--overlay-hover);
+}
+
+.sf-trust-block {
+  padding: 0.85rem 1rem;
+  background: color-mix(in srgb, var(--bg-sunken) 85%, transparent);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.sf-trust-block-compact {
+  padding: 0.75rem 0.85rem;
+}
+
+.sf-trust-source-row {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+
+.sf-trust-source-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.sf-trust-seal {
+  min-width: 4.5rem;
+  padding: 0.5rem 0.75rem;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  background: var(--accent-dim);
+}
+
+.sf-fit-strip {
+  padding: 1rem 0 0.25rem;
+}

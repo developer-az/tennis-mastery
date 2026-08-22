@@ -5,52 +5,49 @@ import type { LeadTapePiece, LeadTapeZone } from "@/types/equipment";
 import { LEAD_TAPE_ZONES } from "@/lib/equipment/leadTape";
 
 const VB_W = 200;
-const VB_H = 280;
+const VB_H = 320;
 const ZONE_ORDER: LeadTapeZone[] = ["tip", "twelve", "three", "nine", "throat", "handle"];
 
-/**
- * One evenodd silhouette: closed isometric head, open V-throat into a neck,
- * then shaft + grip. Inner path is the stringbed hole.
- */
+/** Front-view frame: oval head, open V-throat, shaft, grip. Inner cutouts = bed + throat gap. */
 const FRAME_OUTER = [
-  "M 100 16",
-  "C 118 14 140 18 148 46",
-  "C 156 70 156 98 146 120",
-  "C 138 134 126 140 118 152",
-  "C 112 164 109 176 108 190",
-  "L 109 210",
-  "L 111 218",
-  "L 112 256",
-  "C 112 262 118 264 114 274",
-  "L 86 274",
-  "C 82 264 88 262 88 256",
-  "L 89 218",
-  "L 91 210",
-  "L 92 190",
-  "C 91 176 88 164 82 152",
-  "C 74 140 62 134 54 120",
-  "C 44 98 44 70 52 46",
-  "C 60 18 82 14 100 16",
+  "M 100 10",
+  "C 138 10 162 34 162 72",
+  "C 162 104 150 124 128 138",
+  "L 114 152",
+  "L 106 168",
+  "L 100 174",
+  "L 94 168",
+  "L 86 152",
+  "L 72 138",
+  "C 50 124 38 104 38 72",
+  "C 38 34 62 10 100 10",
   "Z",
 ].join(" ");
 
 const STRINGBED = [
-  "M 100 26",
-  "C 116 24 132 28 138 52",
-  "C 144 74 144 96 136 114",
-  "C 128 126 112 128 100 128",
-  "C 88 128 72 126 64 114",
-  "C 56 96 56 74 62 52",
-  "C 68 28 84 24 100 26",
+  "M 100 22",
+  "C 130 22 148 40 148 72",
+  "C 148 98 138 114 118 122",
+  "C 106 126 94 126 82 122",
+  "C 62 114 52 98 52 72",
+  "C 52 40 70 22 100 22",
   "Z",
 ].join(" ");
 
-/** Open throat — the V under the hoop; without this hole the neck reads as a yoke. */
+/** Open throat — V under the hoop; without this hole the neck reads as a yoke. */
 const THROAT_GAP = [
-  "M 86 134",
-  "L 114 134",
-  "L 106 176",
-  "L 94 176",
+  "M 88 128",
+  "L 112 128",
+  "L 104 162",
+  "L 96 162",
+  "Z",
+].join(" ");
+
+const SHAFT = [
+  "M 94 162",
+  "L 106 162",
+  "L 108 228",
+  "L 92 228",
   "Z",
 ].join(" ");
 
@@ -73,23 +70,23 @@ export function LeadTapeRacketDiagram({
   const uid = useId().replace(/:/g, "");
 
   return (
-    <div className="relative">
+    <div className="relative mx-auto max-w-[220px]">
       <svg
         viewBox={`0 0 ${VB_W} ${VB_H}`}
-        className="h-auto w-full"
+        className="h-auto w-full drop-shadow-sm"
         role={interactive ? "group" : "img"}
         aria-label="Racket lead-tape diagram"
       >
         <defs>
-          <linearGradient id={`ltGraphite-${uid}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#5e5e5e" />
-            <stop offset="40%" stopColor="#1a1a1a" />
-            <stop offset="100%" stopColor="#2f2f2f" />
+          <linearGradient id={`ltFrame-${uid}`} x1="0.5" y1="0" x2="0.5" y2="1">
+            <stop offset="0%" stopColor="#3a3f46" />
+            <stop offset="55%" stopColor="#25282d" />
+            <stop offset="100%" stopColor="#32363c" />
           </linearGradient>
-          <linearGradient id={`ltMetal-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#e8eaed" />
-            <stop offset="55%" stopColor="#9aa3ab" />
-            <stop offset="100%" stopColor="#5c656e" />
+          <linearGradient id={`ltTape-${uid}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#d4dce4" />
+            <stop offset="50%" stopColor="#8b96a3" />
+            <stop offset="100%" stopColor="#5a6570" />
           </linearGradient>
           <linearGradient id={`ltGrip-${uid}`} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#2a1c14" />
@@ -99,123 +96,187 @@ export function LeadTapeRacketDiagram({
           <clipPath id={`ltBed-${uid}`}>
             <path d={STRINGBED} />
           </clipPath>
-          <clipPath id={`ltHandle-${uid}`}>
-            <rect x="88" y="216" width="24" height="44" rx="3" />
-          </clipPath>
+          <filter id={`ltSoft-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.12" />
+          </filter>
         </defs>
 
+        {/* Shadow plate */}
+        <ellipse
+          cx="100"
+          cy="308"
+          rx="28"
+          ry="4"
+          fill="color-mix(in srgb, var(--foreground) 8%, transparent)"
+        />
+
+        {/* Frame shell */}
         <path
           d={`${FRAME_OUTER} ${STRINGBED} ${THROAT_GAP}`}
-          fill={`url(#ltGraphite-${uid})`}
+          fill={`url(#ltFrame-${uid})`}
           fillRule="evenodd"
+          filter={`url(#ltSoft-${uid})`}
         />
-        <path d={STRINGBED} fill="none" stroke="#2a4a3a" strokeWidth="1.2" />
+        <path
+          d={FRAME_OUTER}
+          fill="none"
+          stroke="color-mix(in srgb, var(--foreground) 18%, transparent)"
+          strokeWidth="1"
+        />
 
-        <g clipPath={`url(#ltBed-${uid})`} opacity="0.48">
-          {Array.from({ length: 16 }).map((_, i) => {
-            const x = 62 + (i + 0.5) * (76 / 16);
+        {/* Shaft between throat and handle */}
+        <path d={SHAFT} fill={`url(#ltFrame-${uid})`} />
+
+        {/* String bed */}
+        <path
+          d={STRINGBED}
+          fill="color-mix(in srgb, var(--accent) 6%, var(--bg-scene))"
+          stroke="color-mix(in srgb, var(--accent) 25%, transparent)"
+          strokeWidth="0.8"
+        />
+        <g clipPath={`url(#ltBed-${uid})`} opacity="0.35">
+          {Array.from({ length: 14 }).map((_, i) => {
+            const x = 54 + (i + 0.5) * (92 / 14);
             return (
               <line
                 key={`m${i}`}
                 x1={x}
-                y1="26"
+                y1="24"
                 x2={x}
-                y2="128"
-                stroke="var(--foreground)"
-                strokeWidth="0.4"
-              />
-            );
-          })}
-          {Array.from({ length: 19 }).map((_, i) => {
-            const y = 28 + (i + 0.5) * (100 / 19);
-            return (
-              <line
-                key={`c${i}`}
-                x1="60"
-                y1={y}
-                x2="140"
-                y2={y}
+                y2="122"
                 stroke="var(--foreground)"
                 strokeWidth="0.35"
               />
             );
           })}
+          {Array.from({ length: 17 }).map((_, i) => {
+            const y = 26 + (i + 0.5) * (94 / 17);
+            return (
+              <line
+                key={`c${i}`}
+                x1="52"
+                y1={y}
+                x2="148"
+                y2={y}
+                stroke="var(--foreground)"
+                strokeWidth="0.3"
+              />
+            );
+          })}
         </g>
 
-        <g clipPath={`url(#ltHandle-${uid})`}>
-          <rect x="88" y="216" width="24" height="44" fill={`url(#ltGrip-${uid})`} />
-          {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-            <line
-              key={`g${i}`}
-              x1="89"
-              y1={222 + i * 5.5}
-              x2="111"
-              y2={222 + i * 5.5}
-              stroke="#1a120c"
-              strokeWidth="0.55"
-              opacity="0.4"
-            />
-          ))}
-        </g>
-        <ellipse cx="100" cy="271.5" rx="13" ry="2.2" fill="#0a0a0a" />
+        {/* Grip */}
+        <rect
+          x="90"
+          y="228"
+          width="20"
+          height="72"
+          rx="4"
+          fill={`url(#ltGrip-${uid})`}
+        />
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <line
+            key={`g${i}`}
+            x1="91"
+            y1={234 + i * 7}
+            x2="109"
+            y2={234 + i * 7}
+            stroke="color-mix(in srgb, var(--foreground) 20%, transparent)"
+            strokeWidth="0.5"
+          />
+        ))}
+        <rect
+          x="88"
+          y="296"
+          width="24"
+          height="8"
+          rx="3"
+          fill="color-mix(in srgb, var(--foreground) 45%, var(--panel))"
+        />
 
+        {/* Tape zones — pills anchored on the frame */}
         {ZONE_ORDER.map((id) => {
           const z = LEAD_TAPE_ZONES[id];
           const cx = z.x * VB_W;
           const cy = z.y * VB_H;
           const massHere = massByZone[id] ?? 0;
           const selected = selectedZone === id;
-          const vertical = id === "three" || id === "nine";
-          const w = id === "throat" ? 20 : vertical ? 6 : 20;
-          const h = id === "throat" ? 7.5 : vertical ? 20 : 6.5;
-          const labelX = vertical ? cx + (id === "three" ? 12 : -12) : cx;
-          const labelY = vertical ? cy + 4 : cy + 14;
-          const fill = massHere > 0
-            ? `url(#ltMetal-${uid})`
+          const onHoop = id !== "handle" && id !== "throat";
+          const isSide = id === "three" || id === "nine";
+          const hasTape = massHere > 0;
+
+          const pillW = id === "handle" ? 22 : id === "throat" ? 24 : isSide ? 14 : 22;
+          const pillH = id === "handle" ? 14 : id === "throat" ? 10 : isSide ? 22 : 10;
+          const px = cx - pillW / 2;
+          const py = cy - pillH / 2;
+
+          const fill = hasTape
+            ? `url(#ltTape-${uid})`
             : selected
-              ? "color-mix(in srgb, var(--accent) 38%, transparent)"
-              : "color-mix(in srgb, var(--foreground) 14%, transparent)";
+              ? "color-mix(in srgb, var(--accent) 42%, transparent)"
+              : "color-mix(in srgb, var(--foreground) 10%, var(--panel))";
           const stroke = selected
             ? "var(--accent)"
-            : massHere > 0
-              ? "#3a3a3a"
-              : "color-mix(in srgb, var(--foreground) 30%, transparent)";
+            : hasTape
+              ? "#4a5560"
+              : "color-mix(in srgb, var(--foreground) 22%, transparent)";
+
+          const label = hasTape ? `${massHere}g` : shortZone(id);
+          const labelY = isSide ? cy + 3 : cy + (id === "handle" ? 4 : 3.5);
+
           return (
             <g
               key={id}
               style={{ cursor: interactive ? "pointer" : "default" }}
               onClick={interactive ? () => onZoneClick?.(id) : undefined}
             >
+              {onHoop && hasTape ? (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={isSide ? 11 : 10}
+                  fill="none"
+                  stroke="var(--accent)"
+                  strokeWidth="1.2"
+                  opacity="0.45"
+                />
+              ) : null}
               <rect
-                x={cx - w / 2}
-                y={cy - h / 2}
-                width={w}
-                height={h}
-                rx="1.3"
+                x={px}
+                y={py}
+                width={pillW}
+                height={pillH}
+                rx={pillH / 2}
                 fill={fill}
                 stroke={stroke}
-                strokeWidth={selected ? 1.6 : 0.85}
+                strokeWidth={selected ? 1.5 : 0.9}
               />
               <text
-                x={labelX}
+                x={cx}
                 y={labelY}
                 textAnchor="middle"
-                fill={selected ? "var(--accent)" : "var(--label)"}
-                fontSize="8"
+                fill={
+                  hasTape
+                    ? "#1a1f24"
+                    : selected
+                      ? "var(--accent)"
+                      : "color-mix(in srgb, var(--foreground) 70%, var(--muted))"
+                }
+                fontSize={hasTape ? "7.5" : "8"}
                 fontWeight="600"
               >
-                {massHere > 0 ? `${massHere}g` : shortZone(id)}
+                {label}
               </text>
             </g>
           );
         })}
       </svg>
-      <p className="mt-2 text-center text-xs text-[var(--muted)]">
+      <p className="mt-3 text-center text-xs leading-relaxed text-[var(--muted)]">
         {interactive
-          ? "Tap 12, 3, 9, neck, or handle."
+          ? "Tap 12, 3, 9, neck, or handle to add tape."
           : totalG > 0
-            ? `${totalG.toFixed(1)} g on this hoop`
-            : "No tape"}
+            ? `${totalG.toFixed(1)} g total on this hoop`
+            : "No lead tape yet"}
       </p>
     </div>
   );

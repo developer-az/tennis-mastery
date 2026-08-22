@@ -1,6 +1,6 @@
 import type { LeadTapePiece, LeadTapeZone, RacketProfile } from "@/types/equipment";
 
-/** Diagram viewBox: 0–200 x, 0–280 y. Zones as normalized 0–1 centers. */
+/** Diagram viewBox: 0–200 x, 0–320 y. Zones as normalized 0–1 centers. */
 export const LEAD_TAPE_ZONES: Record<
   LeadTapeZone,
   { label: string; x: number; y: number; hint: string }
@@ -8,37 +8,37 @@ export const LEAD_TAPE_ZONES: Record<
   tip: {
     label: "Tip (12 o'clock outer)",
     x: 0.5,
-    y: 0.068,
+    y: 0.04,
     hint: "Raises swingweight and plow-through; slightly lower launch feel.",
   },
   twelve: {
     label: "12 o'clock hoop",
     x: 0.5,
-    y: 0.095,
+    y: 0.09,
     hint: "Power and plow with a bit less SW gain than extreme tip weight.",
   },
   three: {
     label: "3 o'clock",
-    x: 0.75,
-    y: 0.27,
+    x: 0.79,
+    y: 0.24,
     hint: "Twisting stability on off-center hits; mild SW and balance shift.",
   },
   nine: {
     label: "9 o'clock",
-    x: 0.25,
-    y: 0.27,
+    x: 0.21,
+    y: 0.24,
     hint: "Mirrors 3 o'clock — pair both sides for torsional stability.",
   },
   throat: {
     label: "Neck",
     x: 0.5,
-    y: 0.47,
+    y: 0.48,
     hint: "Adds mass near the balance point — more solid without huge SW jump.",
   },
   handle: {
     label: "Handle / butt",
     x: 0.5,
-    y: 0.845,
+    y: 0.84,
     hint: "Head-lightens the frame; easier to whip, slightly higher swing path.",
   },
 };

@@ -2,6 +2,7 @@ import type { GripProfile, RacketProfile, StringProfile } from "@/types/equipmen
 import type { MySetup } from "@/store/gearStore";
 import { computeLeadTapeEffect } from "@/lib/equipment/leadTape";
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
+import { analyzeFrame } from "@/lib/equipment/strokeformIntel";
 import { tensionOutcome } from "@/lib/equipment/strings";
 import { gripStackEffect } from "@/lib/equipment/gripStack";
 import {
@@ -365,9 +366,12 @@ export function synthesizeCombinedSetup(
       : null;
 
   const fit = racket ? derivePlayerFit(racket) : null;
+  const frameIntel = racket ? analyzeFrame(racket) : null;
   const playstyle = buildPlaystyle({
     racketStyle: racket?.style ?? null,
     fitRole: fit?.courtRole ?? null,
+    archetype: frameIntel?.primaryArchetype ?? null,
+    skillCeiling: frameIntel?.skill.ceiling ?? null,
     power,
     spin,
     control,
@@ -382,6 +386,8 @@ export function synthesizeCombinedSetup(
   });
   const playstyleDetail = buildPlaystyleDetail({
     fit,
+    archetype: frameIntel?.primaryArchetype ?? null,
+    specialBody: frameIntel?.specialBody ?? null,
     playstyleLabel: playstyle.label,
     launchAngleDeg,
     swingPathDeg,
@@ -714,6 +720,8 @@ export function synthesizeCombinedSetup(
 function buildPlaystyle(input: {
   racketStyle: string | null;
   fitRole: string | null;
+  archetype: string | null;
+  skillCeiling: number | null;
   power: number | null;
   spin: number | null;
   control: number | null;
@@ -728,29 +736,19 @@ function buildPlaystyle(input: {
 }): { label: string } {
   const { power: p, spin: s, control: c, launchAngleDeg: launch, swingPathDeg: path } = input;
 
-  // Prefer fit role (now more specific); only override when composite scores clearly shift the mold
-  let core = input.fitRole ?? "Balanced all-courter";
+  // Strokeform archetype first — never a vague “everyone is a baseliner”
+  let core = input.archetype ?? input.fitRole ?? "Modern all-court shaper";
 
   if (s != null && p != null && s >= 74 && s >= (c ?? 50) + 6 && (path == null || path >= 24)) {
-    core = "Heavy-spin baseliner";
-  } else if (s != null && c != null && s >= 68 && c >= 68 && Math.abs(s - c) <= 8) {
-    core = "Shape-and-control baseliner";
+    if (!input.archetype || /all-court/i.test(input.archetype)) core = "Western spin sculptor";
   } else if (c != null && p != null && c >= 74 && c >= p + 8) {
-    core = path != null && path <= 16 ? "Precision / flat-drive" : "Precision baseliner";
+    if (!input.archetype) core = path != null && path <= 16 ? "Precision line-hitter" : "Dense-pattern technician";
   } else if (p != null && p >= 74 && (c ?? 50) <= 60) {
-    core = "First-strike power";
-  } else if (launch != null && launch >= 10 && (s ?? 50) >= 68) {
-    core = "High-margin spinner";
-  } else if (launch != null && launch <= 6 && (c ?? 50) >= 68) {
-    core = "Low-launch penetrator";
-  } else if (input.racketStyle && !/balanced|versatile|modern frame/i.test(input.racketStyle)) {
-    // Keep a specific catalog style if fit didn't already specialize
-    if (core === "Balanced all-courter" || core === "Net-transition all-courter") {
-      core = input.racketStyle.length < 42 ? input.racketStyle : core;
-    }
+    if (!input.archetype) core = "Flat first-strike aggressor";
   }
 
   const tags: string[] = [core];
+  if (input.skillCeiling != null) tags.push(`ceiling ${input.skillCeiling}`);
   if (input.stringMaterial === "polyester" || input.stringMaterial === "co-poly") {
     tags.push(input.stringShape && input.stringShape !== "round" ? "shaped poly" : "poly pocket");
   } else if (input.stringMaterial === "natural-gut" || input.stringMaterial === "multifilament") {
@@ -770,6 +768,8 @@ function buildPlaystyle(input: {
 
 function buildPlaystyleDetail(input: {
   fit: ReturnType<typeof derivePlayerFit> | null;
+  archetype: string | null;
+  specialBody: string | null;
   playstyleLabel: string;
   launchAngleDeg: number | null;
   swingPathDeg: number | null;
@@ -788,8 +788,10 @@ function buildPlaystyleDetail(input: {
   };
 }): string {
   const bits: string[] = [];
-  if (input.fit) bits.push(input.fit.blurb);
+  if (input.specialBody) bits.push(input.specialBody);
+  else if (input.fit) bits.push(input.fit.blurb);
   else bits.push(input.playstyleLabel);
+  if (input.archetype) bits.push(`Archetype: ${input.archetype}`);
 
   if (input.launchAngleDeg != null && input.swingPathDeg != null) {
     bits.push(
