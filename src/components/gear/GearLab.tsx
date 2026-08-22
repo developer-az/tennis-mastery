@@ -63,12 +63,16 @@ export function GearLab({
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 md:px-10 md:py-8">
-      <header className="mb-3 flex flex-wrap items-end justify-between gap-3 md:mb-4">
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-5 md:mb-6">
         <div>
-          <p className="sf-kicker">Gear lab</p>
+          <p className="sf-kicker">Gear intelligence</p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight md:text-3xl">
             Your bag
           </h1>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)]">
+            Multi-source specs · Strokeform quirk analysis · skill span that scales with the game —
+            not a one-size baseline label.
+          </p>
         </div>
         <MySetupBar onSelectTab={selectTab} />
       </header>

@@ -4,6 +4,7 @@ import { useDeferredValue, useMemo, useRef, useState } from "react";
 import type { EquipmentTab, RacketCatalogMeta, RacketProfile } from "@/types/equipment";
 import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search";
 import { derivePlayerFit } from "@/lib/equipment/playerFit";
+import { analyzeFrame } from "@/lib/equipment/strokeformIntel";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
 import { usePlayerStore } from "@/store/playerStore";
@@ -11,6 +12,7 @@ import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneFo
 import { deriveForehandMold } from "@/lib/equipment/forehandMold";
 import { computeFlightMetrics } from "@/lib/equipment/setupSynthesis";
 import { PlayerFitBadges } from "./PlayerFitBadges";
+import { FrameIntelligencePanel } from "./FrameIntelligencePanel";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
@@ -36,6 +38,7 @@ export function RacketExplorer({
   onSelectTab?: (tab: EquipmentTab, extra?: Record<string, string | null>) => void;
 }) {
   void meta;
+  const liveCatalog = meta.live === true;
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("all");
   const [style, setStyle] = useState("all");
@@ -367,6 +370,7 @@ export function RacketExplorer({
             const active = r.slug === selected?.slug;
             const saved = r.slug === setupSlug;
             const fit = derivePlayerFit(r);
+            const intel = analyzeFrame(r, { liveCatalog });
             const inCompare = compareIds.includes(r.slug);
             return (
               <li key={r.slug} className="flex items-stretch gap-0.5">
@@ -416,9 +420,9 @@ export function RacketExplorer({
                       <span className="hidden sm:inline"> · {r.style}</span>
                     </span>
                     <span className="hidden flex-wrap gap-1.5 pt-0.5 sm:flex">
+                      <MiniTag label={intel.primaryArchetype} color="var(--accent)" />
                       <MiniTag label={fit.skill} color="var(--chart-control)" />
-                      <MiniTag label={fit.courtRole} color="var(--chart-spin)" />
-                      <MiniTag label={fit.feelAxis} color="var(--chart-power)" />
+                      <MiniTag label={`${intel.skill.floor}→${intel.skill.ceiling}`} color="var(--chart-power)" />
                     </span>
                   </span>
                 </button>
@@ -528,7 +532,9 @@ export function RacketExplorer({
             </div>
           </header>
 
-          <PlayerFitBadges racket={selected} />
+          <PlayerFitBadges racket={selected} liveCatalog={liveCatalog} />
+
+          <FrameIntelligencePanel racket={selected} liveCatalog={liveCatalog} />
 
           <div className="grid gap-8 md:grid-cols-2">
             <LaunchAngleVisual

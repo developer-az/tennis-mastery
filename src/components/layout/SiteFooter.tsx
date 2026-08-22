@@ -10,8 +10,8 @@ export function SiteFooter({ note }: { note?: string }) {
             STROKEFORM
           </p>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-[var(--muted)]">
-            Coaching-grade tennis form and gear intelligence — biomechanics you can scrub,
-            setups you can mold, decisions you can trust.
+            Built by a coaching + product team — biomechanics you can scrub, multi-source gear
+            intelligence you can trust, setups you can mold.
           </p>
         </div>
         <div>

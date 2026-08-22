@@ -24,6 +24,7 @@ import { SpinPotentialRing, TensionCurve } from "./StringVisuals";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
+import { StringIntelligencePanel } from "./StringIntelligencePanel";
 
 type TensionFilter = "all" | "soft" | "mid" | "firm" | "target";
 
@@ -491,6 +492,8 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
               </button>
             </div>
           </header>
+
+          <StringIntelligencePanel string={selected} />
 
           <SpinPotentialRing value={selectedOutcome.spin} />
 
