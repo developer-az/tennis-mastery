@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SyncStatusPill } from "@/components/auth/SyncStatusPill";
+import { CourtLoading } from "@/components/ui/CourtState";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { authDisplayLabel, useAuthStore } from "@/store/authStore";
 import { usePlayerStore } from "@/store/playerStore";
@@ -35,7 +36,9 @@ export default function AccountDashboardPage() {
 
   if (!initialized) {
     return (
-      <div className="px-6 py-16 text-sm text-[var(--muted)]">Loading account…</div>
+      <div className="mx-auto w-full max-w-3xl px-5 py-10">
+        <CourtLoading label="Loading account…" detail="Checking sign-in and sync status." />
+      </div>
     );
   }
 
@@ -59,7 +62,7 @@ export default function AccountDashboardPage() {
             <p className="mt-2 text-sm text-[var(--muted)]">{account?.email ?? user?.email}</p>
           ) : (
             <p className="mt-2 text-sm text-[var(--muted)]">
-              Data on this device only — sign in to sync when cloud is configured.
+              Data on this device — sign in when you want your court synced.
             </p>
           )}
         </div>
@@ -125,8 +128,8 @@ export default function AccountDashboardPage() {
         <section className="sf-panel mt-4 p-5">
           <p className="sf-label">Sign in for sync</p>
           <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-            Connect Supabase to enable Tennis Warehouse–style accounts. Until then, everything
-            stays in this browser.
+            Create an account to carry your bag, sessions, and one-lever history across devices.
+            Until then, everything stays on this browser.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/account/login" className="sf-btn sf-btn-primary text-sm">

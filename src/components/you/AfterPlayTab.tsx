@@ -44,13 +44,7 @@ export function AfterPlayTab() {
       <p className="text-xs text-[var(--muted)]">Against: {summary}</p>
 
       {warn && warn.status !== "fresh" && (
-        <p
-          className={`rounded-md border px-3 py-2 text-sm ${
-            warn.status === "likely_dead"
-              ? "border-red-400/40 bg-red-500/10"
-              : "border-amber-500/30 bg-amber-500/10"
-          }`}
-        >
+        <p className={`sf-alert${warn.status === "likely_dead" ? " sf-alert-danger" : ""}`}>
           {warn.message}
         </p>
       )}

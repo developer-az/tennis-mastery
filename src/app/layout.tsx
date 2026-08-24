@@ -25,11 +25,11 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Strokeform — Tennis Form & Gear Intelligence",
+    default: "Strokeform — Tennis Mold, Form Lab & Gear Intelligence",
     template: "%s · Strokeform",
   },
   description:
-    "Professional tennis biomechanics and gear molding. Scrub elite stroke models in 3D, build your bag, and keep every change accountable.",
+    "Scrub elite stroke rails in 3D, mold your bag with skill spans and quirks, and keep every gear change accountable to how you play.",
 };
 
 /** Inline script avoids flash before React hydrates theme from localStorage / prefers-color-scheme. */

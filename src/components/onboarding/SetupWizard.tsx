@@ -103,8 +103,9 @@ export function SetupWizard({
         {WIZARD_STEPS.map((s, i) => (
           <span
             key={s}
-            className="h-1.5 w-6 rounded-full"
-            style={{ background: i <= step ? "var(--accent)" : "var(--line-strong)" }}
+            className="sf-progress-tick"
+            data-active={i <= step ? "true" : "false"}
+            aria-hidden
           />
         ))}
       </div>
@@ -120,22 +121,21 @@ export function SetupWizard({
             className="flex min-h-0 flex-1 flex-col"
           >
             {id === "welcome" && (
-              <Step title="We’ll remember your game." subtitle="So you don’t start from zero every time you open the app.">
+              <Step
+                title="We’ll remember your game."
+                subtitle="So you don’t start from zero every time you open the app."
+              >
                 <p className="text-sm leading-relaxed text-[var(--muted)]">
-                  A few questions. Then we show your grip, your bag, and what the numbers mean —
+                  A few questions. Then we show your grip, your bag, and what the mold means —
                   not a blank journal.
                 </p>
-                <button
-                  type="button"
-                  onClick={next}
-                  className="mt-8 w-full rounded-md bg-[var(--accent)] py-3.5 text-sm font-medium text-[var(--accent-ink)]"
-                >
-                  Let’s go
+                <button type="button" onClick={next} className="sf-btn sf-btn-primary mt-8 w-full">
+                  Start setup
                 </button>
                 <button
                   type="button"
                   onClick={() => adoptExample()}
-                  className="mt-3 w-full py-2 text-sm text-[var(--muted)]"
+                  className="sf-btn sf-btn-ghost mt-3 w-full"
                 >
                   Use a sample player
                 </button>
@@ -149,7 +149,7 @@ export function SetupWizard({
                   onChange={(e) => setNameDraft(e.target.value)}
                   onBlur={() => setDisplayName(nameDraft)}
                   placeholder="Your name"
-                  className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-4 py-3 text-base outline-none focus:border-[var(--accent)]"
+                  className="sf-input"
                 />
                 <Primary onClick={() => { setDisplayName(nameDraft); next(); }}>Continue</Primary>
               </Step>
@@ -168,11 +168,7 @@ export function SetupWizard({
                     />
                   ))}
                 </div>
-                {preview && (
-                  <p className="mt-4 rounded-md border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2 text-sm">
-                    {preview}
-                  </p>
-                )}
+                {preview && <p className="sf-alert sf-alert-accent mt-4">{preview}</p>}
                 <Primary onClick={next} disabled={!profile.grips.forehand}>
                   Continue
                 </Primary>
@@ -315,48 +311,70 @@ export function SetupWizard({
             {id === "payoff" && (
               <Step
                 title={profile.displayName ? `Here’s you, ${profile.displayName}.` : "Here’s you."}
-                subtitle="Specs advise. Your body decides. Coaching-grade — not Hawk-Eye."
+                subtitle="Specs advise. Your body decides. This is your first mold read — not Hawk-Eye."
               >
-                <ul className="space-y-2 text-sm">
-                  {profile.grips.forehand && (
-                    <li className="rounded-md border border-[var(--line)] px-3 py-2">
-                      FH {fhGripLabel(profile.grips.forehand)}
-                      {preview ? ` · ${preview}` : ""}
+                <div className="sf-intel-panel !p-4">
+                  <p className="sf-kicker">Court snapshot</p>
+                  <ul className="mt-4 space-y-3 text-sm">
+                    {profile.grips.forehand && (
+                      <li className="sf-intel-quirk" style={{ borderLeftColor: "var(--accent)" }}>
+                        <span className="font-semibold">FH {fhGripLabel(profile.grips.forehand)}</span>
+                        {preview ? (
+                          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{preview}</p>
+                        ) : null}
+                      </li>
+                    )}
+                    {profile.constraints.filter((c) => c.active).map((c) => (
+                      <li
+                        key={c.id}
+                        className="sf-intel-quirk"
+                        style={{ borderLeftColor: "var(--amber)" }}
+                      >
+                        <span className="text-[10px] font-semibold tracking-[0.14em] text-[var(--amber)] uppercase">
+                          Guardrail
+                        </span>
+                        <p className="mt-0.5 font-semibold">{c.label}</p>
+                      </li>
+                    ))}
+                    <li className="sf-intel-callout !p-3">
+                      <p className="sf-label">Bag</p>
+                      <p className="mt-1">
+                        {hasAnyGear(setup) ? setupSummary(setup) : "Not set yet — add it anytime."}
+                      </p>
                     </li>
-                  )}
-                  {profile.grips.backhandNote && (
-                    <li className="rounded-md border border-[var(--line)] px-3 py-2 text-[var(--muted)]">
-                      {profile.grips.backhandNote}
-                    </li>
-                  )}
-                  {profile.constraints.filter((c) => c.active).map((c) => (
-                    <li key={c.id} className="rounded-md border border-[var(--line)] px-3 py-2">
-                      Guardrail: {c.label}
-                    </li>
-                  ))}
-                  <li className="rounded-md border border-[var(--line)] px-3 py-2">
-                    {hasAnyGear(setup) ? setupSummary(setup) : "Bag not set yet — add it anytime."}
-                  </li>
-                  {insight.launchAngleDeg != null && (
-                    <li className="rounded-md border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
-                      Molded launch ~{insight.launchAngleDeg.toFixed(1)}°
-                      {insight.swingPathDeg != null ? ` · path ~${insight.swingPathDeg.toFixed(0)}°` : ""}
-                    </li>
-                  )}
-                </ul>
+                    {insight.launchAngleDeg != null && (
+                      <li className="sf-intel-ladder !p-3">
+                        <p className="sf-label">Molded leave</p>
+                        <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums">
+                          {insight.launchAngleDeg.toFixed(1)}°
+                          {insight.swingPathDeg != null ? (
+                            <span className="ml-2 text-base text-[var(--muted)]">
+                              · path {insight.swingPathDeg.toFixed(0)}°
+                            </span>
+                          ) : null}
+                        </p>
+                        {insight.forehand ? (
+                          <p className="mt-1 text-xs text-[var(--muted)]">
+                            Face ~{insight.forehand.face.closedDeg.toFixed(1)}° closed at contact
+                          </p>
+                        ) : null}
+                      </li>
+                    )}
+                  </ul>
+                </div>
                 <Link
                   href="/lab"
                   onClick={() => complete()}
-                  className="mt-8 block w-full rounded-md bg-[var(--accent)] py-3.5 text-center text-sm font-medium text-[var(--accent-ink)]"
+                  className="sf-btn sf-btn-primary mt-8 w-full"
                 >
-                  See it in Lab
+                  Scrub it in Lab
                 </Link>
                 <button
                   type="button"
                   onClick={() => complete()}
-                  className="mt-3 w-full py-2 text-sm text-[var(--muted)]"
+                  className="sf-btn sf-btn-ghost mt-3 w-full"
                 >
-                  Tweak bag on You
+                  Open your court
                 </button>
               </Step>
             )}
@@ -409,20 +427,9 @@ function Choice({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full rounded-md px-4 py-3.5 text-left transition"
-      style={{
-        background: active ? "var(--accent)" : "transparent",
-        color: active ? "var(--accent-ink)" : "var(--foreground)",
-        boxShadow: active ? "none" : "0 0 0 1px var(--line)",
-      }}
-    >
+    <button type="button" onClick={onClick} className="sf-choice" data-active={active ? "true" : "false"}>
       <p className="text-sm font-medium">{title}</p>
-      <p className={`mt-0.5 text-xs ${active ? "text-[var(--accent-ink)]/70" : "text-[var(--muted)]"}`}>
-        {hint}
-      </p>
+      <p className={`mt-0.5 text-xs ${active ? "opacity-70" : "text-[var(--muted)]"}`}>{hint}</p>
     </button>
   );
 }
@@ -441,7 +448,7 @@ function Primary({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="mt-8 w-full rounded-md bg-[var(--accent)] py-3.5 text-sm font-medium text-[var(--accent-ink)] disabled:opacity-40"
+      className="sf-btn sf-btn-primary mt-8 w-full"
     >
       {children}
     </button>

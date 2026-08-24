@@ -10,8 +10,8 @@ export function SiteFooter({ note }: { note?: string }) {
             STROKEFORM
           </p>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-[var(--muted)]">
-            Built by a coaching + product team — biomechanics you can scrub, multi-source gear
-            intelligence you can trust, setups you can mold.
+            Biomechanics you can scrub, multi-source gear intelligence with skill spans and quirks,
+            and a court that remembers every one-lever change.
           </p>
         </div>
         <div>
@@ -50,7 +50,7 @@ export function SiteFooter({ note }: { note?: string }) {
       <div className="border-t border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-2 px-6 py-4 text-[11px] text-[var(--muted)] md:px-10">
           <p>© {year} Strokeform</p>
-          <p className="tracking-[0.08em] uppercase">Built for serious players</p>
+          <p className="tracking-[0.08em] uppercase">Logged feel outweighs spec math</p>
         </div>
       </div>
     </footer>

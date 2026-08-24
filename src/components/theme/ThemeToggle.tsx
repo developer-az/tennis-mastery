@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "./ThemeProvider";
 
 function SunIcon() {
@@ -31,16 +32,32 @@ function MoonIcon() {
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const next = theme === "light" ? "dark" : "light";
+
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[var(--muted)] transition hover:bg-[var(--overlay-hover)] hover:text-[var(--foreground)]"
-      aria-label={`Switch to ${next} mode`}
-      title={`Switch to ${next} mode`}
+      className="inline-flex h-9 w-9 items-center justify-center text-[var(--muted)] transition hover:bg-[var(--overlay-hover)] hover:text-[var(--foreground)]"
+      style={{ borderRadius: "var(--radius)" }}
+      aria-label={mounted ? `Switch to ${next} mode` : "Toggle color theme"}
+      title={mounted ? `Switch to ${next} mode` : "Toggle color theme"}
+      suppressHydrationWarning
     >
-      {theme === "light" ? <MoonIcon /> : <SunIcon />}
+      {/* Icon depends on localStorage theme — wait for mount to avoid SSR mismatch */}
+      {!mounted ? (
+        <span className="h-[18px] w-[18px]" aria-hidden />
+      ) : theme === "light" ? (
+        <MoonIcon />
+      ) : (
+        <SunIcon />
+      )}
     </button>
   );
 }
