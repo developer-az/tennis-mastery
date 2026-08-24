@@ -23,16 +23,16 @@ export function LabPhaseOverlay() {
   }, [playerId, strokeType, t]);
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-10 p-4 md:p-5">
-      <div className="sf-lab-overlay max-w-md">
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-10 p-3 md:p-5">
+      <div className="sf-lab-overlay max-w-md !p-3 md:!p-4">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <p className="sf-kicker !text-[10px]">{athlete}</p>
           <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-tight">
             {PHASE_LABELS[phase.phase]}
           </p>
         </div>
-        <p className="mt-2 text-sm leading-snug text-[var(--foreground)]/90">{phase.coachingCue}</p>
-        <p className="mt-3 border-t border-[var(--line)] pt-2.5 text-[11px] leading-relaxed text-[var(--muted)]">
+        <p className="mt-1.5 text-sm leading-snug text-[var(--foreground)]/90">{phase.coachingCue}</p>
+        <p className="mt-2 hidden border-t border-[var(--line)] pt-2.5 text-[11px] leading-relaxed text-[var(--muted)] sm:block">
           <span className="font-semibold text-[var(--accent)]">Signature · </span>
           {quirk}
         </p>

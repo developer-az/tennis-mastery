@@ -31,7 +31,7 @@ export function PlayerStrokePicker() {
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
           Athlete
         </p>
-        <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+<div className="-mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0">
           {PLAYERS.map((p) => {
             const active = p.id === playerId;
             return (
@@ -40,7 +40,7 @@ export function PlayerStrokePicker() {
                 type="button"
                 onClick={() => setPlayer(p.id)}
                 aria-pressed={active}
-                className="shrink-0 cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-all duration-200 hover:brightness-110"
+className="cursor-pointer shrink-0 rounded-[var(--radius)] px-3 py-2 text-left text-sm transition-all duration-200 hover:brightness-110"
                 style={{
                   background: active ? p.color : "rgba(232,239,233,0.04)",
                   color: active ? "#f8f6f0" : "var(--foreground)",
@@ -60,7 +60,7 @@ export function PlayerStrokePicker() {
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
           Stroke
         </p>
-        <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+<div className="-mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0">
           {STROKES.map((s) => {
             const active = s === stroke;
             const label = player.strokes[s]?.label ?? STROKE_LABELS[s];
@@ -71,7 +71,7 @@ export function PlayerStrokePicker() {
                 onClick={() => setStroke(s)}
                 aria-pressed={active}
                 title={label}
-                className="shrink-0 cursor-pointer rounded-md px-3 py-1.5 text-sm transition-colors duration-200 hover:brightness-110"
+className="shrink-0 cursor-pointer rounded-[var(--radius)] px-3 py-1.5 text-sm transition-colors duration-200 hover:brightness-110"
                 style={{
                   background: active ? "var(--accent)" : "transparent",
                   color: active ? "var(--accent-ink)" : "var(--foreground)",
@@ -89,7 +89,63 @@ export function PlayerStrokePicker() {
         </p>
       </div>
 
-      <p className="text-sm leading-relaxed text-[var(--muted)]">{player.playingStyle}</p>
+      <p className="hidden text-sm leading-relaxed text-[var(--muted)] lg:block">{player.playingStyle}</p>
+    </div>
+  );
+}
+
+export function PlaybackDock() {
+  const t = useCoachStore((s) => s.t);
+  const playing = useCoachStore((s) => s.playing);
+  const setT = useCoachStore((s) => s.setT);
+  const togglePlaying = useCoachStore((s) => s.togglePlaying);
+  const setPlaying = useCoachStore((s) => s.setPlaying);
+  const playerId = useCoachStore((s) => s.playerId);
+  const strokeType = useCoachStore((s) => s.stroke);
+  const player = PLAYERS.find((p) => p.id === playerId) ?? PLAYERS[0];
+  const stroke = player.strokes[strokeType];
+  const pose = sampleStroke(stroke, t);
+
+  return (
+    <div className="pointer-events-auto border-t border-[var(--line)] bg-[color-mix(in_srgb,var(--background)_88%,transparent)] px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={togglePlaying}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius)] bg-[var(--accent)] text-[var(--accent-ink)]"
+          aria-label={playing ? "Pause" : "Play"}
+        >
+          {playing ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+              <rect x="2" y="2" width="3.5" height="10" rx="0.5" />
+              <rect x="8.5" y="2" width="3.5" height="10" rx="0.5" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+              <path d="M3 2.5v9l9-4.5-9-4.5z" />
+            </svg>
+          )}
+        </button>
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Scrub stroke phase</span>
+          <div className="flex justify-between text-[11px] text-[var(--muted)]">
+            <span>{PHASE_LABELS[pose.phase]}</span>
+            <span>{Math.round(t * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.001}
+            value={t}
+            onChange={(e) => {
+              setPlaying(false);
+              setT(Number(e.target.value));
+            }}
+            className="mt-1 w-full accent-[var(--accent)]"
+          />
+        </label>
+      </div>
     </div>
   );
 }
@@ -284,7 +340,7 @@ export function ViewToggles() {
                       ? "From the net looking back at the athlete"
                       : "Over the hitting shoulder — map hand and face angle"
             }
-            className="rounded-md px-2.5 py-1.5 text-xs transition"
+            className="shrink-0 rounded-md px-2.5 py-1.5 text-xs transition"
             style={{
               background: cameraMode === m ? "var(--line-strong)" : "transparent",
               boxShadow: "0 0 0 1px var(--line)",
