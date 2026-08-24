@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
+import Link from "next/link";
 import { usePlayerStore } from "@/store/playerStore";
 import { useGearStore } from "@/store/gearStore";
-import { deriveForehandMold } from "@/lib/equipment/forehandMold";
+import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
 import { useCoachStore } from "@/store/coachStore";
 
-/** Form Lab cue: face / bevel from the stored grip, not a generic pro. */
+/** Form Lab cue: face / bevel from the stored grip + molded leave/path (includes tape). */
 export function PlayerGripCue() {
   const grips = usePlayerStore((s) => s.profile.grips);
   const setup = useGearStore((s) => s.setup);
@@ -15,14 +15,10 @@ export function PlayerGripCue() {
 
   const mold = useMemo(() => {
     if (!grips.forehand) return null;
-    return deriveForehandMold({
+    // Null catalogs still apply tape + string heuristics from setup meta
+    return synthesizeCombinedSetup(setup, null, null, null, [], {
       playerGrip: grips.forehand,
-      launchAngleDeg: setup.racketLaunchDeg,
-      swingPathDeg: setup.racketSwingPathDeg,
-      power: setup.racketPower,
-      spin: setup.racketSpin,
-      control: setup.racketControl,
-    });
+    }).forehand;
   }, [grips.forehand, setup]);
 
   if (!grips.forehand) {
@@ -36,6 +32,8 @@ export function PlayerGripCue() {
     );
   }
 
+  const hasTape = (setup.leadTape?.pieces?.length ?? 0) > 0;
+
   return (
     <div className="space-y-1 text-xs">
       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
@@ -46,6 +44,7 @@ export function PlayerGripCue() {
         <p className="leading-relaxed text-[var(--muted)]">
           ~{mold.face.closedDeg}° closed in the {mold.prefersHeight} window
           {stroke === "backhand" ? " — BH inherits this face family." : "."}
+          {hasTape ? " Mold includes your lead tape." : ""}
         </p>
       )}
     </div>

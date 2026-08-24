@@ -147,7 +147,7 @@ export function GearLab({
         ) : null}
         {tab === "lead-tape" ? (
           <div id="gear-panel-lead-tape" role="tabpanel" aria-labelledby="gear-tab-lead-tape">
-            <LeadTapeLab rackets={rackets} />
+            <LeadTapeLab rackets={rackets} strings={strings} grips={grips} />
           </div>
         ) : null}
       </div>

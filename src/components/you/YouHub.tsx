@@ -6,7 +6,7 @@ import type { GripProfile, RacketProfile, StringProfile } from "@/types/equipmen
 import { usePlayerStore } from "@/store/playerStore";
 import { hasAnyGear, setupSummary, useGearStore } from "@/store/gearStore";
 import { derivePatterns, recentBodyTrend } from "@/lib/player/patterns";
-import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
+import { synthesizeCombinedSetup, previewSetupWithString } from "@/lib/equipment/setupSynthesis";
 import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { fhGripLabel, gripPreviewLine } from "@/lib/player/onboarding";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
@@ -14,6 +14,7 @@ import { InBandImproveSection } from "@/components/gear/InBandImproveSection";
 import { SyncStatusPill } from "@/components/auth/SyncStatusPill";
 import { strikeZoneForFrame } from "@/components/gear/RacketVisuals";
 import { SetupVisualStory } from "./SetupVisualStory";
+import { YouStringCompare } from "./YouStringCompare";
 import { BagTab } from "./BagTab";
 import { AfterPlayTab } from "./AfterPlayTab";
 import { HistoryTab } from "./HistoryTab";
@@ -37,6 +38,7 @@ export function YouHub({
   const setup = useGearStore((s) => s.setup);
 
   const [tab, setTab] = useState<HubTab>("today");
+  const [previewStringId, setPreviewStringId] = useState<string | null>(null);
 
   useEffect(() => {
     if (usePlayerStore.persist.hasHydrated()) setHydrated(true);
@@ -58,6 +60,24 @@ export function YouHub({
   }, [grips, setup.gripId, setup.gripLayers]);
   const armFriendly = prefersArmFriendlySetup(profile);
 
+  // Clear string preview when the saved bag changes
+  useEffect(() => {
+    setPreviewStringId(null);
+  }, [setup.stringId, setup.racketSlug, setup.leadTape, setup.tensionLbs, setup.gaugeMm]);
+
+  const previewString = useMemo(
+    () => (previewStringId ? strings.find((s) => s.id === previewStringId) ?? null : null),
+    [previewStringId, strings],
+  );
+  const activeString = previewString ?? string;
+  const stringPreviewing = Boolean(
+    previewString && (!string || previewString.id !== string.id),
+  );
+  const activeSetup = useMemo(
+    () => (previewString ? previewSetupWithString(setup, previewString) : setup),
+    [previewString, setup],
+  );
+
   const insight = useMemo(
     () =>
       synthesizeCombinedSetup(setup, racket, string, grip, grips, {
@@ -66,17 +86,39 @@ export function YouHub({
       }),
     [setup, racket, string, grip, grips, profile.grips.forehand, armFriendly],
   );
+
+  const displayInsight = useMemo(
+    () =>
+      stringPreviewing
+        ? synthesizeCombinedSetup(activeSetup, racket, activeString, grip, grips, {
+            playerGrip: profile.grips.forehand,
+            armFriendly,
+          })
+        : insight,
+    [
+      stringPreviewing,
+      activeSetup,
+      racket,
+      activeString,
+      grip,
+      grips,
+      profile.grips.forehand,
+      armFriendly,
+      insight,
+    ],
+  );
+
   const strikeZone = useMemo(
     () =>
       strikeZoneForFrame({
         ...(racket ?? {}),
-        idealLaunchAngleDeg: insight.launchAngleDeg,
-        idealSwingPathDeg: insight.swingPathDeg,
-        spin: insight.scores.spin,
-        control: insight.scores.control,
-        power: insight.scores.power,
+        idealLaunchAngleDeg: displayInsight.launchAngleDeg,
+        idealSwingPathDeg: displayInsight.swingPathDeg,
+        spin: displayInsight.scores.spin,
+        control: displayInsight.scores.control,
+        power: displayInsight.scores.power,
       }),
-    [racket, insight.launchAngleDeg, insight.swingPathDeg, insight.scores],
+    [racket, displayInsight.launchAngleDeg, displayInsight.swingPathDeg, displayInsight.scores],
   );
   const patterns = useMemo(() => derivePatterns(profile).slice(0, 3), [profile]);
   const pending = profile.decisions.filter((d) => d.result === "pending");
@@ -199,21 +241,38 @@ export function YouHub({
               </div>
             </div>
 
-            {insight.hasAny ? (
-              <SetupVisualStory
-                scores={insight.scores}
-                stock={insight.stockScores}
-                role={insight.playstyle}
-                flight={insight.flight}
-                launchDeg={insight.launchAngleDeg}
-                pathDeg={insight.swingPathDeg}
-                zone={strikeZone}
-                forehand={insight.forehand}
-                pieces={setup.leadTape?.pieces ?? []}
-                hasRacket={insight.hasRacket}
-                racket={racket}
-                string={string}
-              />
+            {insight.hasAny || racket ? (
+              <>
+                {(insight.hasRacket || racket) && (
+                  <YouStringCompare
+                    setup={setup}
+                    string={string}
+                    strings={strings}
+                    baseline={insight}
+                    preview={displayInsight}
+                    previewStringId={previewStringId}
+                    onSelectPreviewId={setPreviewStringId}
+                  />
+                )}
+                <SetupVisualStory
+                  scores={displayInsight.scores}
+                  stock={displayInsight.stockScores}
+                  role={displayInsight.playstyle}
+                  flight={displayInsight.flight}
+                  launchDeg={displayInsight.launchAngleDeg}
+                  pathDeg={displayInsight.swingPathDeg}
+                  zone={strikeZone}
+                  forehand={displayInsight.forehand}
+                  pieces={setup.leadTape?.pieces ?? []}
+                  hasRacket={displayInsight.hasRacket}
+                  racket={racket}
+                  string={activeString}
+                  moldDeltas={displayInsight.deltas}
+                  scoreDeltas={displayInsight.scoreDeltas}
+                  hasTape={displayInsight.hasTape}
+                  previewing={stringPreviewing}
+                />
+              </>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <Stat label="Launch" value="—" />
@@ -223,7 +282,9 @@ export function YouHub({
               </div>
             )}
 
-            {insight.hasAny ? <InBandImproveSection plan={insight.inBand} compact /> : null}
+            {displayInsight.hasAny ? (
+              <InBandImproveSection plan={displayInsight.inBand} compact />
+            ) : null}
 
             {pending.length > 0 && (
               <button

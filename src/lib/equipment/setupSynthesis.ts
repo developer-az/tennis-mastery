@@ -1288,3 +1288,35 @@ function buildScienceNotes(input: {
 
   return notes;
 }
+
+/**
+ * Clone MySetup with a candidate string (and optional tension/gauge) so
+ * synthesizeCombinedSetup can recompute the full mold — including lead tape.
+ */
+export function previewSetupWithString(
+  setup: MySetup,
+  string: StringProfile,
+  opts?: { tensionLbs?: number | null; gaugeMm?: number | null },
+): MySetup {
+  const tension =
+    opts?.tensionLbs !== undefined && opts.tensionLbs != null
+      ? opts.tensionLbs
+      : (setup.tensionLbs ?? string.recommendedTensionLbs);
+  const gauge =
+    opts?.gaugeMm !== undefined
+      ? opts.gaugeMm
+      : (setup.gaugeMm ?? string.gaugesMm[0] ?? null);
+  const bed = tensionOutcome(string, tension, gauge ?? undefined);
+  return {
+    ...setup,
+    stringId: string.id,
+    stringLabel: `${string.brand} ${string.name}`,
+    tensionLbs: tension,
+    gaugeMm: gauge,
+    stringPower: bed.power,
+    stringSpin: bed.spin,
+    stringControl: bed.control,
+    stringComfort: bed.comfort,
+  };
+}
+
