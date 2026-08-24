@@ -9,7 +9,7 @@ import { derivePatterns, recentBodyTrend } from "@/lib/player/patterns";
 import { synthesizeCombinedSetup, previewSetupWithString } from "@/lib/equipment/setupSynthesis";
 import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { fhGripLabel, gripPreviewLine } from "@/lib/player/onboarding";
-import { SetupWizard } from "@/components/onboarding/SetupWizard";
+import { PlayerCardSheet } from "@/components/you/PlayerCardSheet";
 import { InBandImproveSection } from "@/components/gear/InBandImproveSection";
 import { SyncStatusPill } from "@/components/auth/SyncStatusPill";
 import { strikeZoneForFrame } from "@/components/gear/RacketVisuals";
@@ -18,6 +18,7 @@ import { YouStringCompare } from "./YouStringCompare";
 import { BagTab } from "./BagTab";
 import { AfterPlayTab } from "./AfterPlayTab";
 import { HistoryTab } from "./HistoryTab";
+import { WorkOnThis } from "./WorkOnThis";
 import { CourtEmpty, CourtLoading } from "@/components/ui/CourtState";
 
 type HubTab = "today" | "bag" | "play" | "history";
@@ -34,18 +35,21 @@ export function YouHub({
   const profile = usePlayerStore((s) => s.profile);
   const hydrated = usePlayerStore((s) => s.hydrated);
   const setHydrated = usePlayerStore((s) => s.setHydrated);
-  const onboardingComplete = usePlayerStore((s) => s.onboardingComplete);
-  const restartOnboarding = usePlayerStore((s) => s.restartOnboarding);
   const setup = useGearStore((s) => s.setup);
 
   const [tab, setTab] = useState<HubTab>("today");
-  const [previewStringId, setPreviewStringId] = useState<string | null>(null);
+  const [playerCardOpen, setPlayerCardOpen] = useState(false);
+  const bagKey = `${setup.stringId ?? ""}|${setup.racketSlug ?? ""}|${setup.tensionLbs ?? ""}|${setup.gaugeMm ?? ""}|${JSON.stringify(setup.leadTape ?? null)}`;
+  const [preview, setPreview] = useState<{ bagKey: string; id: string | null }>({
+    bagKey,
+    id: null,
+  });
+  const previewStringId = preview.bagKey === bagKey ? preview.id : null;
+  const setPreviewStringId = (id: string | null) => setPreview({ bagKey, id });
 
   useEffect(() => {
     if (usePlayerStore.persist.hasHydrated()) setHydrated(true);
   }, [setHydrated]);
-
-  const showWizard = hydrated && !onboardingComplete;
 
   const racket = useMemo(
     () => rackets.find((r) => r.slug === setup.racketSlug) ?? null,
@@ -60,11 +64,6 @@ export function YouHub({
     return outerId ? grips.find((g) => g.id === outerId) ?? null : null;
   }, [grips, setup.gripId, setup.gripLayers]);
   const armFriendly = prefersArmFriendlySetup(profile);
-
-  // Clear string preview when the saved bag changes
-  useEffect(() => {
-    setPreviewStringId(null);
-  }, [setup.stringId, setup.racketSlug, setup.leadTape, setup.tensionLbs, setup.gaugeMm]);
 
   const previewString = useMemo(
     () => (previewStringId ? strings.find((s) => s.id === previewStringId) ?? null : null),
@@ -123,17 +122,18 @@ export function YouHub({
   );
   const patterns = useMemo(() => derivePatterns(profile).slice(0, 3), [profile]);
   const pending = profile.decisions.filter((d) => d.result === "pending");
+  const needsGrip = !profile.grips.forehand;
+  const needsBag = !hasAnyGear(setup);
+  const playerCardLabel = needsGrip || needsBag || !profile.displayName.trim()
+    ? "Add your game"
+    : "Edit player card";
 
   if (!hydrated) {
     return <CourtLoading label="Loading your court…" />;
   }
 
-  if (showWizard) {
-    return <SetupWizard rackets={rackets} strings={strings} grips={grips} />;
-  }
-
   const name = profile.displayName.trim() || "You";
-  const preview = gripPreviewLine(profile.grips.forehand);
+  const gripPreview = gripPreviewLine(profile.grips.forehand);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8 md:py-12">
@@ -148,10 +148,10 @@ export function YouHub({
           <SyncStatusPill />
           <button
             type="button"
-            onClick={() => restartOnboarding()}
+            onClick={() => setPlayerCardOpen(true)}
             className="sf-btn-ghost text-xs tracking-[0.06em]"
           >
-            Redo setup
+            {playerCardLabel}
           </button>
         </div>
       </div>
@@ -165,7 +165,7 @@ export function YouHub({
           [
             ["today", "Today"],
             ["bag", "Bag"],
-            ["play", "After play"],
+            ["play", "Play"],
             ["history", "History"],
           ] as const
         ).map(([id, label]) => (
@@ -195,6 +195,26 @@ export function YouHub({
       <div className="mt-8">
         {tab === "today" && (
           <div className="space-y-6">
+            {needsGrip ? (
+              <button
+                type="button"
+                onClick={() => setPlayerCardOpen(true)}
+                className="sf-alert sf-alert-accent w-full text-left"
+              >
+                Add a grip so Lab can show your face angle. Optional — skip if you just want to browse.
+              </button>
+            ) : null}
+            {needsBag ? (
+              <div className="sf-alert flex flex-wrap items-center justify-between gap-3">
+                <p>Pick a racket when you want — like walking a store aisle.</p>
+                <Link href="/gear?tab=rackets" className="sf-text-link shrink-0">
+                  Browse rackets
+                </Link>
+              </div>
+            ) : null}
+
+            <WorkOnThis insight={displayInsight} />
+
             <div className="flex flex-wrap items-center gap-2">
               {profile.grips.forehand && (
                 <span className="border border-[var(--accent)]/35 bg-[var(--accent-dim)] px-2.5 py-1 text-xs text-[var(--accent)]">
@@ -218,7 +238,7 @@ export function YouHub({
                 Coaching models · logged feel outweighs spec math
               </p>
             </div>
-            {preview ? <p className="text-sm text-[var(--muted)]">{preview}</p> : null}
+            {gripPreview ? <p className="text-sm text-[var(--muted)]">{gripPreview}</p> : null}
 
             <div className="sf-panel px-4 py-3.5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -275,10 +295,10 @@ export function YouHub({
             ) : (
               <CourtEmpty
                 kicker="No mold yet"
-                title="Need a frame before launch and path light up"
-                body="Save a racket (and optionally a bed) so Strokeform can show leave angle, skill span, and flight for your court."
-                primary={{ href: "/gear?tab=rackets", label: "Pick a racket" }}
-                secondary={{ href: "/gear", label: "Open gear lab" }}
+                title="Browse a racket when you’re ready"
+                body="Save a frame (and optionally a bed) so Strokeform can show leave angle and flight for your court. Setup is optional."
+                primary={{ href: "/gear?tab=rackets", label: "Browse rackets" }}
+                secondary={{ href: "/lab", label: "Open form lab" }}
               />
             )}
 
@@ -301,7 +321,7 @@ export function YouHub({
               onClick={() => setTab("play")}
               className="sf-btn sf-btn-primary w-full"
             >
-              Log last session
+              Log last hit
             </button>
 
             {patterns.length > 0 && (
@@ -324,6 +344,15 @@ export function YouHub({
         {tab === "play" && <AfterPlayTab />}
         {tab === "history" && <HistoryTab />}
       </div>
+
+      {playerCardOpen ? (
+        <PlayerCardSheet
+          rackets={rackets}
+          strings={strings}
+          grips={grips}
+          onClose={() => setPlayerCardOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

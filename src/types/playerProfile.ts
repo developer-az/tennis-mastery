@@ -80,6 +80,10 @@ export interface DecisionEntry {
 
 export type SessionFeel = "great" | "ok" | "pushy" | "flying" | "dumping" | "framing" | "other";
 
+export type PlayStroke = "serve" | "forehand" | "backhand" | "volley" | "movement";
+
+export type PlayStruggle = "flying" | "dumping" | "framing" | "no_spin" | "arm" | "grip_slip";
+
 export interface SessionEntry {
   id: string;
   createdAt: string;
@@ -93,6 +97,16 @@ export interface SessionEntry {
   bodyCheck: Partial<Record<BodyArea, "ok" | "whisper" | "pain" | "blister">>;
   overallFeel: SessionFeel;
   notes: string;
+  strokes?: PlayStroke[];
+  struggles?: PlayStruggle[];
+}
+
+export interface AssignedDrill {
+  drillId: string;
+  reason: string;
+  completed: boolean;
+  assignedAt: string;
+  source: "session" | "pattern" | "frame";
 }
 
 export interface StringBedHours {
@@ -137,6 +151,7 @@ export interface PlayerProfile {
   pendingLever: PendingLeverChange | null;
   /** Free-form evolving notes */
   bodyFeedbackNotes: string;
+  completedDrillIds: string[];
   updatedAt: string;
 }
 
@@ -166,6 +181,7 @@ export function emptyProfile(): PlayerProfile {
     matchedPairs: [],
     pendingLever: null,
     bodyFeedbackNotes: "",
+    completedDrillIds: [],
     updatedAt: new Date().toISOString(),
   };
 }
@@ -224,6 +240,7 @@ export function exampleCoachingProfile(): PlayerProfile {
     pendingLever: null,
     bodyFeedbackNotes:
       "Framing on full backhands when late. Felt pushy at times. Balls flying around 50 lbs on poly.",
+    completedDrillIds: [],
     updatedAt: now,
   };
 }

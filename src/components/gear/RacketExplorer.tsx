@@ -3,8 +3,6 @@
 import { useDeferredValue, useMemo, useRef, useState } from "react";
 import type { EquipmentTab, RacketCatalogMeta, RacketProfile } from "@/types/equipment";
 import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search";
-import { derivePlayerFit } from "@/lib/equipment/playerFit";
-import { analyzeFrame } from "@/lib/equipment/strokeformIntel";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
 import { usePlayerStore } from "@/store/playerStore";
@@ -16,8 +14,29 @@ import { FrameIntelligencePanel } from "./FrameIntelligencePanel";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
+import {
+  AisleChip,
+  CatalogAisle,
+  ChipRow,
+  ProductCard,
+  SearchField,
+} from "./CatalogShop";
+import {
+  FEEL_MIN,
+  RACKET_FEELS,
+  RACKET_SHOP_TYPES,
+  brandsByCount,
+  groupByBrand,
+  matchesFeel,
+  racketShopBadge,
+  racketShopType,
+  uniqueSortedBrands,
+  type FeelKey,
+  type RacketShopType,
+} from "@/lib/equipment/shopAisles";
 
-const PAGE = 80;
+const PAGE = 24;
+const AISLE_CARDS = 8;
 const MAX_COMPARE = 3;
 
 function patternBand(pattern: string | null): "16x19" | "18x20" | "other" {
@@ -41,6 +60,8 @@ export function RacketExplorer({
   const liveCatalog = meta.live === true;
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("all");
+  const [shopType, setShopType] = useState<RacketShopType | "all">("all");
+  const [feel, setFeel] = useState<FeelKey | "all">("all");
   const [style, setStyle] = useState("all");
   const [weightBand, setWeightBand] = useState("all");
   const [headBand, setHeadBand] = useState("all");
@@ -61,10 +82,8 @@ export function RacketExplorer({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const deferredQuery = useDeferredValue(query);
 
-  const brands = useMemo(
-    () => Array.from(new Set(initialRackets.map((r) => r.brand))).sort(),
-    [initialRackets],
-  );
+  const brands = useMemo(() => uniqueSortedBrands(initialRackets), [initialRackets]);
+  const aisleBrands = useMemo(() => brandsByCount(initialRackets, 8), [initialRackets]);
   const styles = useMemo(
     () => Array.from(new Set(initialRackets.map((r) => r.style))).sort(),
     [initialRackets],
@@ -74,6 +93,8 @@ export function RacketExplorer({
     const q = deferredQuery.trim();
     const list = initialRackets.filter((r) => {
       if (brand !== "all" && r.brand !== brand) return false;
+      if (shopType !== "all" && racketShopType(r) !== shopType) return false;
+      if (!matchesFeel(r, feel)) return false;
       if (style !== "all" && r.style !== style) return false;
       if (weightBand === "light" && !(r.weightG != null && r.weightG < 295)) return false;
       if (weightBand === "mid" && !(r.weightG != null && r.weightG >= 295 && r.weightG < 315))
@@ -122,9 +143,9 @@ export function RacketExplorer({
       }
     });
     return sorted;
-  }, [initialRackets, deferredQuery, brand, style, weightBand, headBand, pattern, sort]);
+  }, [initialRackets, deferredQuery, brand, shopType, feel, style, weightBand, headBand, pattern, sort]);
 
-  const nextEpoch = `${deferredQuery}|${brand}|${style}|${weightBand}|${headBand}|${pattern}|${sort}`;
+  const nextEpoch = `${deferredQuery}|${brand}|${shopType}|${feel}|${style}|${weightBand}|${headBand}|${pattern}|${sort}`;
   let pageSize = visible;
   if (filterEpoch !== nextEpoch) {
     setFilterEpoch(nextEpoch);
@@ -267,205 +288,175 @@ export function RacketExplorer({
     });
   };
 
+  const selectRacket = (slug: string) => {
+    setSelectedSlug(slug);
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+      requestAnimationFrame(() =>
+        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    }
+  };
+
+  const showAisles =
+    brand === "all" &&
+    shopType === "all" &&
+    feel === "all" &&
+    style === "all" &&
+    weightBand === "all" &&
+    headBand === "all" &&
+    pattern === "all" &&
+    !deferredQuery.trim();
+
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-6">
-      {/* List first on phones so search/save is immediate */}
-      <div className="order-1 space-y-3 lg:order-1 lg:space-y-4">
-        <div className="space-y-2 md:static">
-          <label className="relative block flex-1">
-            <span className="sr-only">Search rackets</span>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search Prestige Pro, CX 200, Blade…"
-              inputMode="search"
-              enterKeyHint="search"
-              autoCapitalize="off"
-              autoCorrect="off"
-              className="w-full rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+      <div className="order-1 space-y-4 lg:order-1">
+        <SearchField
+          value={query}
+          onChange={setQuery}
+          placeholder="Search Blade, CX 200, Prestige…"
+          label="Search rackets"
+        />
+        <p className="text-sm text-[var(--muted)]">
+          Not sure?{" "}
+          <button
+            type="button"
+            className="sf-text-link"
+            onClick={() => {
+              setShopType("beginner");
+              setBrand("all");
+              setFeel("all");
+            }}
+          >
+            Start with beginner-friendly
+          </button>
+        </p>
+        <ChipRow label="Brand">
+          <AisleChip label="All" active={brand === "all"} onClick={() => setBrand("all")} />
+          {brands.map((b) => (
+            <AisleChip key={b} label={b} active={brand === b} onClick={() => setBrand(b)} />
+          ))}
+        </ChipRow>
+        <ChipRow label="Type">
+          <AisleChip label="All types" active={shopType === "all"} onClick={() => setShopType("all")} />
+          {RACKET_SHOP_TYPES.map((t) => (
+            <AisleChip
+              key={t.id}
+              label={t.label}
+              active={shopType === t.id}
+              onClick={() => setShopType(t.id)}
             />
-          </label>
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-            <select
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              aria-label="Brand"
-              className="sf-select w-full"
-            >
-              <option value="all">All brands</option>
-              {brands.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-            <select
-              value={style}
-              onChange={(e) => setStyle(e.target.value)}
-              aria-label="Style"
-              className="sf-select w-full"
-            >
+          ))}
+        </ChipRow>
+        <ChipRow label="Feel">
+          <AisleChip label="Any feel" active={feel === "all"} onClick={() => setFeel("all")} />
+          {RACKET_FEELS.map((f) => (
+            <AisleChip
+              key={f.id}
+              label={f.label}
+              active={feel === f.id}
+              onClick={() => setFeel(f.id)}
+              color={f.color}
+            />
+          ))}
+        </ChipRow>
+        <details className="text-sm">
+          <summary className="cursor-pointer text-[var(--muted)]">More filters</summary>
+          <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            <select value={style} onChange={(e) => setStyle(e.target.value)} aria-label="Style" className="sf-select w-full">
               <option value="all">All styles</option>
               {styles.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
-            <select
-              value={weightBand}
-              onChange={(e) => setWeightBand(e.target.value)}
-              aria-label="Weight"
-              className="sf-select w-full"
-            >
+            <select value={weightBand} onChange={(e) => setWeightBand(e.target.value)} aria-label="Weight" className="sf-select w-full">
               <option value="all">Any weight</option>
               <option value="light">&lt; 295 g</option>
               <option value="mid">295–314 g</option>
               <option value="heavy">315 g+</option>
             </select>
-            <select
-              value={headBand}
-              onChange={(e) => setHeadBand(e.target.value)}
-              aria-label="Head size"
-              className="sf-select w-full"
-            >
+            <select value={headBand} onChange={(e) => setHeadBand(e.target.value)} aria-label="Head size" className="sf-select w-full">
               <option value="all">Any head size</option>
               <option value="mid">Mid (&lt; 98&quot;)</option>
               <option value="midplus">Midplus (98–100&quot;)</option>
               <option value="oversize">Oversize (&gt; 100&quot;)</option>
             </select>
-            <select
-              value={pattern}
-              onChange={(e) => setPattern(e.target.value)}
-              aria-label="String pattern"
-              className="sf-select w-full"
-            >
+            <select value={pattern} onChange={(e) => setPattern(e.target.value)} aria-label="String pattern" className="sf-select w-full">
               <option value="all">Any pattern</option>
               <option value="16x19">16×19 open</option>
               <option value="18x20">18×20 dense</option>
               <option value="other">Other patterns</option>
             </select>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as typeof sort)}
-              aria-label="Sort"
-              className="sf-select w-full"
-            >
-              <option value="newest">Sort: newest</option>
-              <option value="spin">Sort: spin</option>
-              <option value="control">Sort: control</option>
-              <option value="power">Sort: power</option>
-              <option value="weight">Sort: weight</option>
+            <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort" className="sf-select w-full">
+              <option value="newest">Newest</option>
+              <option value="spin">Most spin</option>
+              <option value="control">Most control</option>
+              <option value="power">Most power</option>
+              <option value="weight">Heaviest</option>
             </select>
           </div>
-        </div>
+        </details>
 
         <p className="text-xs text-[var(--muted)]">
           {shown.length} of {filtered.length}
           {query.trim() ? " matches" : " frames"}
+          {feel !== "all" ? ` · ${feel} ${FEEL_MIN}+` : ""}
         </p>
 
-        <ul className="max-h-[min(70vh,28rem)] divide-y divide-[var(--line)] overflow-y-auto overscroll-contain border-y border-[var(--line)] md:max-h-[32rem]">
-          {shown.map((r) => {
-            const active = r.slug === selected?.slug;
-            const saved = r.slug === setupSlug;
-            const fit = derivePlayerFit(r);
-            const intel = analyzeFrame(r, { liveCatalog });
-            const inCompare = compareIds.includes(r.slug);
-            return (
-              <li key={r.slug} className="flex items-stretch gap-0.5">
-                <label
-                  className="flex shrink-0 items-center px-2"
-                  title={inCompare ? "Remove from compare" : "Add to compare"}
+        {showAisles ? (
+          <div className="space-y-6">
+            {groupByBrand(initialRackets)
+              .filter((g) => aisleBrands.includes(g.brand))
+              .map((g) => (
+                <CatalogAisle
+                  key={g.brand}
+                  title={g.brand}
+                  actionLabel={`See all ${g.brand}`}
+                  onAction={() => setBrand(g.brand)}
                 >
-                  <span className="sr-only">
-                    Compare {r.brand} {r.model}
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={inCompare}
-                    onChange={() => toggleCompare(r.slug)}
-                    className="h-3.5 w-3.5 accent-[var(--accent)]"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedSlug(r.slug);
-                    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
-                      requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
-                    }
-                  }}
-                  aria-pressed={active}
-                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left transition sm:gap-3 ${
-                    active ? "bg-[var(--accent-dim)]" : "hover:bg-white/[0.03]"
-                  }`}
-                >
-                  <EquipmentThumb
-                    src={racketImageUrl(r)}
-                    alt={`${r.brand} ${r.model}`}
-                    size="sm"
-                  />
-                  <span className="flex min-w-0 flex-col gap-1">
-                    <span className="flex flex-wrap items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
-                      {r.brand} {r.model}
-                      {saved ? (
-                        <span className="rounded bg-[var(--accent)]/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-[var(--accent)]">
-                          Setup
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="text-xs text-[var(--muted)]">
-                      {r.year} · {r.headSizeSqIn}&quot; · {r.stringPattern}
-                      <span className="hidden sm:inline"> · {r.style}</span>
-                    </span>
-                    <span className="hidden flex-wrap gap-1.5 pt-0.5 sm:flex">
-                      <MiniTag label={intel.primaryArchetype} color="var(--accent)" />
-                      <MiniTag label={fit.skill} color="var(--chart-control)" />
-                      <MiniTag label={`${intel.skill.floor}→${intel.skill.ceiling}`} color="var(--chart-power)" />
-                    </span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    saveRacket(r);
-                  }}
-                  className="m-1 shrink-0 self-center rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition"
-                  style={{
-                    background: saved ? "var(--accent-dim)" : "var(--accent)",
-                    color: saved ? "var(--accent)" : "var(--accent-ink)",
-                    boxShadow: saved ? "0 0 0 1px var(--accent)" : "none",
-                  }}
-                  aria-label={
-                    saved
-                      ? `${r.brand} ${r.model} already in setup`
-                      : `Save ${r.brand} ${r.model} to my setup`
-                  }
-                >
-                  {saved ? "Saved" : "Save"}
-                </button>
-              </li>
-            );
-          })}
-          {filtered.length === 0 && (
-            <li className="px-2 py-8 text-sm text-[var(--muted)]">
-              No rackets match those filters. Try &quot;prestige pro&quot;, &quot;cx 200&quot;, or clear
-              weight / head size.
-            </li>
-          )}
-        </ul>
-        {pageSize < filtered.length ? (
-          <button
-            type="button"
-            onClick={() => setVisible((v) => v + PAGE)}
-            className="w-full rounded-md px-3 py-2 text-sm text-[var(--muted)] transition hover:bg-white/5 hover:text-[var(--foreground)]"
-            style={{ boxShadow: "0 0 0 1px var(--line)" }}
-          >
-            Load more ({filtered.length - pageSize} remaining)
-          </button>
-        ) : null}
+                  {g.items.slice(0, AISLE_CARDS).map((r) => (
+                    <RacketCard
+                      key={r.slug}
+                      racket={r}
+                      compact
+                      selected={r.slug === selected?.slug}
+                      saved={r.slug === setupSlug}
+                      onSelect={() => selectRacket(r.slug)}
+                      onSave={() => saveRacket(r)}
+                    />
+                  ))}
+                </CatalogAisle>
+              ))}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {shown.map((r) => (
+                <RacketCard
+                  key={r.slug}
+                  racket={r}
+                  selected={r.slug === selected?.slug}
+                  saved={r.slug === setupSlug}
+                  onSelect={() => selectRacket(r.slug)}
+                  onSave={() => saveRacket(r)}
+                />
+              ))}
+            </div>
+            {filtered.length === 0 && (
+              <p className="px-1 py-8 text-sm text-[var(--muted)]">
+                No rackets match. Try beginner-friendly, or search Blade / CX 200.
+              </p>
+            )}
+            {pageSize < filtered.length ? (
+              <button
+                type="button"
+                onClick={() => setVisible((v) => v + PAGE)}
+                className="sf-btn sf-btn-secondary w-full"
+              >
+                Load more ({filtered.length - pageSize} remaining)
+              </button>
+            ) : null}
+          </>
+        )}
       </div>
 
       {selected && (
@@ -503,14 +494,22 @@ export function RacketExplorer({
               <button
                 type="button"
                 onClick={() => saveRacket(selected)}
-                className="mt-4 min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
+                className="mt-4 min-h-11 w-full rounded-[var(--radius)] px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
                 style={{
                   background: inSetup ? "var(--accent-dim)" : "var(--accent)",
                   color: inSetup ? "var(--accent)" : "var(--accent-ink)",
                   boxShadow: inSetup ? "0 0 0 1px var(--accent)" : "none",
                 }}
               >
-                {inSetup ? "Saved in my setup" : "Save to my setup"}
+                {inSetup ? "In your bag" : "Add to bag"}
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleCompare(selected.slug)}
+                className="mt-2 w-full rounded-[var(--radius)] px-4 py-2 text-xs text-[var(--muted)] sm:w-auto"
+                style={{ boxShadow: "0 0 0 1px var(--line)" }}
+              >
+                {compareIds.includes(selected.slug) ? "In compare" : "Compare this frame"}
               </button>
               <button
                 type="button"
@@ -649,17 +648,39 @@ export function RacketExplorer({
   );
 }
 
-function MiniTag({ label, color }: { label: string; color: string }) {
+function RacketCard({
+  racket,
+  compact,
+  selected,
+  saved,
+  onSelect,
+  onSave,
+}: {
+  racket: RacketProfile;
+  compact?: boolean;
+  selected: boolean;
+  saved: boolean;
+  onSelect: () => void;
+  onSave: () => void;
+}) {
   return (
-    <span
-      className="rounded px-1.5 py-0.5 text-[10px] font-medium"
-      style={{
-        color,
-        background: `color-mix(in srgb, ${color} 12%, transparent)`,
-        boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${color} 35%, transparent)`,
-      }}
-    >
-      {label}
-    </span>
+    <ProductCard
+      image={racketImageUrl(racket)}
+      alt={`${racket.brand} ${racket.model}`}
+      brand={racket.brand}
+      name={racket.model}
+      badge={racketShopBadge(racket)}
+      meta={`${racket.year}${racket.headSizeSqIn ? ` · ${racket.headSizeSqIn}"` : ""}`}
+      scores={[
+        { label: "Spin", value: racket.spin, color: "var(--chart-spin)" },
+        { label: "Power", value: racket.power, color: "var(--chart-power)" },
+        { label: "Control", value: racket.control, color: "var(--chart-control)" },
+      ]}
+      saved={saved}
+      selected={selected}
+      onSelect={onSelect}
+      onSave={onSave}
+      compact={compact}
+    />
   );
 }

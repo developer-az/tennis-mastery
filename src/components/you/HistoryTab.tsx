@@ -49,7 +49,7 @@ export function HistoryTab() {
       <section>
         <h3 className="font-[family-name:var(--font-display)] text-lg">Constraints</h3>
         {profile.constraints.length === 0 ? (
-          <p className="mt-2 text-sm text-[var(--muted)]">None yet — set them in Redo setup.</p>
+          <p className="mt-2 text-sm text-[var(--muted)]">None yet — add them on your player card.</p>
         ) : (
           <ul className="mt-2 space-y-2">
             {profile.constraints.map((c) => (

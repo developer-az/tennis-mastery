@@ -16,6 +16,8 @@ import { GripFeelVisual } from "./GripVisuals";
 import { ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
+import { AisleChip, ChipRow, ProductCard, SearchField } from "./CatalogShop";
+import { uniqueSortedBrands } from "@/lib/equipment/shopAisles";
 
 const MAX_COMPARE = 3;
 
@@ -30,6 +32,7 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
   const clearGripLayers = useGearStore((s) => s.clearGripLayers);
   const setGripSize = useGearStore((s) => s.setGripSize);
   const [query, setQuery] = useState("");
+  const [brand, setBrand] = useState("all");
   const [kind, setKind] = useState<"all" | "overgrip" | "replacement">("all");
   const [texture, setTexture] = useState("all");
   const [selectedId, setSelectedId] = useState(
@@ -50,6 +53,7 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
     () => Array.from(new Set(grips.map((g) => g.texture))).sort(),
     [grips],
   );
+  const brands = useMemo(() => uniqueSortedBrands(grips), [grips]);
 
   const stackFx = useMemo(
     () => gripStackEffect(layers, grips, setup.gripSize),
@@ -59,6 +63,7 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
   const filtered = useMemo(() => {
     const q = deferredQuery.trim();
     return grips.filter((g) => {
+      if (brand !== "all" && g.brand !== brand) return false;
       if (kind !== "all" && g.kind !== kind) return false;
       if (texture !== "all" && g.texture !== texture) return false;
       if (!q) return true;
@@ -72,7 +77,7 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
         g.kind,
       );
     });
-  }, [grips, deferredQuery, kind, texture]);
+  }, [grips, deferredQuery, brand, kind, texture]);
 
   const selected = filtered.find((g) => g.id === selectedId) ?? filtered[0] ?? null;
   const inStack =
@@ -170,43 +175,34 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-6">
       <div className="order-1 space-y-3 lg:space-y-4">
-        <div className="space-y-2">
-          <input
+        <div className="space-y-3">
+          <SearchField
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Tourna, Super Grap, leather…"
-            aria-label="Search grips"
-            inputMode="search"
-            enterKeyHint="search"
-            autoCapitalize="off"
-            autoCorrect="off"
-            className="w-full rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+            onChange={setQuery}
+            placeholder="Search Tourna, Super Grap…"
+            label="Search grips"
           />
-          <div className="grid grid-cols-2 gap-1.5">
-            <select
-              value={kind}
-              onChange={(e) => setKind(e.target.value as typeof kind)}
-              aria-label="Grip kind"
-              className="sf-select w-full"
-            >
-              <option value="all">All grips</option>
-              <option value="overgrip">Overgrips</option>
-              <option value="replacement">Replacement grips</option>
-            </select>
-            <select
-              value={texture}
-              onChange={(e) => setTexture(e.target.value)}
-              aria-label="Texture"
-              className="sf-select w-full"
-            >
-              <option value="all">Any texture</option>
-              {textures.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ChipRow label="Brand">
+            <AisleChip label="All" active={brand === "all"} onClick={() => setBrand("all")} />
+            {brands.map((b) => (
+              <AisleChip key={b} label={b} active={brand === b} onClick={() => setBrand(b)} />
+            ))}
+          </ChipRow>
+          <ChipRow label="Type">
+            <AisleChip label="All kinds" active={kind === "all"} onClick={() => setKind("all")} />
+            <AisleChip label="Overgrip" active={kind === "overgrip"} onClick={() => setKind("overgrip")} />
+            <AisleChip
+              label="Replacement"
+              active={kind === "replacement"}
+              onClick={() => setKind("replacement")}
+            />
+          </ChipRow>
+          <ChipRow label="Texture">
+            <AisleChip label="Any texture" active={texture === "all"} onClick={() => setTexture("all")} />
+            {textures.map((t) => (
+              <AisleChip key={t} label={t} active={texture === t} onClick={() => setTexture(t)} />
+            ))}
+          </ChipRow>
         </div>
 
         {layers.length > 0 ? (
@@ -268,113 +264,45 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
 
         <p className="text-xs text-[var(--muted)]">
           {filtered.length} grip{filtered.length === 1 ? "" : "s"}
-          {kind !== "all" || texture !== "all" || deferredQuery ? " match" : " in catalog"}
-          {" · "}
-          Compare up to {MAX_COMPARE} (checkboxes)
+          {kind !== "all" || texture !== "all" || deferredQuery || brand !== "all" ? " match" : " in catalog"}
         </p>
 
-        <ul className="max-h-[min(70vh,28rem)] divide-y divide-[var(--line)] overflow-y-auto overscroll-contain border-y border-[var(--line)] md:max-h-[32rem]">
-          {filtered.map((g) => {
-            const active = g.id === selected?.id;
-            const saved = layers.some((l) => l.id === g.id);
-            const inCompare = compareIds.includes(g.id);
-            const canAdd = canAddGripLayer(layers, g.kind);
-            return (
-              <li key={g.id} className="flex items-stretch gap-0.5">
-                <label
-                  className="flex shrink-0 items-center px-2"
-                  title={inCompare ? "Remove from compare" : "Add to compare"}
-                >
-                  <span className="sr-only">
-                    Compare {g.brand} {g.name}
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={inCompare}
-                    onChange={() => toggleCompare(g.id)}
-                    className="h-3.5 w-3.5 accent-[var(--amber)]"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedId(g.id);
-                    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
-                      requestAnimationFrame(() =>
-                        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-                      );
-                    }
-                  }}
-                  aria-pressed={active}
-                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left transition sm:gap-3 ${
-                    active ? "bg-[var(--accent-dim)]" : "hover:bg-[var(--overlay-hover)]"
-                  }`}
-                >
-                  <EquipmentThumb
-                    src={gripImageUrl(g)}
-                    alt={`${g.brand} ${g.name}`}
-                    size="sm"
-                  />
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="flex flex-wrap items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
-                      {g.brand} {g.name}
-                      {saved ? (
-                        <span className="rounded bg-[var(--amber)]/20 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-[var(--amber)]">
-                          In stack
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="text-xs text-[var(--muted)]">
-                      {g.kind === "overgrip" ? "Overgrip" : "Replacement"} · {g.texture} ·{" "}
-                      {g.thicknessMm} mm
-                    </span>
-                  </span>
-                </button>
-                <div className="m-1.5 flex shrink-0 flex-col justify-center gap-1">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addLayer(g);
-                    }}
-                    disabled={!canAdd && layers.length > 0}
-                    className="rounded-md px-2.5 py-2 text-[11px] font-semibold uppercase tracking-wide transition active:scale-[0.98] disabled:opacity-40 sm:min-h-10 sm:px-3 sm:py-2.5 sm:text-xs"
-                    style={{
-                      background: "var(--accent)",
-                      color: "var(--accent-ink)",
-                    }}
-                    aria-label={
-                      layers.length === 0
-                        ? `Save ${g.brand} ${g.name} to my setup`
-                        : `Add ${g.brand} ${g.name} to grip stack`
-                    }
-                  >
-                    {layers.length === 0 ? "Save" : "Add"}
-                  </button>
-                  {layers.length > 0 ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        replaceStack(g);
-                      }}
-                      className="rounded-md px-2 py-1 text-[10px] text-[var(--muted)]"
-                      style={{ boxShadow: "0 0 0 1px var(--line)" }}
-                      aria-label={`Replace stack with ${g.brand} ${g.name}`}
-                    >
-                      Replace
-                    </button>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-          {filtered.length === 0 && (
-            <li className="px-2 py-8 text-sm text-[var(--muted)]">
-              No grips match that search. Try All grips or a shorter query.
-            </li>
-          )}
-        </ul>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {filtered.map((g) => (
+            <ProductCard
+              key={g.id}
+              image={gripImageUrl(g)}
+              alt={`${g.brand} ${g.name}`}
+              brand={g.brand}
+              name={g.name}
+              badge={g.kind === "overgrip" ? "Overgrip" : "Replacement"}
+              meta={`${g.texture} · ${g.thicknessMm} mm`}
+              scores={[
+                { label: "Tack", value: g.tackiness, color: "var(--chart-spin)" },
+                { label: "Cushion", value: g.cushion, color: "var(--chart-comfort)" },
+                { label: "Grip", value: g.absorbency, color: "var(--chart-control)" },
+              ]}
+              saved={layers.some((l) => l.id === g.id)}
+              selected={g.id === selected?.id}
+              onSelect={() => {
+                setSelectedId(g.id);
+                if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+                  requestAnimationFrame(() =>
+                    detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                  );
+                }
+              }}
+              onSave={() => addLayer(g)}
+              saveLabel={layers.length === 0 ? "Add to bag" : "Add layer"}
+              savedLabel="In stack"
+            />
+          ))}
+        </div>
+        {filtered.length === 0 ? (
+          <p className="px-1 py-8 text-sm text-[var(--muted)]">
+            No grips match. Try overgrip, or search Tourna.
+          </p>
+        ) : null}
       </div>
 
       {selected && (
@@ -489,9 +417,15 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
                 </h4>
                 <p className="mt-1 text-xs text-[var(--muted)]">
                   Side-by-side tack, cushion, absorbency, durability, and thickness.
-                  Select up to {MAX_COMPARE} with the list checkboxes.
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => toggleCompare(selected.id)}
+                className="text-xs text-[var(--muted)]"
+              >
+                {compareIds.includes(selected.id) ? "In compare" : "Compare this grip"}
+              </button>
               {compareGrips.length > 0 && (
                 <button
                   type="button"
