@@ -49,6 +49,9 @@ export function BagTab({
         }
         onEdit={() => setPicker("string")}
       />
+      <p className="text-xs text-[var(--muted)]">
+        Tip: on Today, swipe similar beds to see leave / path / flight deltas with your lead tape held constant.
+      </p>
       <Row label="Grip product" value={setup.gripLabel} onEdit={() => setPicker("grip")} />
 
       {setup.stringId && (

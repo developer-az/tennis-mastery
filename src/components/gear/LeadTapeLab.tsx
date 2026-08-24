@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import type { LeadTapePiece, LeadTapeZone, RacketProfile } from "@/types/equipment";
+import type { GripProfile, LeadTapePiece, LeadTapeZone, RacketProfile, StringProfile } from "@/types/equipment";
 import {
   LEAD_TAPE_MASS_PRESETS,
   LEAD_TAPE_ZONES,
@@ -12,8 +12,11 @@ import type { TapeTowardPlan } from "@/lib/equipment/leadTapePlan";
 import {
   computeFlightMetrics,
   scoreDeltasFromTape,
+  synthesizeCombinedSetup,
 } from "@/lib/equipment/setupSynthesis";
 import { useGearStore } from "@/store/gearStore";
+import { usePlayerStore } from "@/store/playerStore";
+import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { LaunchAngleVisual, strikeZoneForFrame } from "./RacketVisuals";
 import { MoldTowardPanel } from "./MoldTowardPanel";
 import { LeadTapeRacketDiagram } from "./LeadTapeRacketDiagram";
@@ -29,9 +32,18 @@ const ZONE_PLAIN: Record<LeadTapeZone, string> = {
   handle: "Handle — quicker whip",
 };
 
-export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
+export function LeadTapeLab({
+  rackets,
+  strings = [],
+  grips = [],
+}: {
+  rackets: RacketProfile[];
+  strings?: StringProfile[];
+  grips?: GripProfile[];
+}) {
   const setup = useGearStore((s) => s.setup);
   const setLeadTapePieces = useGearStore((s) => s.setLeadTapePieces);
+  const profile = usePlayerStore((s) => s.profile);
   const pieces = useMemo(() => setup.leadTape?.pieces ?? [], [setup.leadTape?.pieces]);
 
   const baseRacket = useMemo(() => {
@@ -41,6 +53,15 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
     }
     return rackets[0] ?? null;
   }, [rackets, setup.racketSlug]);
+
+  const bagString = useMemo(
+    () => (setup.stringId ? strings.find((s) => s.id === setup.stringId) ?? null : null),
+    [strings, setup.stringId],
+  );
+  const bagGrip = useMemo(() => {
+    const outerId = setup.gripLayers?.[setup.gripLayers.length - 1]?.id ?? setup.gripId;
+    return outerId ? grips.find((g) => g.id === outerId) ?? null : null;
+  }, [grips, setup.gripId, setup.gripLayers]);
 
   const [massPreset, setMassPreset] = useState<(typeof LEAD_TAPE_MASS_PRESETS)[number]>(1);
   const [selectedZone, setSelectedZone] = useState<LeadTapeZone>("twelve");
@@ -54,6 +75,7 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
     [baseRacket],
   );
 
+  /** Frame+tape-only flight (isolated lab view) */
   const tapedFlight = useMemo(() => {
     if (!baseRacket || !effect) return null;
     const zs = effect.zoneSummary;
@@ -81,6 +103,15 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
       sideG,
     });
   }, [baseRacket, effect]);
+
+  /** Full bag mold — string + grip + tape (matches You / Combined Setup) */
+  const bagInsight = useMemo(() => {
+    if (!baseRacket) return null;
+    return synthesizeCombinedSetup(setup, baseRacket, bagString, bagGrip, grips, {
+      playerGrip: profile.grips.forehand,
+      armFriendly: prefersArmFriendlySetup(profile),
+    });
+  }, [setup, baseRacket, bagString, bagGrip, grips, profile]);
 
   const updatePieces = useCallback(
     (next: LeadTapePiece[]) => setLeadTapePieces(next),
@@ -240,37 +271,81 @@ export function LeadTapeLab({ rackets }: { rackets: RacketProfile[] }) {
           <summary className="cursor-pointer list-none px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--foreground)] [&::-webkit-details-marker]:hidden">
             Ball flight with this tape
             <span className="ml-2 tabular-nums text-[11px]">
-              {effect.launchAngleDeg.toFixed(1)}° leave
-              {tapedFlight ? ` · +${tapedFlight.netClearIn.toFixed(1)}″ net` : ""}
+              {bagInsight?.launchAngleDeg != null
+                ? `${bagInsight.launchAngleDeg.toFixed(1)}° leave (full bag)`
+                : `${effect.launchAngleDeg.toFixed(1)}° leave`}
+              {bagInsight?.flight
+                ? ` · +${bagInsight.flight.netClearIn.toFixed(1)}″ net`
+                : tapedFlight
+                  ? ` · +${tapedFlight.netClearIn.toFixed(1)}″ net`
+                  : ""}
             </span>
           </summary>
-          <div className="border-t border-[var(--line)] px-3 py-3">
-            <LaunchAngleVisual
-              degrees={effect.launchAngleDeg}
-              pathDeg={effect.swingPathDeg}
-              spin={baseRacket.spin}
-              power={baseRacket.power}
-              control={baseRacket.control}
-              flight={tapedFlight}
-              zone={strikeZoneForFrame({
-                ...baseRacket,
-                idealLaunchAngleDeg: effect.launchAngleDeg,
-                idealSwingPathDeg: effect.swingPathDeg,
-              })}
-              label="Side view"
-              compact
-            />
-            <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">
-              Stock {baseline.launchAngleDeg}° leave
-              {hasTape
-                ? ` → ${effect.launchAngleDeg}° (${effect.deltaLaunchDeg >= 0 ? "+" : ""}${effect.deltaLaunchDeg}°)`
-                : ""}
-              {" · "}
-              path {baseline.swingPathDeg}°
-              {hasTape
-                ? ` → ${effect.swingPathDeg}° (${effect.deltaSwingPathDeg >= 0 ? "+" : ""}${effect.deltaSwingPathDeg}°)`
-                : ""}
-            </p>
+          <div className="border-t border-[var(--line)] px-3 py-3 space-y-3">
+            {bagInsight?.launchAngleDeg != null && bagInsight.flight ? (
+              <>
+                <p className="text-[10px] font-semibold tracking-[0.12em] text-[var(--accent)] uppercase">
+                  Full bag mold (string · grip · tape)
+                </p>
+                <LaunchAngleVisual
+                  degrees={bagInsight.launchAngleDeg}
+                  pathDeg={bagInsight.swingPathDeg ?? undefined}
+                  spin={bagInsight.scores.spin}
+                  power={bagInsight.scores.power}
+                  control={bagInsight.scores.control}
+                  flight={bagInsight.flight}
+                  zone={strikeZoneForFrame({
+                    ...baseRacket,
+                    idealLaunchAngleDeg: bagInsight.launchAngleDeg,
+                    idealSwingPathDeg: bagInsight.swingPathDeg,
+                    spin: bagInsight.scores.spin,
+                    control: bagInsight.scores.control,
+                    power: bagInsight.scores.power,
+                  })}
+                  label="Side view — your court"
+                  compact
+                />
+                <p className="text-xs tabular-nums text-[var(--muted)]">
+                  Leave {bagInsight.launchAngleDeg.toFixed(1)}°
+                  {bagInsight.deltas.tapeLaunch
+                    ? ` (tape ${bagInsight.deltas.tapeLaunch >= 0 ? "+" : ""}${bagInsight.deltas.tapeLaunch}°)`
+                    : ""}
+                  {" · "}path {bagInsight.swingPathDeg?.toFixed(0) ?? "—"}°
+                  {bagInsight.deltas.tapePath
+                    ? ` (tape ${bagInsight.deltas.tapePath >= 0 ? "+" : ""}${bagInsight.deltas.tapePath}°)`
+                    : ""}
+                </p>
+              </>
+            ) : (
+              <>
+                <LaunchAngleVisual
+                  degrees={effect.launchAngleDeg}
+                  pathDeg={effect.swingPathDeg}
+                  spin={baseRacket.spin}
+                  power={baseRacket.power}
+                  control={baseRacket.control}
+                  flight={tapedFlight}
+                  zone={strikeZoneForFrame({
+                    ...baseRacket,
+                    idealLaunchAngleDeg: effect.launchAngleDeg,
+                    idealSwingPathDeg: effect.swingPathDeg,
+                  })}
+                  label="Side view — frame + tape"
+                  compact
+                />
+                <p className="text-xs tabular-nums text-[var(--muted)]">
+                  Stock {baseline.launchAngleDeg}° leave
+                  {hasTape
+                    ? ` → ${effect.launchAngleDeg}° (${effect.deltaLaunchDeg >= 0 ? "+" : ""}${effect.deltaLaunchDeg}°)`
+                    : ""}
+                  {" · "}
+                  path {baseline.swingPathDeg}°
+                  {hasTape
+                    ? ` → ${effect.swingPathDeg}° (${effect.deltaSwingPathDeg >= 0 ? "+" : ""}${effect.deltaSwingPathDeg}°)`
+                    : ""}
+                </p>
+              </>
+            )}
           </div>
         </details>
       </div>

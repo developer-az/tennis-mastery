@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { LeadTapePiece, RacketProfile, StringProfile } from "@/types/equipment";
 import type { FlightMetrics } from "@/lib/equipment/setupSynthesis";
+import type { ScorePieceDeltas } from "@/lib/equipment/moldPhysics";
 import type { ForehandMoldAdvice } from "@/lib/equipment/forehandMold";
 import { formatFt } from "@/lib/equipment/ballFlight";
 import {
@@ -31,6 +32,12 @@ const SetupFlightCanvas = dynamic(
 
 type ScoreBag = Record<"power" | "spin" | "control" | "comfort", number | null>;
 
+function fmtSigned(n: number): string {
+  const r = Math.round(n * 10) / 10;
+  if (Math.abs(r) < 0.05) return "0";
+  return `${r > 0 ? "+" : ""}${r}`;
+}
+
 /**
  * One coherent story for You → Today:
  * readout → scores → contact (where + face) → flight (3D + side) → tape.
@@ -49,6 +56,10 @@ export function SetupVisualStory({
   hasRacket,
   racket = null,
   string = null,
+  moldDeltas,
+  scoreDeltas,
+  hasTape = false,
+  previewing = false,
 }: {
   scores: ScoreBag;
   stock: ScoreBag;
@@ -62,6 +73,20 @@ export function SetupVisualStory({
   hasRacket: boolean;
   racket?: RacketProfile | null;
   string?: StringProfile | null;
+  moldDeltas?: {
+    stringLaunch: number;
+    gripLaunch: number;
+    tapeLaunch: number;
+    stringPath: number;
+    tapePath: number;
+  };
+  scoreDeltas?: {
+    string: ScorePieceDeltas;
+    grip: ScorePieceDeltas;
+    tape: ScorePieceDeltas;
+  };
+  hasTape?: boolean;
+  previewing?: boolean;
 }) {
   const closed = forehand?.face.closedDeg ?? 8;
   const hasFlight = launchDeg != null && flight != null;
@@ -71,7 +96,14 @@ export function SetupVisualStory({
     <div className="space-y-6">
       {/* 0 — one readout for the whole story */}
       <section className="sf-panel p-4 md:p-5">
-        <p className="sf-kicker">This mold at a glance</p>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="sf-kicker">This mold at a glance</p>
+          {previewing ? (
+            <span className="text-[10px] font-semibold tracking-[0.1em] text-[var(--amber)] uppercase">
+              Preview bed
+            </span>
+          ) : null}
+        </div>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <Readout
             label="Leave"
@@ -98,6 +130,26 @@ export function SetupVisualStory({
             {" · "}
             {forehand.face.label.toLowerCase()} · prefer {forehand.prefersHeight}-high balls
           </p>
+        ) : null}
+
+        {moldDeltas && (hasTape || Math.abs(moldDeltas.stringLaunch) + Math.abs(moldDeltas.gripLaunch) > 0) ? (
+          <div className="mt-4 border-t border-[var(--line)] pt-3">
+            <p className="sf-label">Mold contributions</p>
+            <p className="mt-1.5 text-xs tabular-nums leading-relaxed text-[var(--muted)]">
+              Leave — string {fmtSigned(moldDeltas.stringLaunch)}° · grip{" "}
+              {fmtSigned(moldDeltas.gripLaunch)}° · tape {fmtSigned(moldDeltas.tapeLaunch)}°
+              <br />
+              Path — string {fmtSigned(moldDeltas.stringPath)}° · tape {fmtSigned(moldDeltas.tapePath)}°
+              {scoreDeltas ? (
+                <>
+                  <br />
+                  Scores — tape P/S/C {fmtSigned(scoreDeltas.tape.power)}/
+                  {fmtSigned(scoreDeltas.tape.spin)}/{fmtSigned(scoreDeltas.tape.control)}
+                  {tapeG > 0 ? ` · ${tapeG.toFixed(1)} g on hoop` : ""}
+                </>
+              ) : null}
+            </p>
+          </div>
         ) : null}
       </section>
 
@@ -147,7 +199,7 @@ export function SetupVisualStory({
           <SectionHead
             step="02"
             title="Flight"
-            blurb="Same numbers as above: leave angle from the strings, clearance over a 3.0 ft net."
+            blurb="Same numbers as above: leave angle from the strings, clearance over a 3.0 ft net — includes lead tape mass."
           />
           <div className="mt-4 space-y-4">
             <SetupFlightCanvas
@@ -185,7 +237,7 @@ export function SetupVisualStory({
             title="Lead tape"
             blurb={
               tapeG > 0
-                ? `${tapeG.toFixed(1)} g on the hoop — mass that shifts the mold above.`
+                ? `${tapeG.toFixed(1)} g on the hoop — already baked into leave, path, scores, and flight above.`
                 : "No tape yet. Tip/12 adds plow; 3/9 stabilizes; handle whips the path steeper."
             }
           />

@@ -48,12 +48,15 @@ export function GearPickerSheet({
   strings,
   grips,
   onClose,
+  /** When set, select calls this with the item id instead of writing My setup. */
+  onPreviewPick,
 }: {
   kind: PickerKind;
   rackets: RacketProfile[];
   strings: StringProfile[];
   grips: GripProfile[];
   onClose: () => void;
+  onPreviewPick?: (id: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const deferred = useDeferredValue(query);
@@ -79,7 +82,7 @@ export function GearPickerSheet({
         id: r.slug,
         title: `${r.brand} ${r.model}`,
         meta: `${r.year}${r.weightG ? ` · ${r.weightG}g` : ""}`,
-        select: () => saveRacketToBag(r),
+        select: () => (onPreviewPick ? onPreviewPick(r.slug) : saveRacketToBag(r)),
       }));
     }
     if (kind === "string") {
@@ -98,7 +101,7 @@ export function GearPickerSheet({
         id: s.id,
         title: `${s.brand} ${s.name}`,
         meta: `${s.material} · ${s.recommendedTensionLbs} lbs rec`,
-        select: () => saveStringToBag(s),
+        select: () => (onPreviewPick ? onPreviewPick(s.id) : saveStringToBag(s)),
       }));
     }
     const list = q
@@ -108,9 +111,9 @@ export function GearPickerSheet({
       id: g.id,
       title: `${g.brand} ${g.name}`,
       meta: g.kind,
-      select: () => saveGripToBag(g),
+      select: () => (onPreviewPick ? onPreviewPick(g.id) : saveGripToBag(g)),
     }));
-  }, [kind, deferred, rackets, strings, grips]);
+  }, [kind, deferred, rackets, strings, grips, onPreviewPick]);
 
   const placeholder =
     kind === "racket"
