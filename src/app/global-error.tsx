@@ -26,6 +26,9 @@ export default function GlobalError({
             The mold engines hit an unexpected fault. Your bag data on this device is untouched —
             retry, or return to your court.
           </p>
+          {process.env.NODE_ENV === "development" && error?.message ? (
+            <p className="mt-3 break-words font-mono text-[11px] text-[#e07a6a]">{error.message}</p>
+          ) : null}
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               type="button"

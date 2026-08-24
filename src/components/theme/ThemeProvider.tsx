@@ -32,11 +32,15 @@ function applyDomTheme(mode: ThemeMode) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>(() => resolveInitialTheme());
+  // SSR + first client paint use a stable default; sync from storage after mount
+  // so ThemeToggle / consumers don't hydrate-mismatch against localStorage.
+  const [theme, setThemeState] = useState<ThemeMode>("dark");
 
   useLayoutEffect(() => {
-    applyDomTheme(theme);
-  }, [theme]);
+    const resolved = resolveInitialTheme();
+    setThemeState(resolved);
+    applyDomTheme(resolved);
+  }, []);
 
   const setTheme = useCallback((mode: ThemeMode) => {
     setThemeState(mode);
@@ -45,6 +49,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
+    applyDomTheme(mode);
   }, []);
 
   const toggleTheme = useCallback(() => {
@@ -55,6 +60,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       } catch {
         /* ignore */
       }
+      applyDomTheme(next);
       return next;
     });
   }, []);

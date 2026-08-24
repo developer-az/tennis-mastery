@@ -7,24 +7,26 @@ import { usePlayerStore } from "@/store/playerStore";
 
 /**
  * Persistent product signal in the shell — bag one-liner or pending accountability.
- * Makes the nav feel like a living court, not three static links.
+ * Renders only after mount to avoid SSR/client hydration mismatches with persisted stores.
  */
 export function CourtStatusChip() {
-  const [ready, setReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const setup = useGearStore((s) => s.setup);
-  const pending = usePlayerStore((s) =>
-    s.profile.decisions.filter((d) => d.result === "pending"),
-  );
-  const hydrated = usePlayerStore((s) => s.hydrated);
-  const setHydrated = usePlayerStore((s) => s.setHydrated);
+  // Stable selector refs — never return a fresh .filter() array from the store
+  // selector (that causes infinite re-renders → global error boundary).
+  const decisions = usePlayerStore((s) => s.profile?.decisions);
 
   useEffect(() => {
-    if (usePlayerStore.persist.hasHydrated()) setHydrated(true);
-    setReady(true);
-  }, [setHydrated]);
+    setMounted(true);
+  }, []);
+
+  const pending = useMemo(
+    () => (decisions ?? []).filter((d) => d.result === "pending"),
+    [decisions],
+  );
 
   const bagLine = useMemo(() => {
-    if (!hasAnyGear(setup)) return null;
+    if (!setup || !hasAnyGear(setup)) return null;
     const full = setupSummary(setup);
     if (full.length <= 42) return full;
     const racket = setup.racketLabel?.split(" ").slice(0, 3).join(" ");
@@ -32,7 +34,7 @@ export function CourtStatusChip() {
     return racket ?? "Bag set";
   }, [setup]);
 
-  if (!ready || !hydrated) return null;
+  if (!mounted) return null;
 
   if (pending.length > 0) {
     return (
