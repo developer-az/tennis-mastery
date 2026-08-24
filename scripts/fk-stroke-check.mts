@@ -22,6 +22,7 @@ const anthro = {
 };
 
 const pose = createSkeletonPose();
+let fail = false;
 
 function check(stroke: StrokeProfile) {
   console.log(`\n=== ${stroke.label} (${stroke.handedness}) ===`);
@@ -37,7 +38,25 @@ function check(stroke: StrokeProfile) {
       side.padEnd(6),
       depth.padEnd(5),
       `y=${t.y.toFixed(2)}`,
+      `ankL=${pose.leadAnkle.y.toFixed(2)}`,
+      `ankT=${pose.trailAnkle.y.toFixed(2)}`,
     );
+    if (
+      kf.phase === "ready" &&
+      stroke.type !== "volley" &&
+      (pose.leadAnkle.y > 0.08 || pose.trailAnkle.y > 0.08)
+    ) {
+      console.log("  WARN ready feet not planted");
+    }
+    if (stroke.type === "serve" && kf.phase === "contact") {
+      if (pose.leadAnkle.y < 0.12 || pose.trailAnkle.y < 0.12) {
+        console.log("  FAIL serve contact should be airborne");
+        fail = true;
+      }
+    }
+    if (stroke.type === "forehand" && kf.phase === "contact" && pose.trailAnkle.y < 0.05) {
+      console.log("  WARN FH contact trail foot still glued");
+    }
   }
 }
 
@@ -48,3 +67,10 @@ check(federerOneHandedBackhand);
 check(serenaServe);
 check(federerSlice);
 check(alcarazVolley);
+
+if (fail) {
+  console.log("\nFootwork check FAILED");
+  process.exitCode = 1;
+} else {
+  console.log("\nFootwork check OK");
+}

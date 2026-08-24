@@ -9,9 +9,8 @@ import { deg } from "@/lib/kinematics";
  *   +X = player's right   +Y = up   -Z = toward net (forward)
  *
  * Kinetic-chain aware:
- *   - Feet plant in court space (trail back, lead forward) so a unit turn
- *     rotates over a base instead of spinning a crouch
- *   - Pelvis height comes from two-bone reach — sit on the load, stand into contact
+ *   - Planted feet stay on court; push-off / airborne use ankle PF + foot lift
+ *   - Pelvis height comes from the supporting leg(s) — sit on the load, extend into contact
  *   - Hitting elbow stays on the wing; lead arm points then tucks
  *   - Collision catcher keeps tip/shaft clear of torso and head
  */
@@ -40,6 +39,12 @@ export interface SkeletonPose {
   nonHitElbow: THREE.Vector3;
   nonHitWrist: THREE.Vector3;
   nonHitHand: THREE.Vector3;
+  /** Horizontal toe direction (court plane). */
+  leadFootFwd: THREE.Vector3;
+  trailFootFwd: THREE.Vector3;
+  /** Foot pitch (rad): + plantarflex / toes down. */
+  leadFootPitch: number;
+  trailFootPitch: number;
 }
 
 export function createSkeletonPose(): SkeletonPose {
@@ -66,6 +71,10 @@ export function createSkeletonPose(): SkeletonPose {
     nonHitElbow: new THREE.Vector3(),
     nonHitWrist: new THREE.Vector3(),
     nonHitHand: new THREE.Vector3(),
+    leadFootFwd: new THREE.Vector3(0, 0, -1),
+    trailFootFwd: new THREE.Vector3(0, 0, -1),
+    leadFootPitch: 0,
+    trailFootPitch: 0,
   };
 }
 
@@ -86,6 +95,8 @@ const _shank = new THREE.Vector3();
 const _leadFwd = new THREE.Vector3();
 const _trailFwd = new THREE.Vector3();
 const _clear = new THREE.Vector3();
+const _kneeA = new THREE.Vector3();
+const _kneeB = new THREE.Vector3();
 
 function yawBasis(yaw: number, forward: THREE.Vector3, right: THREE.Vector3) {
   const c = Math.cos(yaw);
@@ -138,9 +149,12 @@ function elbowHingeAxis(
 }
 
 const FOOT_Y = 0.03;
-/** Court axes — feet plant here so a unit turn is rotation over a base, not a spin. */
+/** Court axes — planted feet use these so a unit turn rotates over a base. */
 const _courtFwd = new THREE.Vector3(0, 0, -1);
 const _courtRight = new THREE.Vector3(1, 0, 0);
+
+/** Athletic flat foot ≈ 12° DF. Positive PF lifts the heel; negative stays flat. */
+const FLAT_DF = 12;
 
 /** Hip–ankle chord for a given knee flexion (0 = straight). */
 function legChord(thighLen: number, shankLen: number, kneeFlexRad: number): number {
@@ -150,12 +164,31 @@ function legChord(thighLen: number, shankLen: number, kneeFlexRad: number): numb
   );
 }
 
-/** Pelvis height that realizes `kneeFlex` over a planted ankle (two-bone). */
-function hipHeightForPlant(
+/**
+ * Ankle height from calf/foot DOF.
+ * DF 12° = heel and ball on court. Lower DF (plantarflex) raises the heel via the
+ * Achilles. FootLift (cm) raises the whole foot (toe-off / airborne).
+ */
+function ankleHeight(dfDeg: number, liftCm: number): number {
+  const pf = Math.max(0, FLAT_DF - dfDeg);
+  const heel = Math.min(0.075, pf * 0.00215);
+  const clearance = Math.max(0, liftCm) * 0.01;
+  return FOOT_Y + heel + clearance;
+}
+
+function footPitchRad(dfDeg: number, liftCm: number): number {
+  const pf = FLAT_DF - dfDeg;
+  const airborne = smooth01((liftCm - 3) / 10);
+  return deg(Math.max(-8, Math.min(42, pf * 0.85 + airborne * 12)));
+}
+
+/** Pelvis height that realizes `kneeFlex` over a supporting ankle (two-bone). */
+function hipHeightForSupport(
   hipX: number,
   hipZ: number,
   ankleX: number,
   ankleZ: number,
+  ankleY: number,
   kneeFlexRad: number,
   thighLen: number,
   shankLen: number,
@@ -163,7 +196,7 @@ function hipHeightForPlant(
   const d = legChord(thighLen, shankLen, kneeFlexRad);
   const horiz = Math.hypot(hipX - ankleX, hipZ - ankleZ);
   const span = Math.min(horiz, d - 0.012);
-  return FOOT_Y + Math.sqrt(Math.max(0, d * d - span * span));
+  return ankleY + Math.sqrt(Math.max(0, d * d - span * span));
 }
 
 function restoreLen(from: THREE.Vector3, to: THREE.Vector3, len: number) {
@@ -194,37 +227,47 @@ function wingElbow(
 }
 
 /**
- * Two-bone IK so the ankle plants on the court at (x, FOOT_Y, z).
- * Knee bends in the stance plane so each leg stands independently.
+ * Two-bone IK from hip to a target ankle (may be planted or airborne).
+ * Knee stays in the stance plane — pick the anterior/high solution so the
+ * joint never pops across the hip–ankle chord.
  */
-function plantLegIk(
+function solveLegIk(
   hip: THREE.Vector3,
   plantX: number,
+  plantY: number,
   plantZ: number,
   thighLen: number,
   shankLen: number,
   stanceFwd: THREE.Vector3,
   right: THREE.Vector3,
+  hipFlexDeg: number,
   flare: number,
+  planted: boolean,
   outKnee: THREE.Vector3,
   outAnkle: THREE.Vector3,
 ): void {
-  outAnkle.set(plantX, FOOT_Y, plantZ);
+  outAnkle.set(plantX, Math.max(FOOT_Y, plantY), plantZ);
   _tmp.subVectors(outAnkle, hip);
   let dist = _tmp.length();
   const maxR = thighLen + shankLen - 0.012;
   const minR = Math.abs(thighLen - shankLen) + 0.025;
 
-  // Pull plant toward hip on the floor if out of reach (no floating foot)
-  if (dist > maxR && dist > 1e-6) {
+  if (planted && dist > maxR && dist > 1e-6) {
     const s = maxR / dist;
     outAnkle.set(hip.x + _tmp.x * s, FOOT_Y, hip.z + _tmp.z * s);
+    _tmp.subVectors(outAnkle, hip);
+    dist = _tmp.length();
+  } else if (!planted && dist > maxR && dist > 1e-6) {
+    const s = maxR / dist;
+    outAnkle.set(hip.x + _tmp.x * s, hip.y + _tmp.y * s, hip.z + _tmp.z * s);
+    if (outAnkle.y < FOOT_Y) outAnkle.y = FOOT_Y;
     _tmp.subVectors(outAnkle, hip);
     dist = _tmp.length();
   }
   if (dist < minR && dist > 1e-6) {
     const s = minR / dist;
-    outAnkle.set(hip.x + _tmp.x * s, FOOT_Y, hip.z + _tmp.z * s);
+    outAnkle.set(hip.x + _tmp.x * s, hip.y + _tmp.y * s, hip.z + _tmp.z * s);
+    if (planted) outAnkle.y = Math.max(FOOT_Y, plantY);
     _tmp.subVectors(outAnkle, hip);
     dist = _tmp.length();
   }
@@ -232,8 +275,12 @@ function plantLegIk(
 
   _dir.copy(_tmp).normalize();
 
-  // Plane of bend: prefer stance-forward so knees track toes
-  _axis.crossVectors(_dir, stanceFwd);
+  const hipFlex = deg(Math.max(0, Math.min(80, hipFlexDeg)));
+  _preferred.copy(stanceFwd).multiplyScalar(0.55 + 0.65 * Math.sin(hipFlex));
+  _preferred.y += 0.2 + 0.35 * Math.cos(hipFlex);
+
+  _axis.crossVectors(_dir, _preferred);
+  if (_axis.lengthSq() < 1e-6) _axis.crossVectors(_dir, stanceFwd);
   if (_axis.lengthSq() < 1e-6) _axis.crossVectors(_dir, right);
   if (_axis.lengthSq() < 1e-6) _axis.set(1, 0, 0);
   _axis.normalize();
@@ -242,20 +289,23 @@ function plantLegIk(
   const alpha = Math.acos(Math.max(-1, Math.min(1, cosThigh)));
 
   _thigh.copy(_dir).applyAxisAngle(_axis, alpha);
-  outKnee.copy(hip).addScaledVector(_thigh, thighLen);
-  // Prefer knee above the hip–ankle chord (athletic stance, not hyperextended reverse)
-  const midY = (hip.y + outAnkle.y) * 0.5;
-  if (outKnee.y < midY + 0.04) {
-    _thigh.copy(_dir).applyAxisAngle(_axis, -alpha);
-    outKnee.copy(hip).addScaledVector(_thigh, thighLen);
-  }
+  _kneeA.copy(hip).addScaledVector(_thigh, thighLen);
+  _thigh.copy(_dir).applyAxisAngle(_axis, -alpha);
+  _kneeB.copy(hip).addScaledVector(_thigh, thighLen);
+
+  const score = (knee: THREE.Vector3) => {
+    _tmp.subVectors(knee, hip);
+    return _tmp.dot(stanceFwd) * 2.2 + knee.y * 1.4 + _tmp.dot(_preferred) * 0.4;
+  };
+  outKnee.copy(score(_kneeA) >= score(_kneeB) ? _kneeA : _kneeB);
   outKnee.addScaledVector(right, flare * 0.035);
-  // Re-snap ankle length after flare nudge
+
   _shank.subVectors(outAnkle, outKnee);
   if (_shank.lengthSq() > 1e-8) {
     _shank.normalize();
     outAnkle.copy(outKnee).addScaledVector(_shank, shankLen);
-    outAnkle.y = FOOT_Y;
+    if (planted) outAnkle.y = Math.max(FOOT_Y, plantY);
+    else outAnkle.y = Math.max(FOOT_Y, outAnkle.y);
   }
 }
 
@@ -280,13 +330,12 @@ function shiftY(out: SkeletonPose, dy: number) {
   out.nonHitHand.y += dy;
 }
 
-/** Dual-support floor plant — each ankle on the court; no hanging feet. */
-function groundPose(out: SkeletonPose): void {
-  out.leadAnkle.y = FOOT_Y;
-  out.trailAnkle.y = FOOT_Y;
-  // If a knee sank below the ankle (rare), nudge it up
-  if (out.leadKnee.y < FOOT_Y + 0.08) out.leadKnee.y = FOOT_Y + 0.12;
-  if (out.trailKnee.y < FOOT_Y + 0.08) out.trailKnee.y = FOOT_Y + 0.12;
+/** Keep ankles from tunneling the court — never slam a lifted foot back down. */
+function clampAnklesToCourt(out: SkeletonPose): void {
+  if (out.leadAnkle.y < FOOT_Y) out.leadAnkle.y = FOOT_Y;
+  if (out.trailAnkle.y < FOOT_Y) out.trailAnkle.y = FOOT_Y;
+  if (out.leadKnee.y < out.leadAnkle.y + 0.06) out.leadKnee.y = out.leadAnkle.y + 0.08;
+  if (out.trailKnee.y < out.trailAnkle.y + 0.06) out.trailKnee.y = out.trailAnkle.y + 0.08;
 }
 
 /**
@@ -395,6 +444,16 @@ export function solveSkeletonFk(
   const driveW = smooth01((j.pelvisSurge - 2) / 12);
   const avgKnee = (j.leadKneeFlexion + j.trailKneeFlexion) * 0.5;
 
+  const leadDF = j.leadAnkleDorsiflexion ?? j.ankleDorsiflexion ?? FLAT_DF;
+  const trailDF = j.trailAnkleDorsiflexion ?? j.ankleDorsiflexion ?? FLAT_DF;
+  const leadLiftCm = j.leadFootLift ?? 0;
+  const trailLiftCm = j.trailFootLift ?? 0;
+  const leadAnkleY = ankleHeight(leadDF, leadLiftCm);
+  const trailAnkleY = ankleHeight(trailDF, trailLiftCm);
+  const leadPlanted = leadLiftCm < 3.2;
+  const trailPlanted = trailLiftCm < 3.2;
+  const jumpW = smooth01((leadLiftCm + trailLiftCm - 10) / 18);
+
   // Stance toes mostly face the net; only a fraction of hip yaw (pivot, not spin).
   const stanceYaw = yaw * 0.22;
   _leadFwd.copy(_courtFwd).applyAxisAngle(_up, stanceYaw - mirror * deg(14));
@@ -403,14 +462,20 @@ export function solveSkeletonFk(
   const leadKnee = deg(j.leadKneeFlexion);
   const trailKnee = deg(j.trailKneeFlexion);
 
-  // Court-fixed plants: trail back on load, lead steps toward the net on drive.
+  // Court plants: trail back on load, lead steps toward the net on drive.
+  // Free (lifted) trail foot swings through instead of stretching a plant.
   const halfW = 0.175;
   let trailX = halfW * mirror + sway * 0.15;
   let trailZ = 0.15 + loadW * 0.11 - driveW * 0.05;
   let leadX = -halfW * mirror + sway * 0.35;
-  let leadZ = -0.11 - driveW * 0.1 + loadW * 0.02;
-  // Pivot the lead foot around the trail foot as the hips coil
-  {
+  let leadZ = -0.11 - driveW * 0.16 + loadW * 0.02;
+  if (!trailPlanted) {
+    const swing = smooth01((trailLiftCm - 3) / 12);
+    trailZ = trailZ * (1 - swing) + (-0.04 + driveW * -0.06) * swing;
+    trailX = trailX * (1 - swing * 0.45) + (sway * 0.1) * swing;
+  }
+  // Pivot the lead foot around the trail foot as the hips coil (planted base only).
+  if (leadPlanted && trailPlanted) {
     const dx = leadX - trailX;
     const dz = leadZ - trailZ;
     const c = Math.cos(stanceYaw);
@@ -419,15 +484,19 @@ export function solveSkeletonFk(
     leadZ = trailZ + dx * s + dz * c;
   }
 
-  // Weight transfer: COM stays over the trail foot on the load, then over the lead.
-  const leadWeight = 0.42 + driveW * 0.32 - loadW * 0.2;
+  // Weight transfer: COM over the trail foot on the load, then over the lead.
+  // Airborne: COM between the feet, slightly toward the landing (lead) leg.
+  let leadWeight = 0.42 + driveW * 0.32 - loadW * 0.2;
+  if (!trailPlanted && leadPlanted) leadWeight = Math.max(leadWeight, 0.78);
+  if (!leadPlanted && trailPlanted) leadWeight = Math.min(leadWeight, 0.28);
+  if (!leadPlanted && !trailPlanted) leadWeight = 0.45 + driveW * 0.15;
   out.pelvis.set(
     trailX + (leadX - trailX) * leadWeight + sway * 0.2,
     0.8,
     trailZ + (leadZ - trailZ) * leadWeight - surge * 0.25,
   );
 
-  // Hip sockets rotate with the pelvis (unit turn) while the feet stay planted.
+  // Hip sockets rotate with the pelvis (unit turn).
   out.leadHip.set(
     out.pelvis.x - _right.x * hipWidth * 0.5 * mirror + _fwd.x * 0.05,
     0,
@@ -439,27 +508,41 @@ export function solveSkeletonFk(
     out.pelvis.z + _right.z * hipWidth * 0.5 * mirror - _fwd.z * 0.08,
   );
 
-  // Height from the more bent (loaded) leg — sit on takeback, stand into contact.
-  const leadH = hipHeightForPlant(
+  const hingeDrop = Math.sin(hipPitch) * thigh * 0.08;
+  const leadH = hipHeightForSupport(
     out.leadHip.x,
     out.leadHip.z,
     leadX,
     leadZ,
+    leadAnkleY,
     leadKnee,
     thigh,
     shank,
   );
-  const trailH = hipHeightForPlant(
+  const trailH = hipHeightForSupport(
     out.trailHip.x,
     out.trailHip.z,
     trailX,
     trailZ,
+    trailAnkleY,
     trailKnee,
     thigh,
     shank,
   );
-  const hingeDrop = Math.sin(hipPitch) * thigh * 0.08;
-  out.pelvis.y = Math.max(0.36, Math.min(leadH, trailH) - hingeDrop);
+  const leadSupport = smooth01((3.6 - leadLiftCm) / 3.2);
+  const trailSupport = smooth01((3.6 - trailLiftCm) / 3.2);
+  const dualY = Math.min(leadH, trailH) - hingeDrop;
+  const leadOnlyY = leadH - hingeDrop * 0.45;
+  const trailOnlyY = trailH - hingeDrop * 0.45;
+  const stacked = (legChord(thigh, shank, leadKnee) + legChord(thigh, shank, trailKnee)) * 0.5;
+  const airY =
+    Math.max(leadAnkleY, trailAnkleY) + stacked * 0.9 + jumpW * 0.04 - hingeDrop * 0.2;
+  const pelvisY =
+    leadSupport * trailSupport * dualY +
+    leadSupport * (1 - trailSupport) * leadOnlyY +
+    trailSupport * (1 - leadSupport) * trailOnlyY +
+    (1 - leadSupport) * (1 - trailSupport) * airY;
+  out.pelvis.y = Math.max(0.36, pelvisY);
   out.leadHip.y = out.pelvis.y;
   out.trailHip.y = out.pelvis.y;
 
@@ -476,31 +559,42 @@ export function solveSkeletonFk(
     .addScaledVector(_up, 0.28)
     .addScaledVector(_fwd, leanTotal * 0.04);
 
-  plantLegIk(
+  solveLegIk(
     out.leadHip,
     leadX,
+    leadAnkleY,
     leadZ,
     thigh,
     shank,
     _leadFwd,
     _courtRight,
+    j.leadHipFlexion,
     -mirror * 0.06,
+    leadPlanted,
     out.leadKnee,
     out.leadAnkle,
   );
-  plantLegIk(
+  solveLegIk(
     out.trailHip,
     trailX,
+    trailAnkleY,
     trailZ,
     thigh,
     shank,
     _trailFwd,
     _courtRight,
+    j.trailHipFlexion,
     mirror * 0.05,
+    trailPlanted,
     out.trailKnee,
     out.trailAnkle,
   );
-  groundPose(out);
+  clampAnklesToCourt(out);
+
+  out.leadFootFwd.copy(_leadFwd);
+  out.trailFootFwd.copy(_trailFwd);
+  out.leadFootPitch = footPitchRad(leadDF, leadLiftCm);
+  out.trailFootPitch = footPitchRad(trailDF, trailLiftCm);
 
   // --- Shoulders / X-factor ---
   const shYaw = yaw + twist * 0.32;
@@ -684,7 +778,7 @@ export function solveSkeletonFk(
     out.nonHitElbow.lerp(out.hitElbow, 0.3);
   }
 
-  groundPose(out);
+  clampAnklesToCourt(out);
 }
 
 export function estimateRacketTip(

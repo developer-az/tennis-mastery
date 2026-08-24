@@ -267,30 +267,31 @@ export function BiomechanicalSkeleton({
     if (m.trailAnkle) m.trailAnkle.scale.setScalar(0.038);
 
     if (m.leadFoot) {
-      // Toes toward the net with a hint of the plant line — not spun with the hips
-      _dir.set(p.leadAnkle.x - p.leadHip.x, 0, p.leadAnkle.z - p.leadHip.z);
-      _dir.z -= 0.55;
+      const pitch = p.leadFootPitch;
+      _dir.copy(p.leadFootFwd);
+      _dir.y = 0;
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.leadFoot.position.set(
         p.leadAnkle.x + _dir.x * 0.07,
-        0.022,
+        p.leadAnkle.y - 0.008 + Math.sin(pitch) * 0.03,
         p.leadAnkle.z + _dir.z * 0.07,
       );
-      m.leadFoot.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
+      m.leadFoot.rotation.set(pitch, Math.atan2(_dir.x, _dir.z), 0);
       m.leadFoot.scale.set(1.15, 0.55, 1.85);
     }
     if (m.trailFoot) {
-      _dir.set(p.trailAnkle.x - p.trailHip.x, 0, p.trailAnkle.z - p.trailHip.z);
-      _dir.z -= 0.4;
+      const pitch = p.trailFootPitch;
+      _dir.copy(p.trailFootFwd);
+      _dir.y = 0;
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.trailFoot.position.set(
         p.trailAnkle.x + _dir.x * 0.06,
-        0.022,
+        p.trailAnkle.y - 0.008 + Math.sin(pitch) * 0.03,
         p.trailAnkle.z + _dir.z * 0.06,
       );
-      m.trailFoot.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
+      m.trailFoot.rotation.set(pitch, Math.atan2(_dir.x, _dir.z), 0);
       m.trailFoot.scale.set(1.1, 0.55, 1.75);
     }
 

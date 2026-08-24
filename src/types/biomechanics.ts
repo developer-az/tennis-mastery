@@ -42,6 +42,9 @@ export type GripType =
  * wristExtension: + lag, − snap through contact
  * nonHittingShoulderAbduction: + away from body (counterbalance / toss)
  * nonHittingShoulderInternalRotation: lead-arm twist (point / balance)
+ * ankleDorsiflexion: shared cue; ~12° athletic flat, + sit/shin-over-toes, − plantarflex (calf drive)
+ * lead/trailAnkleDorsiflexion: per-leg DF. Unused → falls back to ankleDorsiflexion
+ * lead/trailFootLift: clearance in cm (0 = plant, 4–8 = heel/toe-off, 12+ = airborne)
  * racketFaceAngle: + open (slice), − closed
  * racketPathElevation: tip pitch from horizontal (+ up, − down/scratch-back)
  */
@@ -63,6 +66,10 @@ export interface JointAngles {
   leadHipFlexion: number;
   trailHipFlexion: number;
   ankleDorsiflexion: number;
+  leadAnkleDorsiflexion: number;
+  trailAnkleDorsiflexion: number;
+  leadFootLift: number;
+  trailFootLift: number;
   nonHittingShoulderFlexion: number;
   nonHittingShoulderAbduction: number;
   nonHittingShoulderInternalRotation: number;
