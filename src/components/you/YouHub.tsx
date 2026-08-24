@@ -133,7 +133,7 @@ export function YouHub({
   }
 
   const name = profile.displayName.trim() || "You";
-  const preview = gripPreviewLine(profile.grips.forehand);
+  const gripPreview = gripPreviewLine(profile.grips.forehand);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8 md:py-12">
@@ -238,7 +238,7 @@ export function YouHub({
                 Coaching models · logged feel outweighs spec math
               </p>
             </div>
-            {preview ? <p className="text-sm text-[var(--muted)]">{preview}</p> : null}
+            {gripPreview ? <p className="text-sm text-[var(--muted)]">{gripPreview}</p> : null}
 
             <div className="sf-panel px-4 py-3.5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
