@@ -4,7 +4,7 @@ import { LabUrlSync } from "@/components/lab/LabUrlSync";
 
 export default function LabPage() {
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="flex min-h-full w-full flex-col lg:h-full lg:min-h-0 lg:flex-1 lg:overflow-hidden">
       <Suspense fallback={null}>
         <LabUrlSync />
       </Suspense>
