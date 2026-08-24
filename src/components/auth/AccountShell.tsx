@@ -45,8 +45,9 @@ export function AccountShell({
           ))}
         </ul>
         <p className="mt-8 text-xs leading-relaxed text-[var(--muted)]">
-          By creating an account you agree to store your coaching profile in your connected
-          database. No LLM — same rule engines as the local app.
+          By creating an account you agree to store your coaching profile securely for sync across
+          devices. Strokeform runs the same mold and rule engines whether you&apos;re signed in or
+          playing on this device.
         </p>
       </aside>
 
@@ -67,14 +68,11 @@ export function AccountShell({
 
 export function CloudUnavailableBanner() {
   return (
-    <div
-      className="mb-6 border border-[var(--line)] bg-[var(--accent-dim)] px-4 py-3 text-sm leading-relaxed text-[var(--foreground)]"
-      role="status"
-    >
-      <p className="font-semibold">Playing locally on this device</p>
+    <div className="sf-alert sf-alert-accent mb-6" role="status">
+      <p className="font-semibold">Playing on this device</p>
       <p className="mt-1 text-[var(--muted)]">
-        Cloud accounts need Supabase env vars (<code className="text-xs">.env.local</code>).
-        Your bag and profile still save in this browser.
+        Cloud sync isn&apos;t enabled on this deployment yet. Your bag and profile still save in
+        this browser — sign in later when sync is available.
       </p>
       <Link href="/you" className="sf-text-link mt-2 inline-block">
         Continue without signing in →

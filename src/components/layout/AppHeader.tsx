@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { SyncStatusPill } from "@/components/auth/SyncStatusPill";
+import { CourtStatusChip } from "@/components/layout/CourtStatusChip";
 import { authDisplayLabel, useAuthStore } from "@/store/authStore";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
@@ -41,7 +42,7 @@ export function AppHeader() {
               STROKEFORM
             </span>
             <span className="mt-0.5 hidden text-[10px] tracking-[0.14em] text-[var(--muted)] uppercase sm:block">
-              Form · Gear · Science
+              Mold · Lab · Accountability
             </span>
           </span>
         </Link>
@@ -97,6 +98,8 @@ export function AppHeader() {
               <SyncStatusPill compact />
             </span>
           ) : null}
+
+          <CourtStatusChip />
 
           <ThemeToggle />
         </div>

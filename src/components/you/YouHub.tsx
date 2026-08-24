@@ -17,6 +17,7 @@ import { SetupVisualStory } from "./SetupVisualStory";
 import { BagTab } from "./BagTab";
 import { AfterPlayTab } from "./AfterPlayTab";
 import { HistoryTab } from "./HistoryTab";
+import { CourtEmpty, CourtLoading } from "@/components/ui/CourtState";
 
 type HubTab = "today" | "bag" | "play" | "history";
 
@@ -82,9 +83,7 @@ export function YouHub({
   const pending = profile.decisions.filter((d) => d.result === "pending");
 
   if (!hydrated) {
-    return (
-      <div className="px-6 py-16 text-sm text-[var(--muted)] md:px-10">Loading your court…</div>
-    );
+    return <CourtLoading label="Loading your court…" />;
   }
 
   if (showWizard) {
@@ -215,12 +214,13 @@ export function YouHub({
                 string={string}
               />
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <Stat label="Launch" value="—" />
-                <Stat label="Path" value="—" />
-                <Stat label="Net clear" value="—" />
-                <Stat label="Depth / fly" value="—" />
-              </div>
+              <CourtEmpty
+                kicker="No mold yet"
+                title="Need a frame before launch and path light up"
+                body="Save a racket (and optionally a bed) so Strokeform can show leave angle, skill span, and flight for your court."
+                primary={{ href: "/gear?tab=rackets", label: "Pick a racket" }}
+                secondary={{ href: "/gear", label: "Open gear lab" }}
+              />
             )}
 
             {insight.hasAny ? <InBandImproveSection plan={insight.inBand} compact /> : null}
@@ -229,7 +229,7 @@ export function YouHub({
               <button
                 type="button"
                 onClick={() => setTab("history")}
-                className="w-full rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left text-sm"
+                className="sf-alert w-full text-left"
               >
                 Resolve pending decision: {pending[0].changeSummary}
               </button>
@@ -267,11 +267,3 @@ export function YouHub({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="sf-panel px-3 py-3">
-      <p className="sf-label">{label}</p>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold">{value}</p>
-    </div>
-  );
-}

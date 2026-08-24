@@ -23,10 +23,10 @@ export function HomeHeroCtas() {
         {returning ? "Open your court" : "Start your setup"}
       </Link>
       <Link href="/lab" className="sf-btn sf-btn-secondary">
-        Explore the lab
+        Open form lab
       </Link>
       <Link href="/gear" className="sf-btn sf-btn-ghost">
-        Browse gear
+        Gear intelligence
       </Link>
     </div>
   );

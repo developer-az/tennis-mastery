@@ -45,26 +45,20 @@ export function AccountabilityStrip() {
   return (
     <div className="mb-4 space-y-2">
       {lockMsg && (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-[var(--amber)]">
+        <p className="sf-alert">
           {lockMsg}{" "}
-          <Link href="/you" className="underline underline-offset-2">
+          <Link href="/you" className="sf-text-link ml-1">
             Resolve
           </Link>
         </p>
       )}
       {bedWarn && (
-        <p
-          className={`rounded-md border px-4 py-2 text-sm ${
-            bedWarn.status === "likely_dead"
-              ? "border-red-400/40 bg-red-500/10"
-              : "border-amber-500/30 bg-amber-500/10"
-          }`}
-        >
+        <p className={`sf-alert${bedWarn.status === "likely_dead" ? " sf-alert-danger" : ""}`}>
           {bedWarn.message}
         </p>
       )}
       {hardFlags.map((f) => (
-        <p key={f.id} className="rounded-md border border-red-400/40 bg-red-500/10 px-4 py-2 text-sm">
+        <p key={f.id} className="sf-alert sf-alert-danger">
           <span className="font-medium">{f.title}.</span> {f.detail}
         </p>
       ))}

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { GearLab } from "@/components/gear/GearLab";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { CourtLoading } from "@/components/ui/CourtState";
 import { loadRackets } from "@/lib/equipment/rackets";
 import { STRINGS } from "@/data/equipment/strings";
 import { GRIPS } from "@/data/equipment/grips";
@@ -19,8 +20,11 @@ export default async function GearPage() {
     <div className="flex flex-1 flex-col">
       <Suspense
         fallback={
-          <div className="mx-auto w-full max-w-6xl px-6 py-16 text-sm text-[var(--muted)] md:px-10">
-            Loading gear lab…
+          <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10">
+            <CourtLoading
+              label="Loading gear lab…"
+              detail="Catalog specs, intelligence sources, and your bag comparison."
+            />
           </div>
         }
       >
@@ -29,7 +33,7 @@ export default async function GearPage() {
 
       <SiteFooter
         note={
-          'Racket specs powered by the Racqix Tennis Racquet Dataset. Launch, swing-path, and string/grip scores are coaching-grade models for learning — not laboratory certificates.'
+          'Specs advise; logged feel decides. Racket numbers from the Racqix catalog; launch, path, skill span, and quirks are Strokeform coaching models — not laboratory certificates.'
         }
       />
     </div>

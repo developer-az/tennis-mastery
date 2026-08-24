@@ -81,7 +81,7 @@ function LoginForm() {
   return (
     <AccountShell
       title="Sign in to your court"
-      subtitle="Track your bag, sessions, and one-lever changes — the Tennis Warehouse way: one account, your gear history."
+      subtitle="Track your bag, sessions, and one-lever changes — one account, your court history."
       alternate={{
         prompt: "Don't have an account?",
         href: "/account/create",

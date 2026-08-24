@@ -44,11 +44,7 @@ export function HistoryTab() {
         few sessions.
       </p>
 
-      {lockMsg && (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-          {lockMsg}
-        </p>
-      )}
+      {lockMsg && <p className="sf-alert">{lockMsg}</p>}
 
       <section>
         <h3 className="font-[family-name:var(--font-display)] text-lg">Constraints</h3>
