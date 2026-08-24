@@ -13,6 +13,8 @@ import {
   type PlayerGrips,
   type PlayerPreferences,
   type PlayerProfile,
+  type PlayStroke,
+  type PlayStruggle,
   type SessionEntry,
   type SessionFeel,
   type StringBedHours,
@@ -20,7 +22,6 @@ import {
   exampleCoachingProfile,
 } from "@/types/playerProfile";
 import { rankedLeversFor, type ProblemId } from "@/lib/player/levers";
-import { profileLooksStarted } from "@/lib/player/onboarding";
 
 function uid(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
@@ -80,9 +81,12 @@ interface PlayerState {
     bodyCheck: SessionEntry["bodyCheck"];
     overallFeel: SessionFeel;
     notes: string;
+    strokes?: PlayStroke[];
+    struggles?: PlayStruggle[];
     /** If string bed should accrue hours */
     stringLabel?: string | null;
   }) => string;
+  toggleDrillComplete: (drillId: string) => void;
   resetStringBed: (stringId: string, stringLabel: string, tensionLbs: number | null) => void;
   upsertMatchedPair: (pair: Omit<MatchedPair, "id"> & { id?: string }) => void;
   removeMatchedPair: (id: string) => void;
@@ -96,12 +100,12 @@ export const usePlayerStore = create<PlayerState>()(
     (set, get) => ({
       profile: emptyProfile(),
       hydrated: false,
-      onboardingComplete: false,
+      onboardingComplete: true,
       onboardingStep: 0,
       setHydrated: (v) => set({ hydrated: v }),
       setOnboardingStep: (step) => set({ onboardingStep: Math.max(0, step) }),
       completeOnboarding: () => set({ onboardingComplete: true, onboardingStep: 0 }),
-      restartOnboarding: () => set({ onboardingComplete: false, onboardingStep: 0 }),
+      restartOnboarding: () => set({ onboardingComplete: true, onboardingStep: 0 }),
       adoptExampleProfile: () =>
         set({
           profile: exampleCoachingProfile(),
@@ -111,7 +115,7 @@ export const usePlayerStore = create<PlayerState>()(
       resetProfile: () =>
         set({
           profile: emptyProfile(),
-          onboardingComplete: false,
+          onboardingComplete: true,
           onboardingStep: 0,
         }),
       setDisplayName: (name) =>
@@ -290,6 +294,8 @@ export const usePlayerStore = create<PlayerState>()(
           bodyCheck: input.bodyCheck,
           overallFeel: input.overallFeel,
           notes: input.notes.trim(),
+          strokes: input.strokes ?? [],
+          struggles: input.struggles ?? [],
         };
 
         set((s) => {
@@ -348,6 +354,14 @@ export const usePlayerStore = create<PlayerState>()(
         });
         return id;
       },
+      toggleDrillComplete: (drillId) =>
+        set((s) => {
+          const ids = s.profile.completedDrillIds ?? [];
+          const next = ids.includes(drillId)
+            ? ids.filter((id) => id !== drillId)
+            : [...ids, drillId];
+          return { profile: touch({ ...s.profile, completedDrillIds: next }) };
+        }),
       resetStringBed: (stringId, stringLabel, tensionLbs) =>
         set((s) => {
           const now = new Date().toISOString();
@@ -402,8 +416,11 @@ export const usePlayerStore = create<PlayerState>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         state.setHydrated(true);
-        if (!state.onboardingComplete && profileLooksStarted(state.profile)) {
+        if (!state.onboardingComplete) {
           state.completeOnboarding();
+        }
+        if (!state.profile.completedDrillIds) {
+          state.profile.completedDrillIds = [];
         }
       },
     },

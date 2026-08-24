@@ -36,7 +36,7 @@ export function BagTab({
   return (
     <div className="space-y-4">
       <p className="text-sm text-[var(--muted)]">
-        {hasAnyGear(setup) ? setupSummary(setup) : "Add pieces with search — no catalog slog."}
+        {hasAnyGear(setup) ? setupSummary(setup) : "Browse brands like a shop aisle — add a racket when you want."}
       </p>
 
       <Row label="Racket" value={setup.racketLabel} onEdit={() => setPicker("racket")} />

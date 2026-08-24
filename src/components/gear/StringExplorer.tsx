@@ -10,9 +10,7 @@ import {
   parseGaugeFromQuery,
   parsePolyIntent,
   shapeLabel,
-  stringCategoryBlurb,
   stringHasGauge,
-  stringStiffness,
   tensionOutcome,
   tensionRangeOverlaps,
   findSimilarStrings,
@@ -25,6 +23,26 @@ import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
 import { StringIntelligencePanel } from "./StringIntelligencePanel";
+import {
+  AisleChip,
+  CatalogAisle,
+  ChipRow,
+  ProductCard,
+  SearchField,
+} from "./CatalogShop";
+import {
+  FEEL_MIN,
+  STRING_FEELS,
+  STRING_MATERIAL_AISLES,
+  brandsByCount,
+  groupByBrand,
+  matchesFeel,
+  stringMaterialAisle,
+  stringMaterialShopLabel,
+  uniqueSortedBrands,
+  type FeelKey,
+  type StringMaterialAisle,
+} from "@/lib/equipment/shopAisles";
 
 type TensionFilter = "all" | "soft" | "mid" | "firm" | "target";
 
@@ -36,7 +54,9 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
   const setGaugeStore = useGearStore((s) => s.setGauge);
 
   const [query, setQuery] = useState("");
-  const [material, setMaterial] = useState("all");
+  const [brand, setBrand] = useState("all");
+  const [feel, setFeel] = useState<FeelKey | "all">("all");
+  const [materialAisle, setMaterialAisle] = useState<StringMaterialAisle | "all">("all");
   const [shape, setShape] = useState("all");
   const [gaugeFilter, setGaugeFilter] = useState("all");
   const [tensionFilter, setTensionFilter] = useState<TensionFilter>("all");
@@ -75,7 +95,10 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
       .trim();
 
     return strings.filter((s) => {
-      const materialFilter = material !== "all" ? material : polyFromQuery ? "poly" : "all";
+      if (brand !== "all" && s.brand !== brand) return false;
+      if (materialAisle !== "all" && stringMaterialAisle(s.material) !== materialAisle) return false;
+      if (!matchesFeel(s, feel)) return false;
+      const materialFilter = polyFromQuery ? "poly" : "all";
       if (!matchesMaterialFilter(s, materialFilter)) return false;
       if (shape !== "all" && s.shape !== shape) return false;
       if (gaugeTarget != null && !stringHasGauge(s, gaugeTarget)) return false;
@@ -96,20 +119,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
         s.feel,
       );
     });
-  }, [strings, deferredQuery, material, shape, gaugeFilter, tensionFilter, targetTension]);
-
-  const categoryActive =
-    (material !== "all" ||
-      shape !== "all" ||
-      gaugeFilter !== "all" ||
-      parsePolyIntent(deferredQuery) ||
-      parseGaugeFromQuery(deferredQuery) != null) &&
-    filtered.length > 0;
-
-  const categoryGauge =
-    gaugeFilter !== "all" ? parseFloat(gaugeFilter) : parseGaugeFromQuery(deferredQuery);
-  const categoryMaterial =
-    material !== "all" ? material : parsePolyIntent(deferredQuery) ? "poly" : "all";
+  }, [strings, deferredQuery, brand, feel, materialAisle, shape, gaugeFilter, tensionFilter, targetTension]);
 
   const selected = filtered.find((s) => s.id === selectedId) ?? filtered[0] ?? null;
   const compare = strings.find((s) => s.id === compareId) ?? strings[0];
@@ -146,7 +156,6 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
     : null;
   const inSetup = selected != null && selected.id === setup.stringId;
   const detailRef = useRef<HTMLDivElement>(null);
-  const [categoryOpen, setCategoryOpen] = useState(false);
 
   const saveStringRow = (s: StringProfile) => {
     const t = tensionById[s.id] ?? s.recommendedTensionLbs;
@@ -161,6 +170,25 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
       comfort: outcome.comfort,
     });
   };
+
+  const brands = useMemo(() => uniqueSortedBrands(strings), [strings]);
+  const aisleBrands = useMemo(() => brandsByCount(strings, 8), [strings]);
+  const selectString = (id: string) => {
+    setSelectedId(id);
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+      requestAnimationFrame(() =>
+        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    }
+  };
+  const showAisles =
+    brand === "all" &&
+    feel === "all" &&
+    materialAisle === "all" &&
+    shape === "all" &&
+    gaugeFilter === "all" &&
+    tensionFilter === "all" &&
+    !deferredQuery.trim();
 
   const vsSetupRows: CompareDeltaRow[] =
     selected && selectedOutcome
@@ -198,41 +226,46 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
 
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-6">
-      <div className="order-1 space-y-3 lg:space-y-4">
-        <div className="space-y-2">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search RPM, ALU Power, poly 1.30…"
-            aria-label="Search strings"
-            inputMode="search"
-            enterKeyHint="search"
-            autoCapitalize="off"
-            autoCorrect="off"
-            className="w-full rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
-          />
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-            <select
-              value={material}
-              onChange={(e) => setMaterial(e.target.value)}
-              aria-label="Material"
-              className="sf-select w-full"
-            >
-              <option value="all">All materials</option>
-              <option value="poly">Poly family (poly + co-poly)</option>
-              <option value="polyester">Polyester only</option>
-              <option value="co-poly">Co-poly only</option>
-              <option value="multifilament">Multifilament</option>
-              <option value="synthetic-gut">Synthetic gut</option>
-              <option value="natural-gut">Natural gut</option>
-              <option value="hybrid">Hybrid</option>
-            </select>
-            <select
-              value={shape}
-              onChange={(e) => setShape(e.target.value)}
-              aria-label="Shape"
-              className="sf-select w-full"
-            >
+      <div className="order-1 space-y-4">
+        <SearchField
+          value={query}
+          onChange={setQuery}
+          placeholder="Search ALU Power, RPM, poly 1.30…"
+          label="Search strings"
+        />
+        <ChipRow label="Brand">
+          <AisleChip label="All" active={brand === "all"} onClick={() => setBrand("all")} />
+          {brands.map((b) => (
+            <AisleChip key={b} label={b} active={brand === b} onClick={() => setBrand(b)} />
+          ))}
+        </ChipRow>
+        <ChipRow label="Type">
+          <AisleChip label="All types" active={materialAisle === "all"} onClick={() => setMaterialAisle("all")} />
+          {STRING_MATERIAL_AISLES.map((t) => (
+            <AisleChip
+              key={t.id}
+              label={t.label}
+              active={materialAisle === t.id}
+              onClick={() => setMaterialAisle(t.id)}
+            />
+          ))}
+        </ChipRow>
+        <ChipRow label="Feel">
+          <AisleChip label="Any feel" active={feel === "all"} onClick={() => setFeel("all")} />
+          {STRING_FEELS.map((f) => (
+            <AisleChip
+              key={f.id}
+              label={f.label}
+              active={feel === f.id}
+              onClick={() => setFeel(f.id)}
+              color={f.color}
+            />
+          ))}
+        </ChipRow>
+        <details className="text-sm">
+          <summary className="cursor-pointer text-[var(--muted)]">More filters</summary>
+          <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            <select value={shape} onChange={(e) => setShape(e.target.value)} aria-label="Shape" className="sf-select w-full">
               <option value="all">Any shape</option>
               <option value="round">Round</option>
               <option value="octagonal">Octagonal</option>
@@ -242,12 +275,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
               <option value="twisted">Twisted</option>
               <option value="textured">Textured</option>
             </select>
-            <select
-              value={gaugeFilter}
-              onChange={(e) => setGaugeFilter(e.target.value)}
-              aria-label="Gauge"
-              className="sf-select w-full"
-            >
+            <select value={gaugeFilter} onChange={(e) => setGaugeFilter(e.target.value)} aria-label="Gauge" className="sf-select w-full">
               <option value="all">Any gauge</option>
               {GAUGE_FILTER_OPTIONS.map((g) => (
                 <option key={g} value={String(g)}>
@@ -255,21 +283,15 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                 </option>
               ))}
             </select>
-            <select
-              value={tensionFilter}
-              onChange={(e) => setTensionFilter(e.target.value as TensionFilter)}
-              aria-label="Tension band"
-              className="sf-select w-full"
-            >
-              <option value="all">Any tension band</option>
-              <option value="soft">Soft rec. (≤50 lbs)</option>
+            <select value={tensionFilter} onChange={(e) => setTensionFilter(e.target.value as TensionFilter)} aria-label="Tension band" className="sf-select w-full">
+              <option value="all">Any tension</option>
+              <option value="soft">Softer rec. (≤50)</option>
               <option value="mid">Mid rec. (50–54)</option>
-              <option value="firm">Firm rec. (55+)</option>
+              <option value="firm">Firmer rec. (55+)</option>
               <option value="target">Fits my tension…</option>
             </select>
             {tensionFilter === "target" ? (
-              <label className="col-span-2 flex items-center gap-2 sm:col-span-2">
-                <span className="sr-only">Target tension</span>
+              <label className="col-span-2 flex items-center gap-2">
                 <input
                   type="number"
                   min={40}
@@ -277,158 +299,62 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                   step={0.5}
                   value={targetTension}
                   onChange={(e) => setTargetTension(parseFloat(e.target.value) || 52)}
-                  className="w-full rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm tabular-nums outline-none focus:border-[var(--accent)]"
+                  className="sf-input"
                   aria-label="Target tension in pounds"
                 />
                 <span className="shrink-0 text-xs text-[var(--muted)]">lbs</span>
               </label>
-            ) : (
-              <p className="col-span-2 self-center text-xs text-[var(--muted)]">
-                Filter by material, gauge (e.g. 1.30), shape, or tension.
-              </p>
-            )}
+            ) : null}
           </div>
-        </div>
-
-        {categoryActive ? (
-          <div
-            className="rounded-md px-3 py-3 text-sm leading-relaxed"
-            style={{
-              background: "color-mix(in srgb, var(--chart-spin) 8%, transparent)",
-              boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--chart-spin) 28%, transparent)",
-            }}
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sky)]">
-              Category · {filtered.length} match
-              {filtered.length === 1 ? "" : "es"}
-            </p>
-            <p className="mt-2 text-[var(--foreground)]/90">
-              {stringCategoryBlurb(categoryMaterial, categoryGauge, shape)}
-            </p>
-            <button
-              type="button"
-              className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[var(--chart-spin)]"
-              onClick={() => setCategoryOpen((o) => !o)}
-            >
-              {categoryOpen ? "Hide matches" : "Show matching beds"}
-            </button>
-            <ul className={`mt-3 max-h-48 space-y-1.5 overflow-y-auto text-xs text-[var(--muted)] ${categoryOpen ? "" : "hidden"}`}>
-              {[...filtered]
-                .sort((a, b) => b.spin - a.spin)
-                .slice(0, 12)
-                .map((s) => (
-                  <li key={s.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(s.id)}
-                      className="text-left transition hover:text-[var(--sky)]"
-                    >
-                      {s.brand} {s.name}
-                      <span className="tabular-nums text-[var(--foreground)]/60">
-                        {" "}
-                        · Sp {s.spin} · Ctl {s.control} ·{" "}
-                        {s.gaugesMm.map((g) => g.toFixed(2)).join("/")} mm
-                      </span>
-                    </button>
-                  </li>
-                ))}
-            </ul>
-          </div>
-        ) : null}
-
+        </details>
         <p className="text-xs text-[var(--muted)]">
           {filtered.length} string{filtered.length === 1 ? "" : "s"}
-          {material !== "all" ||
-          deferredQuery ||
-          tensionFilter !== "all" ||
-          shape !== "all" ||
-          gaugeFilter !== "all"
-            ? " match"
-            : " in catalog"}
+          {feel !== "all" ? ` · ${feel} ${FEEL_MIN}+` : ""}
         </p>
-
-        <ul className="max-h-[min(70vh,28rem)] divide-y divide-[var(--line)] overflow-y-auto overscroll-contain border-y border-[var(--line)] md:max-h-[32rem]">
-          {filtered.map((s) => {
-            const active = s.id === selected?.id;
-            const saved = s.id === setup.stringId;
-            const [rLo, rHi] = s.tensionRangeLbs;
-            return (
-              <li key={s.id} className="flex items-stretch gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedId(s.id);
-                    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
-                      requestAnimationFrame(() =>
-                        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-                      );
-                    }
-                  }}
-                  aria-pressed={active}
-                  className={`flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left transition sm:gap-3 ${
-                    active ? "bg-[var(--accent-dim)]" : "hover:bg-[var(--overlay-hover)]"
-                  }`}
+        {showAisles ? (
+          <div className="space-y-6">
+            {groupByBrand(strings)
+              .filter((g) => aisleBrands.includes(g.brand))
+              .map((g) => (
+                <CatalogAisle
+                  key={g.brand}
+                  title={g.brand}
+                  actionLabel={`See all ${g.brand}`}
+                  onAction={() => setBrand(g.brand)}
                 >
-                  <EquipmentThumb
-                    src={stringImageUrl(s)}
-                    alt={`${s.brand} ${s.name}`}
-                    size="sm"
-                  />
-                  <span className="flex min-w-0 flex-col gap-1">
-                    <span className="flex flex-wrap items-center gap-2 font-[family-name:var(--font-display)] text-sm tracking-tight">
-                      {s.brand} {s.name}
-                      {saved ? (
-                        <span className="rounded bg-[var(--sky)]/15 px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider text-[var(--sky)]">
-                          Setup
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="text-xs text-[var(--muted)]">
-                      {materialLabel(s.material)} · {shapeLabel(s.shape)} · {rLo}–{rHi} lbs
-                      <span className="hidden sm:inline">
-                        {" "}
-                        · {s.gaugesMm.map((g) => g.toFixed(2)).join("/")} mm
-                      </span>
-                    </span>
-                    <span className="hidden flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] tabular-nums text-[var(--foreground)]/70 sm:flex">
-                      <span style={{ color: "var(--chart-spin)" }}>Sp {s.spin}</span>
-                      <span style={{ color: "var(--chart-control)" }}>Ctl {s.control}</span>
-                      <span style={{ color: "var(--chart-power)" }}>Pwr {s.power}</span>
-                      <span style={{ color: "var(--chart-comfort)" }}>Dur {s.durability}</span>
-                      <span>Tm {s.tensionMaintenance}</span>
-                      <span>Stf {stringStiffness(s)}</span>
-                    </span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    saveStringRow(s);
-                  }}
-                  className="m-1.5 min-h-11 shrink-0 self-center rounded-md px-3 py-2.5 text-xs font-semibold uppercase tracking-wide transition active:scale-[0.98] sm:min-h-10 sm:px-3.5"
-                  style={{
-                    background: saved ? "color-mix(in srgb, var(--chart-spin) 14%, transparent)" : "var(--accent)",
-                    color: saved ? "var(--chart-spin)" : "var(--accent-ink)",
-                    boxShadow: saved ? "0 0 0 1px var(--chart-spin)" : "none",
-                  }}
-                  aria-label={
-                    saved
-                      ? `${s.brand} ${s.name} already in setup`
-                      : `Save ${s.brand} ${s.name} to my setup`
-                  }
-                >
-                  {saved ? "Saved" : "Save"}
-                </button>
-              </li>
-            );
-          })}
-          {filtered.length === 0 && (
-            <li className="px-2 py-8 text-sm text-[var(--muted)]">
-              No strings match. Try co-poly + 1.30 mm, clear tension filter, or widen the query.
-            </li>
-          )}
-        </ul>
+                  {g.items.slice(0, 8).map((s) => (
+                    <StringCard
+                      key={s.id}
+                      string={s}
+                      compact
+                      selected={s.id === selected?.id}
+                      saved={s.id === setup.stringId}
+                      onSelect={() => selectString(s.id)}
+                      onSave={() => saveStringRow(s)}
+                    />
+                  ))}
+                </CatalogAisle>
+              ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {filtered.map((s) => (
+              <StringCard
+                key={s.id}
+                string={s}
+                selected={s.id === selected?.id}
+                saved={s.id === setup.stringId}
+                onSelect={() => selectString(s.id)}
+                onSave={() => saveStringRow(s)}
+              />
+            ))}
+            {filtered.length === 0 ? (
+              <p className="col-span-full py-8 text-sm text-[var(--muted)]">
+                No strings match. Try poly for spin, or multi if your arm talks.
+              </p>
+            ) : null}
+          </div>
+        )}
       </div>
 
       {selected && selectedOutcome && (
@@ -488,7 +414,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                   boxShadow: inSetup ? "0 0 0 1px var(--chart-spin)" : "none",
                 }}
               >
-                {inSetup ? "Saved in my setup" : "Save to my setup"}
+                {inSetup ? "In your bag" : "Add to bag"}
               </button>
             </div>
           </header>
@@ -601,7 +527,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
             <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
               <label className="min-w-0 flex-1">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                  Tension ({lo}–{hi} lbs) · recommended {selected.recommendedTensionLbs}
+                  Tension ({lo}–{hi} lbs) · recommended {selected.recommendedTensionLbs} — lower is more power, higher is more control
                 </span>
                 <input
                   type="range"
@@ -740,5 +666,42 @@ function CompareColumn({
       <ScoreMeter label="Stiffness" value={stiffness} accent="var(--muted)" />
       <ScoreMeter label="Tension maint." value={tensionMaint} accent="var(--chart-comfort)" />
     </div>
+  );
+}
+
+function StringCard({
+  string,
+  compact,
+  selected,
+  saved,
+  onSelect,
+  onSave,
+}: {
+  string: StringProfile;
+  compact?: boolean;
+  selected: boolean;
+  saved: boolean;
+  onSelect: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <ProductCard
+      image={stringImageUrl(string)}
+      alt={`${string.brand} ${string.name}`}
+      brand={string.brand}
+      name={string.name}
+      badge={stringMaterialShopLabel(string.material)}
+      meta={`${string.recommendedTensionLbs} lbs rec`}
+      scores={[
+        { label: "Spin", value: string.spin, color: "var(--chart-spin)" },
+        { label: "Power", value: string.power, color: "var(--chart-power)" },
+        { label: "Control", value: string.control, color: "var(--chart-control)" },
+      ]}
+      saved={saved}
+      selected={selected}
+      onSelect={onSelect}
+      onSave={onSave}
+      compact={compact}
+    />
   );
 }

@@ -194,11 +194,11 @@ export default function Home() {
             ))}
           </div>
           <div className="mt-10 flex flex-wrap gap-3">
-            <Link href="/you" className="sf-btn sf-btn-primary">
-              Open your court
-            </Link>
-            <Link href="/gear?tab=rackets" className="sf-btn sf-btn-secondary">
+            <Link href="/gear?tab=rackets" className="sf-btn sf-btn-primary">
               Browse rackets
+            </Link>
+            <Link href="/you" className="sf-btn sf-btn-secondary">
+              Your court
             </Link>
           </div>
         </section>

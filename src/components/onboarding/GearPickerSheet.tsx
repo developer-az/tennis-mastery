@@ -1,9 +1,19 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import type { GripProfile, RacketProfile, StringProfile } from "@/types/equipment";
 import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search";
+import { gripImageUrl, racketImageUrl, stringImageUrl } from "@/lib/equipment/media/urls";
 import { useGearStore } from "@/store/gearStore";
+import { AisleChip, ChipRow, ProductCard, SearchField } from "@/components/gear/CatalogShop";
+import {
+  RACKET_SHOP_TYPES,
+  racketShopBadge,
+  racketShopType,
+  stringMaterialShopLabel,
+  uniqueSortedBrands,
+  type RacketShopType,
+} from "@/lib/equipment/shopAisles";
 
 export type PickerKind = "racket" | "string" | "grip";
 
@@ -42,13 +52,14 @@ export function saveGripToBag(g: GripProfile) {
   });
 }
 
+const VISIBLE = 18;
+
 export function GearPickerSheet({
   kind,
   rackets,
   strings,
   grips,
   onClose,
-  /** When set, select calls this with the item id instead of writing My setup. */
   onPreviewPick,
 }: {
   kind: PickerKind;
@@ -59,71 +70,57 @@ export function GearPickerSheet({
   onPreviewPick?: (id: string) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [brand, setBrand] = useState("all");
+  const [shopType, setShopType] = useState<RacketShopType | "all">("all");
   const deferred = useDeferredValue(query);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const setup = useGearStore((s) => s.setup);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [kind]);
+  const catalog = kind === "racket" ? rackets : kind === "string" ? strings : grips;
+  const brands = useMemo(() => uniqueSortedBrands(catalog), [catalog]);
 
-  const results = useMemo(() => {
+  const items = useMemo(() => {
     const q = deferred.trim();
     if (kind === "racket") {
-      const list = q
-        ? rackets
-            .filter((r) => matchesEquipmentSearch(q, r.brand, r.model, r.slug, r.year, r.summary))
-            .sort(
-              (a, b) =>
-                searchMatchScore(q, b.brand, b.model, b.slug) -
-                searchMatchScore(q, a.brand, a.model, a.slug),
-            )
-        : rackets.slice(0, 12);
-      return list.slice(0, 12).map((r) => ({
-        id: r.slug,
-        title: `${r.brand} ${r.model}`,
-        meta: `${r.year}${r.weightG ? ` · ${r.weightG}g` : ""}`,
-        select: () => (onPreviewPick ? onPreviewPick(r.slug) : saveRacketToBag(r)),
-      }));
+      const list = rackets.filter((r) => {
+        if (brand !== "all" && r.brand !== brand) return false;
+        if (shopType !== "all" && racketShopType(r) !== shopType) return false;
+        if (!q) return true;
+        return matchesEquipmentSearch(q, r.brand, r.model, r.slug, r.year, r.summary);
+      });
+      if (q) {
+        list.sort(
+          (a, b) =>
+            searchMatchScore(q, b.brand, b.model, b.slug) -
+            searchMatchScore(q, a.brand, a.model, a.slug),
+        );
+      }
+      return list.slice(0, VISIBLE);
     }
     if (kind === "string") {
-      const list = q
-        ? strings
-            .filter((s) =>
-              matchesEquipmentSearch(q, s.brand, s.name, s.id, s.material, s.gaugesMm.join(" ")),
-            )
-            .sort(
-              (a, b) =>
-                searchMatchScore(q, b.brand, b.name, b.id) -
-                searchMatchScore(q, a.brand, a.name, a.id),
-            )
-        : strings.slice(0, 12);
-      return list.slice(0, 12).map((s) => ({
-        id: s.id,
-        title: `${s.brand} ${s.name}`,
-        meta: `${s.material} · ${s.recommendedTensionLbs} lbs rec`,
-        select: () => (onPreviewPick ? onPreviewPick(s.id) : saveStringToBag(s)),
-      }));
+      const list = strings.filter((s) => {
+        if (brand !== "all" && s.brand !== brand) return false;
+        if (!q) return true;
+        return matchesEquipmentSearch(q, s.brand, s.name, s.id, s.material, s.gaugesMm.join(" "));
+      });
+      if (q) {
+        list.sort(
+          (a, b) =>
+            searchMatchScore(q, b.brand, b.name, b.id) -
+            searchMatchScore(q, a.brand, a.name, a.id),
+        );
+      }
+      return list.slice(0, VISIBLE);
     }
-    const list = q
-      ? grips.filter((g) => matchesEquipmentSearch(q, g.brand, g.name, g.id, g.kind))
-      : grips.slice(0, 12);
-    return list.slice(0, 12).map((g) => ({
-      id: g.id,
-      title: `${g.brand} ${g.name}`,
-      meta: g.kind,
-      select: () => (onPreviewPick ? onPreviewPick(g.id) : saveGripToBag(g)),
-    }));
-  }, [kind, deferred, rackets, strings, grips, onPreviewPick]);
-
-  const placeholder =
-    kind === "racket"
-      ? "Search CX 200, Blade, Prestige…"
-      : kind === "string"
-        ? "Search ALU Power, RPM, poly 1.30…"
-        : "Search Tourna, Super Grap…";
+    const list = grips.filter((g) => {
+      if (brand !== "all" && g.brand !== brand) return false;
+      if (!q) return true;
+      return matchesEquipmentSearch(q, g.brand, g.name, g.id, g.kind);
+    });
+    return list.slice(0, VISIBLE);
+  }, [kind, deferred, brand, shopType, rackets, strings, grips]);
 
   const title =
-    kind === "racket" ? "Your racket" : kind === "string" ? "Your string" : "Your grip";
+    kind === "racket" ? "Browse rackets" : kind === "string" ? "Browse strings" : "Browse grips";
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center">
@@ -137,7 +134,7 @@ export function GearPickerSheet({
         role="dialog"
         aria-modal
         aria-labelledby="picker-title"
-        className="relative z-[71] flex max-h-[88vh] w-full max-w-lg flex-col border border-[var(--line)] bg-[var(--panel)] p-4 shadow-2xl sm:rounded-lg"
+        className="relative z-[71] flex max-h-[92vh] w-full max-w-3xl flex-col border border-[var(--line)] bg-[var(--panel)] p-4 shadow-2xl sm:rounded-[var(--radius)]"
       >
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 id="picker-title" className="font-[family-name:var(--font-display)] text-xl">
@@ -147,48 +144,131 @@ export function GearPickerSheet({
             Close
           </button>
         </div>
-        <input
-          ref={inputRef}
+        <SearchField
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && results[0]) {
-              e.preventDefault();
-              results[0].select();
-              onClose();
-            }
-            if (e.key === "Escape") onClose();
-          }}
-          placeholder={placeholder}
-          inputMode="search"
-          enterKeyHint="search"
-          autoCapitalize="off"
-          autoCorrect="off"
-          className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-3 text-base outline-none focus:border-[var(--accent)]"
+          onChange={setQuery}
+          placeholder={
+            kind === "racket"
+              ? "Search Blade, CX 200…"
+              : kind === "string"
+                ? "Search ALU Power, RPM…"
+                : "Search Tourna, Super Grap…"
+          }
+          label={title}
         />
-        <ul className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto">
-          {results.length === 0 ? (
-            <li className="px-2 py-6 text-sm text-[var(--muted)]">No matches — try CX 200 or ALU.</li>
-          ) : (
-            results.map((row, i) => (
-              <li key={row.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    row.select();
-                    onClose();
-                  }}
-                  className="flex w-full items-baseline justify-between gap-3 rounded-md px-3 py-3 text-left transition hover:bg-white/5"
-                  style={i === 0 ? { boxShadow: "inset 0 0 0 1px var(--accent)" } : undefined}
-                >
-                  <span className="text-sm font-medium">{row.title}</span>
-                  <span className="shrink-0 text-xs text-[var(--muted)]">{row.meta}</span>
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-        <p className="mt-2 text-xs text-[var(--muted)]">Enter selects the top match.</p>
+        <div className="mt-3 space-y-3">
+          <ChipRow label="Brand">
+            <AisleChip label="All" active={brand === "all"} onClick={() => setBrand("all")} />
+            {brands.map((b) => (
+              <AisleChip key={b} label={b} active={brand === b} onClick={() => setBrand(b)} />
+            ))}
+          </ChipRow>
+          {kind === "racket" ? (
+            <ChipRow label="Type">
+              <AisleChip
+                label="All types"
+                active={shopType === "all"}
+                onClick={() => setShopType("all")}
+              />
+              {RACKET_SHOP_TYPES.map((t) => (
+                <AisleChip
+                  key={t.id}
+                  label={t.label}
+                  active={shopType === t.id}
+                  onClick={() => setShopType(t.id)}
+                />
+              ))}
+            </ChipRow>
+          ) : null}
+        </div>
+        <div className="mt-4 grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
+          {kind === "racket" &&
+            (items as RacketProfile[]).map((r) => (
+              <ProductCard
+                key={r.slug}
+                image={racketImageUrl(r)}
+                alt={`${r.brand} ${r.model}`}
+                brand={r.brand}
+                name={r.model}
+                badge={racketShopBadge(r)}
+                scores={[
+                  { label: "Spin", value: r.spin, color: "var(--chart-spin)" },
+                  { label: "Power", value: r.power, color: "var(--chart-power)" },
+                  { label: "Control", value: r.control, color: "var(--chart-control)" },
+                ]}
+                saved={setup.racketSlug === r.slug}
+                onSelect={() => {
+                  if (onPreviewPick) onPreviewPick(r.slug);
+                  else saveRacketToBag(r);
+                  onClose();
+                }}
+                onSave={() => {
+                  if (onPreviewPick) onPreviewPick(r.slug);
+                  else saveRacketToBag(r);
+                  onClose();
+                }}
+              />
+            ))}
+          {kind === "string" &&
+            (items as StringProfile[]).map((s) => (
+              <ProductCard
+                key={s.id}
+                image={stringImageUrl(s)}
+                alt={`${s.brand} ${s.name}`}
+                brand={s.brand}
+                name={s.name}
+                badge={stringMaterialShopLabel(s.material)}
+                scores={[
+                  { label: "Spin", value: s.spin, color: "var(--chart-spin)" },
+                  { label: "Power", value: s.power, color: "var(--chart-power)" },
+                  { label: "Control", value: s.control, color: "var(--chart-control)" },
+                ]}
+                saved={setup.stringId === s.id}
+                onSelect={() => {
+                  if (onPreviewPick) onPreviewPick(s.id);
+                  else saveStringToBag(s);
+                  onClose();
+                }}
+                onSave={() => {
+                  if (onPreviewPick) onPreviewPick(s.id);
+                  else saveStringToBag(s);
+                  onClose();
+                }}
+              />
+            ))}
+          {kind === "grip" &&
+            (items as GripProfile[]).map((g) => (
+              <ProductCard
+                key={g.id}
+                image={gripImageUrl(g)}
+                alt={`${g.brand} ${g.name}`}
+                brand={g.brand}
+                name={g.name}
+                badge={g.kind === "overgrip" ? "Overgrip" : "Replacement"}
+                scores={[
+                  { label: "Tack", value: g.tackiness, color: "var(--chart-spin)" },
+                  { label: "Cushion", value: g.cushion, color: "var(--chart-comfort)" },
+                  { label: "Grip", value: g.absorbency, color: "var(--chart-control)" },
+                ]}
+                saved={setup.gripId === g.id}
+                onSelect={() => {
+                  if (onPreviewPick) onPreviewPick(g.id);
+                  else saveGripToBag(g);
+                  onClose();
+                }}
+                onSave={() => {
+                  if (onPreviewPick) onPreviewPick(g.id);
+                  else saveGripToBag(g);
+                  onClose();
+                }}
+              />
+            ))}
+          {items.length === 0 ? (
+            <p className="col-span-full py-8 text-sm text-[var(--muted)]">
+              No matches — try another brand or a shorter search.
+            </p>
+          ) : null}
+        </div>
       </div>
     </div>
   );
