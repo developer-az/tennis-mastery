@@ -25,25 +25,25 @@ export type ThemeColors = {
 };
 
 const LIGHT: ThemeColors = {
-  background: "#f7f6f3",
-  foreground: "#1a1a18",
+  background: "#f3f6f4",
+  foreground: "#0d1f18",
   panel: "#ffffff",
-  bgScene: "#e8e6e0",
-  bgSunken: "#eeece7",
-  muted: "#5c5a54",
-  line: "rgba(26, 26, 24, 0.1)",
-  accent: "#4f8a2a",
+  bgScene: "#dfe8e2",
+  bgSunken: "#e6ebe8",
+  muted: "#4a5c54",
+  line: "rgba(13, 31, 24, 0.1)",
+  accent: "#3f7a24",
   accentFg: "#ffffff",
   amber: "#c47a2c",
   sky: "#2a7a9b",
   court: "#2d6a4f",
-  silhouette: "#2a2a26",
-  silhouetteRim: "#4a4944",
+  silhouette: "#1a2e24",
+  silhouetteRim: "#3a4a40",
   chartPower: "#c47a2c",
   chartSpin: "#2a7a9b",
-  chartControl: "#4f8a2a",
+  chartControl: "#3f7a24",
   chartComfort: "#b0892e",
-  chartFill: "rgba(79, 138, 42, 0.14)",
+  chartFill: "rgba(63, 122, 36, 0.14)",
 };
 
 const DARK: ThemeColors = {

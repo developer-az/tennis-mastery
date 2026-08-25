@@ -69,7 +69,7 @@ export function racketPortraitSvg(r: RacketProfile): string {
   ${patternLines(r.stringPattern, cx, cy, rx, ry)}
   <path d="M ${cx - 10} ${cy + ry - 4} L ${cx - 8} 198 L ${cx + 8} 198 L ${cx + 10} ${cy + ry - 4} Z" fill="${accent}" opacity="0.85"/>
   <rect x="${cx - 7}" y="196" width="14" height="42" rx="3" fill="#1b4332" stroke="${accent}" stroke-width="1.5"/>
-  <rect x="${cx - 6}" y="232" width="12" height="8" rx="2" fill="#c8f560" opacity="0.7"/>
+  <rect x="${cx - 6}" y="232" width="12" height="8" rx="2" fill="#c5e85a" opacity="0.7"/>
   <text x="100" y="252" text-anchor="middle" fill="rgba(232,239,233,0.55)" font-family="system-ui,sans-serif" font-size="8">${esc(year)} · ${r.headSizeSqIn ?? "—"}″</text>
 </svg>`;
 }
@@ -110,8 +110,8 @@ export function stringPortraitSvg(s: StringProfile, gaugeMm?: number): string {
   const cross = shapePath(s.shape, 100, 100, 28);
   const crossEl =
     cross.length > 0
-      ? `<path d="${cross}" fill="none" stroke="#c8f560" stroke-width="2" opacity="0.85"/>`
-      : `<circle cx="100" cy="100" r="26" fill="none" stroke="#c8f560" stroke-width="2" opacity="0.85"/>`;
+      ? `<path d="${cross}" fill="none" stroke="#c5e85a" stroke-width="2" opacity="0.85"/>`
+      : `<circle cx="100" cy="100" r="26" fill="none" stroke="#c5e85a" stroke-width="2" opacity="0.85"/>`;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="${label}">
@@ -161,7 +161,7 @@ export function gripPortraitSvg(g: GripProfile): string {
   const stripLayers = Array.from({ length: layers })
     .map((_, i) => {
       const y = 48 + i * 3;
-      return `<rect x="${40 - i}" y="${y}" width="${120 + i * 2}" height="${88 - i * 2}" rx="6" fill="none" stroke="${isOver ? "#c8f560" : accent}" stroke-opacity="${0.25 + i * 0.12}" stroke-width="2" stroke-dasharray="${textureStroke}"/>`;
+      return `<rect x="${40 - i}" y="${y}" width="${120 + i * 2}" height="${88 - i * 2}" rx="6" fill="none" stroke="${isOver ? "#c5e85a" : accent}" stroke-opacity="${0.25 + i * 0.12}" stroke-width="2" stroke-dasharray="${textureStroke}"/>`;
     })
     .join("");
 

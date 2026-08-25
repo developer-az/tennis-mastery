@@ -14,8 +14,8 @@ export function EquipmentThumb({
     size === "lg"
       ? "h-44 w-32 sm:h-52 sm:w-36"
       : size === "md"
-        ? "h-24 w-20"
-        : "h-16 w-12";
+        ? "h-28 w-[5.5rem]"
+        : "h-[4.5rem] w-14";
 
   return (
     <span className={`sf-thumb-well relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md ${dim}`}>
@@ -27,8 +27,8 @@ export function EquipmentThumb({
       <img
         src={src}
         alt={alt}
-        width={size === "lg" ? 144 : size === "md" ? 72 : 48}
-        height={size === "lg" ? 192 : size === "md" ? 96 : 64}
+        width={size === "lg" ? 144 : size === "md" ? 80 : 56}
+        height={size === "lg" ? 192 : size === "md" ? 112 : 72}
         loading="lazy"
         decoding="async"
         className={`relative z-[1] ${dim} object-contain object-center`}

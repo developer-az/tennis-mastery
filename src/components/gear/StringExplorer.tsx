@@ -14,6 +14,7 @@ import {
   tensionOutcome,
   tensionRangeOverlaps,
   findSimilarStrings,
+  stringCategoryBlurb,
 } from "@/lib/equipment/strings";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { stringImageUrl } from "@/lib/equipment/media/urls";
@@ -250,6 +251,15 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
             />
           ))}
         </ChipRow>
+        {materialAisle !== "all" || shape !== "all" || gaugeFilter !== "all" ? (
+          <p className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-xs leading-relaxed text-[var(--muted)]">
+            {stringCategoryBlurb(
+              materialAisle === "all" ? "all" : materialAisle,
+              gaugeFilter === "all" ? null : Number(gaugeFilter),
+              shape,
+            )}
+          </p>
+        ) : null}
         <ChipRow label="Feel">
           <AisleChip label="Any feel" active={feel === "all"} onClick={() => setFeel("all")} />
           {STRING_FEELS.map((f) => (
@@ -385,8 +395,8 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                   className="rounded-md px-2.5 py-1 font-medium tabular-nums"
                   style={{
                     color: "var(--chart-control)",
-                    background: "color-mix(in srgb, #c8f560 12%, transparent)",
-                    boxShadow: "inset 0 0 0 1px color-mix(in srgb, #c8f560 40%, transparent)",
+                    background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+                    boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent)",
                   }}
                 >
                   Rec. {selected.recommendedTensionLbs} lbs
