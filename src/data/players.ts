@@ -402,6 +402,102 @@ const alcarazDefaults: StrokeLibrary = fillStrokes(
   federerDefaults,
 );
 
+/** Compact early-contact mold — flatter drive than Alcaraz, still modern RPM. */
+const sinnerDefaults: StrokeLibrary = fillStrokes(
+  {
+    forehand: cloneStroke(nadalForehand, {
+      handedness: "right",
+      label: "Forehand (First-strike)",
+      keyframes: nadalForehand.keyframes.map((kf) => ({
+        ...kf,
+        coachingCue: kf.coachingCue
+          .replace(/\blefty\b/gi, "athletic")
+          .replace(/Wide base, coiled athletic stance/i, "Compact base — early unit turn, drive through"),
+      })),
+      metrics: {
+        peakRacketSpeedMs: 31.2,
+        avgSpinRpm: 3100,
+        contactHeightM: 1.18,
+        consistency: {
+          contactHeightCv: 4.6,
+          timingSdMs: 12,
+          pathReproducibility: 92,
+          signatureQuirk: "Early contact + linear drive — Speed Pro takeback, less extreme wiper",
+        },
+        researchNotes: [
+          "Semi-western with a compact loop; prioritizes timing and depth.",
+          "Flatter leave than clay-spin archetypes while still clearing the tape.",
+          "Motion geometry adapted from modern righty drive patterns.",
+        ],
+        sources: nadalForehand.metrics.sources,
+        kineticChain: {
+          sequence: ["legs", "hips", "trunk", "shoulder", "forearm", "wrist", "racket"],
+          proximalDistalLagMs: 28,
+          xFactorDeg: 48,
+          peakGrfN: 1680,
+        },
+        contactDepthM: 0.42,
+        launchAngleDeg: 10.5,
+        swingPathDeg: 34,
+        impactDurationMs: 4.3,
+        grip: "semiWestern",
+      },
+    }),
+    backhand: cloneStroke(djokovicBackhand, {
+      metrics: {
+        ...djokovicBackhand.metrics,
+        peakRacketSpeedMs: 26.5,
+        avgSpinRpm: 2400,
+        consistency: {
+          contactHeightCv: 4.0,
+          timingSdMs: 11,
+          pathReproducibility: 93,
+          signatureQuirk: "Two-hand wall — redirects pace early",
+        },
+      },
+    }),
+    serve: cloneStroke(serenaServe, {
+      metrics: {
+        peakRacketSpeedMs: 48.5,
+        avgSpinRpm: 2500,
+        contactHeightM: 2.88,
+        consistency: {
+          contactHeightCv: 2.8,
+          timingSdMs: 12,
+          pathReproducibility: 92,
+          signatureQuirk: "High trophy, clean slot — first-serve priority",
+        },
+        researchNotes: serenaServe.metrics.researchNotes,
+        sources: serenaServe.metrics.sources,
+        kineticChain: {
+          sequence: ["legs", "trunk", "shoulder", "elbow", "wrist", "racket"],
+          proximalDistalLagMs: 26,
+          xFactorDeg: 56,
+          peakGrfN: 1950,
+        },
+        contactDepthM: 0.1,
+        launchAngleDeg: -3.5,
+        swingPathDeg: 6,
+        impactDurationMs: 3.6,
+        grip: "continental",
+      },
+    }),
+    volley: alcarazVolley,
+    slice: cloneStroke(federerSlice, {
+      metrics: {
+        ...federerSlice.metrics,
+        consistency: {
+          contactHeightCv: 4.8,
+          timingSdMs: 11,
+          pathReproducibility: 91,
+          signatureQuirk: "Slice to change height and recover the center",
+        },
+      },
+    }),
+  },
+  federerDefaults,
+);
+
 export const PLAYERS: PlayerProfile[] = [
   {
     id: "federer",
@@ -527,6 +623,31 @@ export const PLAYERS: PlayerProfile[] = [
     strokes: alcarazDefaults,
     biography:
       "Combines Nadal-like spin geometry with Federer-like all-court creativity. Biomechanically: high peak GRF, short proximal-distal lag, and disguise — same unit turn for FH drive or drop shot.",
+  },
+  {
+    id: "sinner",
+    name: "Jannik Sinner",
+    shortName: "Sinner",
+    nationality: "Italy",
+    era: "2019–present",
+    playingStyle: "Flat-to-heavy first strike — clean takeback, early contact, Speed Pro mold",
+    dominantHand: "right",
+    backhandStyle: "twoHanded",
+    color: "#1A5276",
+    accent: "#E74C3C",
+    anthropometrics: {
+      heightM: 1.88,
+      wingspanM: 1.93,
+      massKg: 76,
+      torsoRatio: 0.3,
+      upperArmRatio: 0.186,
+      forearmRatio: 0.146,
+      thighRatio: 0.245,
+      shankRatio: 0.246,
+    },
+    strokes: sinnerDefaults,
+    biography:
+      "Compact unit turn, early contact, and a linear drive through the ball. Less windshield-wiper than clay archetypes — more of a Speed-frame mold with height and clean timing.",
   },
 ];
 

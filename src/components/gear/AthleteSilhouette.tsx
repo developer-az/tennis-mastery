@@ -18,14 +18,30 @@ export function AthleteSilhouette({
 }) {
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity} fill={fill}>
+      {/* Head + torso */}
       <ellipse cx="0" cy="-52" rx="7.5" ry="8.5" />
       <path d="M-6 -44 C-10 -28 -12 -12 -8 2 L8 4 C12 -10 10 -28 6 -44 Z" />
+      {/* Trail arm (back) + hitting arm to contact */}
       <path d="M-8 -30 C-22 -36 -30 -28 -34 -18 C-28 -22 -18 -24 -8 -20 Z" />
       <path d="M6 -28 C18 -22 34 -14 48 -6 C50 -2 46 2 42 0 C30 -6 16 -14 6 -18 Z" />
-      <path d="M-4 2 C-8 22 -6 40 2 58 L12 56 C6 40 4 22 8 4 Z" />
-      <path d="M2 4 C10 18 8 36 4 54 L-4 56 C2 38 4 20 -2 6 Z" />
-      <ellipse cx="8" cy="58" rx="10" ry="3.2" opacity="0.85" />
-      <ellipse cx="-2" cy="56" rx="9" ry="3" opacity="0.75" />
+
+      {/*
+        Lead leg (near / net side): hip → knee → calf → ankle → foot.
+        Explicit knee joint so thigh and shank read as connected segments.
+      */}
+      <path d="M1 2 C4 10 8 18 10 28 L4 30 C2 20 -1 12 -3 4 Z" />
+      <circle cx="8.5" cy="30" r="3.2" />
+      <path d="M6 32 C9 40 12 48 14 55 L8 57 C5 48 2 40 4 32 Z" />
+      <path d="M7 55 L18 58 L17 61 L5 58 Z" />
+
+      {/*
+        Trail leg (plant / far side): deeper bend, calf tucked under thigh,
+        foot planted behind the lead.
+      */}
+      <path d="M-4 2 C-10 12 -14 22 -12 34 L-5 33 C-6 22 -4 12 0 4 Z" />
+      <circle cx="-10" cy="34" r="3" />
+      <path d="M-12 36 C-14 44 -12 50 -6 54 L-3 50 C-8 47 -10 42 -8 36 Z" />
+      <path d="M-8 52 L2 55 L1 58 L-10 55 Z" />
     </g>
   );
 }

@@ -9,16 +9,17 @@ export async function GET(
   const { slug } = await context.params;
   const format = new URL(request.url).searchParams.get("format");
 
-  const external = externalRacketImage(slug);
-  if (external && format !== "svg") {
-    return Response.redirect(external, 302);
-  }
-
   const { rackets } = await loadRackets();
   const racket = rackets.find((r) => r.slug === slug);
   if (!racket) {
     return new Response("Not found", { status: 404 });
   }
+
+  const external = externalRacketImage(slug);
+  if (external && format !== "svg") {
+    return Response.redirect(external, 302);
+  }
+
   const svg = racketPortraitSvg(racket);
   return new Response(svg, {
     headers: {

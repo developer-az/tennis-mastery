@@ -426,9 +426,8 @@ export function LaunchAngleVisual({
             </span>
           </p>
           <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-            Contact {formatFt(z.outFrontM)} in front of the baseline at {formatFt(z.heightM)}. Face{" "}
-            {closed.toFixed(1)}° closed. Ball center at the net is {formatFt(traj.heightAtNet)} (
-            {traj.netClearIn.toFixed(1)}″ of air over the tape).
+            {formatFt(z.outFrontM)} out · {formatFt(z.heightM)} high · face {closed.toFixed(1)}° closed · +
+            {traj.netClearIn.toFixed(1)}″ over tape.
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             <FlightGauge label="Plow" value={plow} color="var(--chart-comfort)" hint="Mass through hit" />
@@ -600,8 +599,8 @@ export function SwingPathVisual({
       </p>
       {!compact ? (
         <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-          Sweet-spot window {formatFt(z.heightLoM)}–{formatFt(z.heightHiM)} high and {formatFt(z.outFrontLoM)}–
-          {formatFt(z.outFrontHiM)} in front of the torso. {z.detail}
+          Window {formatFt(z.heightLoM)}–{formatFt(z.heightHiM)} · {formatFt(z.outFrontLoM)}–
+          {formatFt(z.outFrontHiM)} out. {z.detail}
         </p>
       ) : (
         <p className="mt-1 text-xs text-[var(--muted)]">

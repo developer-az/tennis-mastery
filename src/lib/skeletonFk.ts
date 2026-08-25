@@ -250,12 +250,20 @@ function plantLegIk(
     outKnee.copy(hip).addScaledVector(_thigh, thighLen);
   }
   outKnee.addScaledVector(right, flare * 0.035);
-  // Re-snap ankle length after flare nudge
-  _shank.subVectors(outAnkle, outKnee);
-  if (_shank.lengthSq() > 1e-8) {
-    _shank.normalize();
-    outAnkle.copy(outKnee).addScaledVector(_shank, shankLen);
-    outAnkle.y = FOOT_Y;
+  // Re-plant ankle on the floor at exact shank length (keeps knee–calf–foot connected)
+  const dy = outKnee.y - FOOT_Y;
+  const horizReachSq = shankLen * shankLen - dy * dy;
+  if (horizReachSq > 1e-6) {
+    const horizReach = Math.sqrt(horizReachSq);
+    _shank.set(plantX - outKnee.x, 0, plantZ - outKnee.z);
+    if (_shank.lengthSq() < 1e-8) {
+      _shank.set(-stanceFwd.x, 0, -stanceFwd.z);
+    }
+    if (_shank.lengthSq() < 1e-8) _shank.set(0, 0, 1);
+    _shank.normalize().multiplyScalar(horizReach);
+    outAnkle.set(outKnee.x + _shank.x, FOOT_Y, outKnee.z + _shank.z);
+  } else {
+    outAnkle.set(outKnee.x, FOOT_Y, outKnee.z);
   }
 }
 
@@ -284,9 +292,22 @@ function shiftY(out: SkeletonPose, dy: number) {
 function groundPose(out: SkeletonPose): void {
   out.leadAnkle.y = FOOT_Y;
   out.trailAnkle.y = FOOT_Y;
-  // If a knee sank below the ankle (rare), nudge it up
-  if (out.leadKnee.y < FOOT_Y + 0.08) out.leadKnee.y = FOOT_Y + 0.12;
-  if (out.trailKnee.y < FOOT_Y + 0.08) out.trailKnee.y = FOOT_Y + 0.12;
+  // Keep knee above ankle without breaking shank length — lift along hip→knee
+  const liftKnee = (hip: THREE.Vector3, knee: THREE.Vector3, ankle: THREE.Vector3) => {
+    if (knee.y >= FOOT_Y + 0.08) return;
+    const minY = FOOT_Y + 0.12;
+    const dy = minY - knee.y;
+    knee.y = minY;
+    // Pull knee slightly toward hip so calf distance stays plausible
+    _tmp.subVectors(hip, ankle).setY(0);
+    if (_tmp.lengthSq() > 1e-6) {
+      _tmp.normalize();
+      knee.x += _tmp.x * dy * 0.15;
+      knee.z += _tmp.z * dy * 0.15;
+    }
+  };
+  liftKnee(out.leadHip, out.leadKnee, out.leadAnkle);
+  liftKnee(out.trailHip, out.trailKnee, out.trailAnkle);
 }
 
 /**

@@ -18,36 +18,31 @@ const TABS: { id: EquipmentTab; label: string; short: string; blurb: string }[] 
     id: "overview",
     label: "Setup",
     short: "Setup",
-    blurb:
-      "Dial tension, gauge, and grip size here. See molded launch, string substitutes you can shop, and honest pros/cons — then jump to lead tape to mold toward a pro frame on a budget.",
+    blurb: "Tension, gauge, grip size — then molded leave and substitutes.",
   },
   {
     id: "rackets",
     label: "Rackets",
     short: "Frames",
-    blurb:
-      "Launch angle, swing path, and playing style for modern frames. Filter by brand, style, weight, head size, and pattern — compare to your tested setup, then save your frame.",
+    blurb: "Filter frames, compare to your bag, save what you hit with.",
   },
   {
     id: "strings",
     label: "Strings",
     short: "Strings",
-    blurb:
-      "Find poly 1.30 or any material/gauge/shape bucket, learn the category, then compare beds to what you have already hit with. Tension and gauge move the scores.",
+    blurb: "Poly, multi, gut — compare beds; dials move the scores.",
   },
   {
     id: "grips",
     label: "Grips",
     short: "Grips",
-    blurb:
-      "Overgrips and replacement grips — tack, cushion, sweat feel, plus your frame’s L0–L5 grip size. Dial size anytime under Setup.",
+    blurb: "Overgrips and replacements — tack, cushion, sweat feel.",
   },
   {
     id: "lead-tape",
     label: "Lead tape",
     short: "Tape",
-    blurb:
-      "Mold your frame toward a pro or target retail setup — calculated tip/handle plans — or place tape by hand and watch SW, balance, launch, and path shift live.",
+    blurb: "Mold toward a target or place strips — SW and leave update live.",
   },
 ];
 

@@ -4,6 +4,7 @@ import { useDeferredValue, useMemo, useRef, useState } from "react";
 import type { EquipmentTab, GripProfile } from "@/types/equipment";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { gripImageUrl } from "@/lib/equipment/media/urls";
+import { hasExternalPhoto, photoFirst } from "@/lib/equipment/media/externalImages";
 import { GRIP_SIZES } from "@/lib/equipment/gripSize";
 import {
   MAX_OVERGRIPS,
@@ -17,7 +18,7 @@ import { ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
 import { AisleChip, ChipRow, ProductCard, SearchField } from "./CatalogShop";
-import { uniqueSortedBrands } from "@/lib/equipment/shopAisles";
+import { GRIP_BRAND_PIN, uniqueSortedBrands } from "@/lib/equipment/shopAisles";
 
 const MAX_COMPARE = 3;
 
@@ -53,7 +54,12 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
     () => Array.from(new Set(grips.map((g) => g.texture))).sort(),
     [grips],
   );
-  const brands = useMemo(() => uniqueSortedBrands(grips), [grips]);
+  const brands = useMemo(() => {
+    const all = uniqueSortedBrands(grips);
+    const pinned = GRIP_BRAND_PIN.filter((b) => all.includes(b));
+    const pinSet = new Set(pinned);
+    return [...pinned, ...all.filter((b) => !pinSet.has(b))];
+  }, [grips]);
 
   const stackFx = useMemo(
     () => gripStackEffect(layers, grips, setup.gripSize),
@@ -62,21 +68,23 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
 
   const filtered = useMemo(() => {
     const q = deferredQuery.trim();
-    return grips.filter((g) => {
-      if (brand !== "all" && g.brand !== brand) return false;
-      if (kind !== "all" && g.kind !== kind) return false;
-      if (texture !== "all" && g.texture !== texture) return false;
-      if (!q) return true;
-      return matchesEquipmentSearch(
-        q,
-        g.brand,
-        g.name,
-        g.texture,
-        g.bestFor,
-        g.uniqueTrait,
-        g.kind,
-      );
-    });
+    return grips
+      .filter((g) => {
+        if (brand !== "all" && g.brand !== brand) return false;
+        if (kind !== "all" && g.kind !== kind) return false;
+        if (texture !== "all" && g.texture !== texture) return false;
+        if (!q) return true;
+        return matchesEquipmentSearch(
+          q,
+          g.brand,
+          g.name,
+          g.texture,
+          g.bestFor,
+          g.uniqueTrait,
+          g.kind,
+        );
+      })
+      .sort((a, b) => photoFirst(hasExternalPhoto("grip", a.id), hasExternalPhoto("grip", b.id)));
   }, [grips, deferredQuery, brand, kind, texture]);
 
   const selected = filtered.find((g) => g.id === selectedId) ?? filtered[0] ?? null;

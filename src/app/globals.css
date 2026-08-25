@@ -279,13 +279,24 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 0.15rem;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  padding-bottom: 0.35rem;
+  scrollbar-width: thin;
+  cursor: grab;
+}
+
+.sf-chip-row:active {
+  cursor: grabbing;
 }
 
 .sf-chip-row::-webkit-scrollbar {
-  display: none;
+  height: 4px;
+}
+
+.sf-chip-row::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-radius: 999px;
 }
 
 .sf-chip {
@@ -317,14 +328,20 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   gap: 0.75rem;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   padding-bottom: 0.35rem;
   scroll-snap-type: x proximity;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  scrollbar-width: thin;
 }
 
 .sf-aisle::-webkit-scrollbar {
-  display: none;
+  height: 4px;
+}
+
+.sf-aisle::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-radius: 999px;
 }
 
 .sf-product-card {

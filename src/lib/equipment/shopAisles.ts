@@ -57,16 +57,32 @@ export function uniqueSortedBrands(items: { brand: string }[]): string[] {
   return Array.from(new Set(items.map((i) => i.brand))).sort((a, b) => a.localeCompare(b));
 }
 
-export function brandsByCount(items: { brand: string }[], n?: number): string[] {
+export function brandsByCount(
+  items: { brand: string }[],
+  n?: number,
+  pin: string[] = [],
+): string[] {
   const counts = new Map<string, number>();
   for (const item of items) {
     counts.set(item.brand, (counts.get(item.brand) ?? 0) + 1);
   }
-  const sorted = [...counts.entries()]
+  const rest = [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([brand]) => brand);
+  const pinned = pin.filter((b) => counts.has(b));
+  const pinnedSet = new Set(pinned);
+  const sorted = [...pinned, ...rest.filter((b) => !pinnedSet.has(b))];
   return n ? sorted.slice(0, n) : sorted;
 }
+
+/** Prefer shop-critical brands in string aisles (Solinco etc.). */
+export const STRING_BRAND_PIN = ["Solinco", "Luxilon", "Babolat", "Wilson", "Yonex", "HEAD", "Tecnifibre"];
+
+/** Prefer Tourna dry-feel + common overgrips in grip aisles. */
+export const GRIP_BRAND_PIN = ["Tourna", "Wilson", "Yonex", "HEAD", "Babolat", "Tecnifibre", "Gamma"];
+
+/** Prefer Head Speed / Babolat / Wilson when browsing frames. */
+export const RACKET_BRAND_PIN = ["HEAD", "Babolat", "Wilson", "Yonex", "Technifibre", "Tecnifibre", "Prince"];
 
 export type StringMaterialAisle = "poly" | "multifilament" | "synthetic-gut" | "natural-gut" | "hybrid";
 
@@ -100,14 +116,17 @@ export function matchesFeel(
   return (scores[feel] ?? 0) >= min;
 }
 
-export function groupByBrand<T extends { brand: string }>(items: T[]): { brand: string; items: T[] }[] {
+export function groupByBrand<T extends { brand: string }>(
+  items: T[],
+  pin: string[] = [],
+): { brand: string; items: T[] }[] {
   const map = new Map<string, T[]>();
   for (const item of items) {
     const list = map.get(item.brand);
     if (list) list.push(item);
     else map.set(item.brand, [item]);
   }
-  return brandsByCount(items).map((brand) => ({ brand, items: map.get(brand) ?? [] }));
+  return brandsByCount(items, undefined, pin).map((brand) => ({ brand, items: map.get(brand) ?? [] }));
 }
 
 export function stringScore(s: StringProfile, key: FeelKey): number {

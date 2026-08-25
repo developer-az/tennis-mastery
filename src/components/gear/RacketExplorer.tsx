@@ -4,6 +4,7 @@ import { useDeferredValue, useMemo, useRef, useState } from "react";
 import type { EquipmentTab, RacketCatalogMeta, RacketProfile } from "@/types/equipment";
 import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
+import { hasExternalPhoto, photoFirst } from "@/lib/equipment/media/externalImages";
 import { useGearStore } from "@/store/gearStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
@@ -23,6 +24,7 @@ import {
 } from "./CatalogShop";
 import {
   FEEL_MIN,
+  RACKET_BRAND_PIN,
   RACKET_FEELS,
   RACKET_SHOP_TYPES,
   brandsByCount,
@@ -81,8 +83,13 @@ export function RacketExplorer({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const deferredQuery = useDeferredValue(query);
 
-  const brands = useMemo(() => uniqueSortedBrands(initialRackets), [initialRackets]);
-  const aisleBrands = useMemo(() => brandsByCount(initialRackets, 8), [initialRackets]);
+  const brands = useMemo(() => {
+    const all = uniqueSortedBrands(initialRackets);
+    const pinned = RACKET_BRAND_PIN.filter((b) => all.includes(b));
+    const pinSet = new Set(pinned);
+    return [...pinned, ...all.filter((b) => !pinSet.has(b))];
+  }, [initialRackets]);
+  const aisleBrands = useMemo(() => brandsByCount(initialRackets, 10, RACKET_BRAND_PIN), [initialRackets]);
   const styles = useMemo(
     () => Array.from(new Set(initialRackets.map((r) => r.style))).sort(),
     [initialRackets],
@@ -122,6 +129,8 @@ export function RacketExplorer({
 
     const sorted = [...list];
     sorted.sort((a, b) => {
+      const photo = photoFirst(hasExternalPhoto("racket", a.slug), hasExternalPhoto("racket", b.slug));
+      if (photo !== 0) return photo;
       if (q) {
         const scoreDelta =
           searchMatchScore(q, b.brand, b.model, b.slug) -
@@ -403,7 +412,7 @@ export function RacketExplorer({
 
         {showAisles ? (
           <div className="space-y-6">
-            {groupByBrand(initialRackets)
+            {groupByBrand(initialRackets, RACKET_BRAND_PIN)
               .filter((g) => aisleBrands.includes(g.brand))
               .map((g) => (
                 <CatalogAisle
@@ -412,7 +421,12 @@ export function RacketExplorer({
                   actionLabel={`See all ${g.brand}`}
                   onAction={() => setBrand(g.brand)}
                 >
-                  {g.items.slice(0, AISLE_CARDS).map((r) => (
+                  {[...g.items]
+                    .sort((a, b) =>
+                      photoFirst(hasExternalPhoto("racket", a.slug), hasExternalPhoto("racket", b.slug)),
+                    )
+                    .slice(0, AISLE_CARDS)
+                    .map((r) => (
                     <RacketCard
                       key={r.slug}
                       racket={r}

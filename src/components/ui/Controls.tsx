@@ -31,7 +31,7 @@ export function PlayerStrokePicker() {
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
           Athlete
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
           {PLAYERS.map((p) => {
             const active = p.id === playerId;
             return (
@@ -40,7 +40,7 @@ export function PlayerStrokePicker() {
                 type="button"
                 onClick={() => setPlayer(p.id)}
                 aria-pressed={active}
-                className="cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-all duration-200 hover:brightness-110"
+                className="shrink-0 cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-all duration-200 hover:brightness-110"
                 style={{
                   background: active ? p.color : "rgba(232,239,233,0.04)",
                   color: active ? "#f8f6f0" : "var(--foreground)",
@@ -60,7 +60,7 @@ export function PlayerStrokePicker() {
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
           Stroke
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
           {STROKES.map((s) => {
             const active = s === stroke;
             const label = player.strokes[s]?.label ?? STROKE_LABELS[s];
@@ -71,7 +71,7 @@ export function PlayerStrokePicker() {
                 onClick={() => setStroke(s)}
                 aria-pressed={active}
                 title={label}
-                className="cursor-pointer rounded-md px-3 py-1.5 text-sm transition-colors duration-200 hover:brightness-110"
+                className="shrink-0 cursor-pointer rounded-md px-3 py-1.5 text-sm transition-colors duration-200 hover:brightness-110"
                 style={{
                   background: active ? "var(--accent)" : "transparent",
                   color: active ? "var(--accent-ink)" : "var(--foreground)",

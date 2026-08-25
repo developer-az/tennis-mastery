@@ -146,8 +146,8 @@ export function LeadTapeLab({
             {baseRacket.brand} {baseRacket.model}
           </h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Place tape by hand on the hoop, or mold toward a target frame on the right. Tip/12 adds plow; 3
-            and 9 add stability; neck solidifies; handle speeds the whip.
+            Place strips on the hoop or mold toward a target. Tip/12 = plow; 3/9 = stability; neck =
+            solid; handle = whip.
           </p>
         </header>
 

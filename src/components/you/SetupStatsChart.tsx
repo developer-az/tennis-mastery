@@ -35,8 +35,7 @@ export function SetupStatsChart({
         Your numbers
       </h2>
       <p className="mt-1 max-w-xl text-xs text-[var(--muted)]">
-        Power, spin, control, comfort for this bag. Track segment = healthy band for{" "}
-        {role || "this mold"}; needle = molded; ghost tick = stock.
+        Healthy band for {role || "this mold"} · needle = molded · tick = stock.
       </p>
 
       {!hasScores ? (

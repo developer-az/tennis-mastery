@@ -18,6 +18,7 @@ import {
 } from "@/lib/equipment/strings";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { stringImageUrl } from "@/lib/equipment/media/urls";
+import { hasExternalPhoto, photoFirst } from "@/lib/equipment/media/externalImages";
 import { useGearStore } from "@/store/gearStore";
 import { SpinPotentialRing, TensionCurve } from "./StringVisuals";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
@@ -33,6 +34,7 @@ import {
 } from "./CatalogShop";
 import {
   FEEL_MIN,
+  STRING_BRAND_PIN,
   STRING_FEELS,
   STRING_MATERIAL_AISLES,
   brandsByCount,
@@ -95,7 +97,8 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
       .replace(/\s+/g, " ")
       .trim();
 
-    return strings.filter((s) => {
+    return strings
+      .filter((s) => {
       if (brand !== "all" && s.brand !== brand) return false;
       if (materialAisle !== "all" && stringMaterialAisle(s.material) !== materialAisle) return false;
       if (!matchesFeel(s, feel)) return false;
@@ -119,7 +122,8 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
         s.bestFor,
         s.feel,
       );
-    });
+    })
+      .sort((a, b) => photoFirst(hasExternalPhoto("string", a.id), hasExternalPhoto("string", b.id)));
   }, [strings, deferredQuery, brand, feel, materialAisle, shape, gaugeFilter, tensionFilter, targetTension]);
 
   const selected = filtered.find((s) => s.id === selectedId) ?? filtered[0] ?? null;
@@ -172,8 +176,13 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
     });
   };
 
-  const brands = useMemo(() => uniqueSortedBrands(strings), [strings]);
-  const aisleBrands = useMemo(() => brandsByCount(strings, 8), [strings]);
+  const brands = useMemo(() => {
+    const all = uniqueSortedBrands(strings);
+    const pinned = STRING_BRAND_PIN.filter((b) => all.includes(b));
+    const pinSet = new Set(pinned);
+    return [...pinned, ...all.filter((b) => !pinSet.has(b))];
+  }, [strings]);
+  const aisleBrands = useMemo(() => brandsByCount(strings, 10, STRING_BRAND_PIN), [strings]);
   const selectString = (id: string) => {
     setSelectedId(id);
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
@@ -323,7 +332,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
         </p>
         {showAisles ? (
           <div className="space-y-6">
-            {groupByBrand(strings)
+            {groupByBrand(strings, STRING_BRAND_PIN)
               .filter((g) => aisleBrands.includes(g.brand))
               .map((g) => (
                 <CatalogAisle
@@ -332,7 +341,12 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                   actionLabel={`See all ${g.brand}`}
                   onAction={() => setBrand(g.brand)}
                 >
-                  {g.items.slice(0, 8).map((s) => (
+                  {[...g.items]
+                    .sort((a, b) =>
+                      photoFirst(hasExternalPhoto("string", a.id), hasExternalPhoto("string", b.id)),
+                    )
+                    .slice(0, 8)
+                    .map((s) => (
                     <StringCard
                       key={s.id}
                       string={s}

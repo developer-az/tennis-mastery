@@ -1,8 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useCallback, useRef, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
 import { EquipmentThumb } from "./EquipmentThumb";
 
+/** Horizontal chip rail with touch + drag scroll. */
 export function ChipRow({
   label,
   children,
@@ -10,10 +11,57 @@ export function ChipRow({
   label: string;
   children: ReactNode;
 }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
+
+  const onPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = rowRef.current;
+    if (!el) return;
+    drag.current = { x: e.clientX, left: el.scrollLeft, moved: false };
+    el.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onPointerMove = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = rowRef.current;
+    const d = drag.current;
+    if (!el || !d) return;
+    const dx = e.clientX - d.x;
+    if (Math.abs(dx) > 4) d.moved = true;
+    if (d.moved) {
+      el.scrollLeft = d.left - dx;
+    }
+  }, []);
+
+  const onPointerUp = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = rowRef.current;
+    const d = drag.current;
+    drag.current = null;
+    if (el) {
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+    // Suppress click on chips after a drag
+    if (d?.moved) {
+      e.preventDefault();
+    }
+  }, []);
+
   return (
-    <div>
+    <div className="min-w-0">
       <p className="sf-label mb-2">{label}</p>
-      <div className="sf-chip-row">{children}</div>
+      <div
+        ref={rowRef}
+        className="sf-chip-row"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        {children}
+      </div>
     </div>
   );
 }
