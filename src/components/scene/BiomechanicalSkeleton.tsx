@@ -317,9 +317,9 @@ export function BiomechanicalSkeleton({
     if (m.nonHitWrist) m.nonHitWrist.scale.setScalar(0.032);
 
     if (racketGroup.current) {
-      // Racket owned by the HAND — grip butt sits in the palm, not the wrist joint
+      // Racket owned by the HAND — group origin = palm; local +Y toward tip
       _dir.subVectors(p.racketTip, p.hitHand);
-      const len = Math.max(0.35, _dir.length());
+      const len = Math.max(0.4, _dir.length());
       _dir.normalize();
 
       if (!hasPrevRacket.current) {
@@ -331,15 +331,10 @@ export function BiomechanicalSkeleton({
         if (_prevY.lengthSq() < 1e-8) _prevY.copy(_yAxis);
         else _prevY.normalize();
         const align = _prevY.dot(_dir);
-        // Large shaft jump (loop / scrub): re-seed instead of twisting through a singularity
-        if (align < -0.5 && _prevY.distanceTo(_dir) > 1.2) {
+        // Large shaft jump (scrub): re-seed instead of twisting through a singularity
+        if (align < -0.35) {
           _quat.setFromUnitVectors(_yAxis, _dir);
           prevFace.current.copy(p.racketFaceNormal);
-        } else if (align < -0.999) {
-          _xAxis.set(Math.abs(_prevY.x) < 0.9 ? 1 : 0, 0, Math.abs(_prevY.x) < 0.9 ? 0 : 1);
-          _zAxis.crossVectors(_prevY, _xAxis).normalize();
-          _swing.setFromAxisAngle(_zAxis, Math.PI);
-          _quat.copy(_swing).multiply(prevRacketQuat.current);
         } else if (align > 0.9999) {
           _quat.copy(prevRacketQuat.current);
         } else {
@@ -348,7 +343,6 @@ export function BiomechanicalSkeleton({
         }
       }
 
-      // Desired face: continuous roll scalar preferred; FK normal as direction hint
       _faceStable.copy(p.racketFaceNormal);
       _faceStable.addScaledVector(_dir, -_faceStable.dot(_dir));
       if (_faceStable.lengthSq() < 1e-6) {
@@ -357,12 +351,8 @@ export function BiomechanicalSkeleton({
         if (_zAxis.lengthSq() < 1e-8) _zAxis.set(1, 0, 0);
         else _zAxis.normalize();
         _faceStable.copy(_zAxis);
-        _rollQ.setFromAxisAngle(_dir, p.racketFaceRoll);
-        _faceStable.applyQuaternion(_rollQ);
-        _faceStable.addScaledVector(_dir, -_faceStable.dot(_dir));
       }
       _faceStable.normalize();
-      // Temporal hemisphere lock (hysteresis): only flip when clearly opposite prev face
       if (_faceStable.dot(prevFace.current) < -0.05) _faceStable.negate();
       prevFace.current.copy(_faceStable);
 
@@ -384,20 +374,23 @@ export function BiomechanicalSkeleton({
       }
       prevRacketQuat.current.copy(_quat);
 
-      _mid.addVectors(p.hitHand, p.racketTip).multiplyScalar(0.5);
-      racketGroup.current.position.copy(_mid);
+      // Palm at the butt — meshes sit along +Y toward the tip
+      racketGroup.current.position.copy(p.hitHand);
       racketGroup.current.quaternion.copy(_quat);
 
+      const handleLen = len * 0.3;
+      const throatLen = len * 0.16;
       if (m.handle) {
-        m.handle.position.set(0, -len * 0.28, 0);
-        m.handle.scale.set(1, len * 0.35, 1);
+        m.handle.position.set(0, handleLen * 0.5, 0);
+        m.handle.scale.set(1, handleLen, 1);
       }
       if (m.throat) {
-        m.throat.position.set(0, -len * 0.05, 0);
-        m.throat.scale.set(1, len * 0.2, 1);
+        m.throat.position.set(0, handleLen + throatLen * 0.5, 0);
+        m.throat.scale.set(1, throatLen, 1);
       }
-      if (m.hoop) m.hoop.position.set(0, len * 0.22, 0);
-      if (m.strings) m.strings.position.set(0, len * 0.22, 0);
+      const hoopY = handleLen + throatLen + len * 0.22;
+      if (m.hoop) m.hoop.position.set(0, hoopY, 0);
+      if (m.strings) m.strings.position.set(0, hoopY, 0);
 
       const glow = Math.min(1, driver.racketSpeedMs / 40);
       hoopMat.emissiveIntensity = 0.08 + glow * 0.35;

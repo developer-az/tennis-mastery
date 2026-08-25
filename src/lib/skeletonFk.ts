@@ -119,9 +119,9 @@ function overheadAuthGuess(j: JointAngles): number {
 }
 
 /**
- * Elbow hinge: fold the forearm in a human swing plane.
- * Takeback → tip rises in a loop. Swing/contact → crease faces down/forward (never sky).
- * Never fold the elbow across the chest or behind the ribcage.
+ * Elbow hinge: 1-DOF fold about upperArm × wingOut.
+ * Polarity is locked to the hitting wing so the axis never flips mid-swing
+ * (flips were the post-contact / recovery racket glitches).
  */
 function elbowHingeAxis(
   upperDir: THREE.Vector3,
@@ -133,31 +133,25 @@ function elbowHingeAxis(
   swingW = 0,
 ): THREE.Vector3 {
   const overheadW = smooth01((Math.abs(upperDir.dot(_up)) - 0.78) / 0.16);
-  const loopW = takebackW * (1 - swingW) * (1 - overheadW);
-  // Swing through: fold toward court-forward / slightly down so the olecranon doesn't face up
+  // Wing-out is the stable reference; blend a little up (loop) / forward (swing)
   _preferred
-    .copy(forward)
-    .multiplyScalar(0.55 + 0.85 * swingW)
-    .addScaledVector(_up, 0.95 * loopW - 0.35 * swingW * (1 - overheadW))
-    .addScaledVector(right, mirror * (0.22 + 0.08 * takebackW) * (1 - overheadW * 0.5))
-    .addScaledVector(forward, -0.1 * loopW);
+    .copy(right)
+    .multiplyScalar(mirror)
+    .addScaledVector(_up, 0.55 * takebackW * (1 - swingW) * (1 - overheadW))
+    .addScaledVector(forward, 0.35 * swingW + 0.1);
+  _preferred.addScaledVector(upperDir, -upperDir.dot(_preferred));
+  if (_preferred.lengthSq() < 1e-8) {
+    _preferred.copy(forward).addScaledVector(upperDir, -upperDir.dot(forward));
+  }
   if (_preferred.lengthSq() < 1e-8) {
     _preferred.copy(right).multiplyScalar(mirror);
   }
+  _preferred.normalize();
   out.crossVectors(upperDir, _preferred);
-  if (out.lengthSq() < 1e-6) {
-    out.copy(right).multiplyScalar(mirror);
-    out.addScaledVector(upperDir, -upperDir.dot(out));
-  }
   if (out.lengthSq() < 1e-8) {
     out.crossVectors(upperDir, forward);
   }
   out.normalize();
-  // Keep hinge so positive fold doesn't invert the crease skyward on groundstrokes
-  if (overheadW < 0.55 && swingW > 0.2) {
-    _tmp.crossVectors(upperDir, out);
-    if (_tmp.y > 0.25) out.multiplyScalar(-1);
-  }
   return out;
 }
 
@@ -451,13 +445,14 @@ function groundPose(
 
 /**
  * Coaching-grade collision catcher: push tip clear of torso capsule + head sphere.
+ * Never moves the gripping hand — the racket is owned by hitHand.
  */
 function clearRacketFromBody(out: SkeletonPose, mirror: number): void {
   const headR = 0.14;
   const torsoR = 0.11;
+  const shaftLen = Math.max(0.4, out.hitHand.distanceTo(out.racketTip));
   for (let iter = 0; iter < 6; iter++) {
     let moved = false;
-    // Head clearance
     _tmp.subVectors(out.racketTip, out.head);
     const dHead = _tmp.length();
     if (dHead < headR + 0.08) {
@@ -466,8 +461,7 @@ function clearRacketFromBody(out: SkeletonPose, mirror: number): void {
       out.racketTip.addScaledVector(_tmp, headR + 0.1 - dHead);
       moved = true;
     }
-    // Sample shaft points (hand → tip) vs torso segment
-    for (let s = 0.15; s <= 1; s += 0.2) {
+    for (let s = 0.2; s <= 1; s += 0.2) {
       _tmp.copy(out.hitHand).lerp(out.racketTip, s);
       _dir.subVectors(out.chest, out.pelvis);
       const lenSq = _dir.lengthSq();
@@ -489,12 +483,17 @@ function clearRacketFromBody(out: SkeletonPose, mirror: number): void {
           _tmp2.normalize();
         }
         const push = torsoR + 0.08 - d;
-        out.racketTip.addScaledVector(_tmp2, push * (0.5 + s * 0.5));
-        out.hitHand.addScaledVector(_tmp2, push * 0.15 * (1 - s));
+        out.racketTip.addScaledVector(_tmp2, push * (0.55 + s * 0.45));
         moved = true;
       }
     }
     if (!moved) break;
+  }
+  // Re-anchor tip on the hand→tip shaft so the grip never floats
+  _rdir.subVectors(out.racketTip, out.hitHand);
+  if (_rdir.lengthSq() > 1e-8) {
+    _rdir.normalize();
+    out.racketTip.copy(out.hitHand).addScaledVector(_rdir, shaftLen);
   }
 }
 
@@ -820,82 +819,54 @@ export function solveSkeletonFk(
   _fdir.copy(_dir);
   rotateAround(_fdir, _axis, -elbow);
 
-  // Soft carry only — do not IR-orbit the forearm across the body on takeback
-  const carry = deg(5) * wingMirror * (1 - overheadW * 0.65) * (0.25 + 0.1 * contactW);
+  // Soft carry — keep IR off the takeback orbit
+  const carry = deg(4) * wingMirror * (1 - overheadW * 0.65) * (0.2 + 0.1 * contactW);
   rotateAround(_fdir, _dir, carry);
-  rotateAround(_fdir, _dir, ir * (0.1 + 0.06 * contactW) * (1 - takebackW * 0.7));
+  rotateAround(_fdir, _dir, ir * (0.08 + 0.05 * contactW) * (1 - takebackW * 0.75));
   _fdir.normalize();
 
-  // If the fold dumped the forearm across the torso, flip the hinge (BH wing especially)
-  if (overheadW < 0.5) {
+  // Soft wing nudge (no hinge flip — flipping caused post-contact glitches)
+  if (overheadW < 0.45 && takebackW > 0.15) {
     _tmp.copy(out.hitElbow).addScaledVector(_fdir, forearm);
-    const eLat = _tmp2.subVectors(out.hitElbow, out.chest).dot(_right) * wingMirror;
-    const wLat = _tmp.subVectors(_tmp, out.chest).dot(_right) * wingMirror;
-    if (wLat < eLat - 0.06) {
-      _axis.multiplyScalar(-1);
-      _fdir.copy(_dir);
-      rotateAround(_fdir, _axis, -elbow);
-      rotateAround(_fdir, _dir, carry);
-      rotateAround(_fdir, _dir, ir * (0.1 + 0.06 * contactW) * (1 - takebackW * 0.7));
+    const elbowLat = _tmp2.subVectors(out.hitElbow, out.chest).dot(_right) * wingMirror;
+    const wristLat = _tmp.subVectors(_tmp, out.chest).dot(_right) * wingMirror;
+    if (wristLat < elbowLat - 0.05) {
+      _fdir.addScaledVector(_right, wingMirror * 0.12);
       _fdir.normalize();
     }
   }
 
   // Mild loop lift on takeback — tip rises from elevation authoring, not an arm yank
-  if (takebackW > 0.05 && overheadW < 0.55) {
-    _fdir.addScaledVector(_up, 0.28 * takebackW * (1 - overheadW));
-    _fdir.addScaledVector(_back, 0.12 * takebackW);
-    _fdir.addScaledVector(_right, wingMirror * 0.08 * takebackW);
+  if (takebackW > 0.05 && overheadW < 0.55 && wrapW < 0.25) {
+    _fdir.addScaledVector(_up, 0.55 * takebackW * (1 - overheadW));
+    _fdir.addScaledVector(_back, 0.1 * takebackW);
+    _fdir.addScaledVector(_right, wingMirror * 0.06 * takebackW);
     _fdir.normalize();
   }
-  // Wrap finish: forearm continues slightly up/across — tip high, elbow still beside torso
-  if (wrapW > 0.1 && overheadW < 0.5) {
-    _fdir.addScaledVector(_up, 0.2 * wrapW);
-    _fdir.addScaledVector(_right, -mirror * 0.18 * wrapW);
-    _fdir.addScaledVector(_fwd, 0.08 * wrapW);
+  // Soft wrap finish — tip high across, no violent yank
+  if (wrapW > 0.12 && overheadW < 0.5) {
+    _fdir.addScaledVector(_up, 0.12 * wrapW);
+    _fdir.addScaledVector(_right, -mirror * 0.1 * wrapW);
+    _fdir.addScaledVector(_fwd, 0.05 * wrapW);
     _fdir.normalize();
   }
-  // Hand stays on the hitting wing of the elbow
-  if (overheadW < 0.45) {
-    _tmp.copy(out.hitElbow).addScaledVector(_fdir, forearm);
-    const elbowLat = _tmp.subVectors(out.hitElbow, out.chest).dot(_right) * wingMirror;
-    _tmp.copy(out.hitElbow).addScaledVector(_fdir, forearm);
-    const wristLat = _tmp.subVectors(_tmp, out.chest).dot(_right) * wingMirror;
-    if (wristLat < elbowLat - 0.04) {
-      rotateAround(_fdir, _dir, deg(18) * wingMirror);
-      _fdir.normalize();
-    }
-  }
-  // If swing fold left the forearm climbing while upper arm is high, pitch it down slightly
-  if (swingW > 0.25 && overheadW < 0.5 && _fdir.y > 0.55 && _dir.y > 0.15) {
-    _fdir.y -= 0.25 * swingW;
-    _fdir.normalize();
-  }
+
   out.hitWrist.copy(out.hitElbow).addScaledVector(_fdir, forearm);
+  // Hand is a short palm along the forearm — grips the racket butt
+  out.hitHand.copy(out.hitWrist).addScaledVector(_fdir, 0.05);
 
-  out.hitHand
-    .copy(out.hitWrist)
-    .addScaledVector(_fdir, 0.055)
-    .addScaledVector(_right, wingMirror * 0.02);
-
-  // BH wing lock: wrist/hand must stay on the backhand side of the elbow (not fold across)
-  if (j.shoulderAbduction < -20 && overheadW < 0.45) {
-    const wingX = -mirror; // left for righty, right for lefty
-    const cross = (out.hitWrist.x - out.hitElbow.x) * wingX;
-    if (cross < 0.02) {
-      out.hitWrist.x = out.hitElbow.x + wingX * Math.max(0.06, Math.abs(out.hitWrist.x - out.hitElbow.x));
+  // BH takeback only: keep wrist on the backhand wing (gated — never during wrap/finish)
+  if (j.shoulderAbduction < -25 && takebackW > 0.2 && wrapW < 0.15 && overheadW < 0.4) {
+    const wingX = -mirror;
+    if ((out.hitWrist.x - out.hitElbow.x) * wingX < 0.02) {
+      out.hitWrist.x = out.hitElbow.x + wingX * 0.08;
       restoreLen(out.hitElbow, out.hitWrist, forearm);
-      out.hitHand
-        .copy(out.hitWrist)
-        .addScaledVector(_fdir, 0.055)
-        .addScaledVector(_right, wingMirror * 0.02);
       _fdir.subVectors(out.hitWrist, out.hitElbow).normalize();
+      out.hitHand.copy(out.hitWrist).addScaledVector(_fdir, 0.05);
     }
   }
 
-  // --- Racket tip from HAND ---
-  // Build tip continuously from the forearm (pitch by elevation delta) so a near-vertical
-  // forearm never flips tip aim through a pelvis-forward XZ blend singularity.
+  // --- Racket tip from HAND (grip owns the shaft) ---
   const elevRad = deg(Math.max(-95, Math.min(95, j.racketPathElevation)));
   const faceDeg = j.racketFaceAngle * mirror;
   const ulnarDeg = j.wristUlnarDeviation * mirror;
@@ -903,114 +874,134 @@ export function solveSkeletonFk(
   const ulnar = ulnarDeg / 40;
   const lag = j.wristExtension / 70;
 
-  // Upper-arm horizontal kept as a stable wing reference when forearm is near vertical
   _preferred.set(_dir.x, 0, _dir.z);
   const upperHoriz = Math.sqrt(_preferred.lengthSq());
 
+  // Tip aim starts from forearm — continuous pitch about a wing-locked axis
   _rdir.copy(_fdir);
   const forearmPitch = Math.asin(Math.max(-1, Math.min(1, _fdir.y)));
-  const dPitch = elevRad - forearmPitch;
-  _axis.crossVectors(_fdir, _up);
-  if (_axis.lengthSq() < 1e-5) {
-    // Forearm ≈ vertical: hinge about hitting-wing axis (continuous, not ±fwd flip)
-    if (upperHoriz > 0.06) {
-      _axis.set(-_preferred.z, 0, _preferred.x).normalize();
-      if (_axis.dot(_right) * mirror < 0) _axis.multiplyScalar(-1);
-    } else {
-      _axis.copy(_right).multiplyScalar(mirror);
-    }
-  } else {
-    _axis.normalize();
+  let dPitch = elevRad - forearmPitch;
+  dPitch = Math.max(-1.2, Math.min(1.35, dPitch));
+  // Pitch axis = forearm × wingOut (stable) — not forearm × world-up (flips when forearm is steep)
+  _preferred.copy(_right).multiplyScalar(wingMirror);
+  _preferred.addScaledVector(_fdir, -_fdir.dot(_preferred));
+  if (_preferred.lengthSq() < 1e-6) {
+    _preferred.set(-_fdir.z, 0, _fdir.x);
+    if (_preferred.dot(_right) * wingMirror < 0) _preferred.multiplyScalar(-1);
   }
+  _axis.copy(_preferred).normalize();
+  // Positive elevation lifts the tip about the wing-out axis
   rotateAround(_rdir, _axis, dPitch);
+
+  // Soft floor: keep tip from dumping when elevation asks for level-or-up
+  if (elevRad > 0.18) {
+    const minY = Math.sin(Math.max(0.2, elevRad)) * 0.4 + 0.1 * takebackW;
+    if (_rdir.y < minY) {
+      const blend = smooth01((minY - _rdir.y) / 0.35);
+      _rdir.y = _rdir.y * (1 - blend) + minY * blend;
+      _rdir.normalize();
+    }
+  }
 
   if (lag > 0) {
     _tmp.set(_fdir.x, 0, _fdir.z);
     if (_tmp.lengthSq() > 0.04) {
       _tmp.normalize();
-      _rdir.addScaledVector(_tmp, -lag * 0.28);
+      _rdir.addScaledVector(_tmp, -lag * 0.22);
     } else if (upperHoriz > 0.06) {
       _tmp.copy(_preferred).multiplyScalar(1 / upperHoriz);
-      _rdir.addScaledVector(_tmp, -lag * 0.2);
+      _rdir.addScaledVector(_tmp, -lag * 0.16);
     }
-    _rdir.addScaledVector(_up, lag * 0.22);
+    _rdir.addScaledVector(_up, lag * 0.18);
   } else if (lag < 0) {
-    _rdir.addScaledVector(_fwd, -lag * 0.5);
+    _rdir.addScaledVector(_fwd, -lag * 0.4);
   }
 
-  _rdir.addScaledVector(_right, face * 0.1 - ulnar * 0.22 + mirror * 0.02 * contactW);
-  _rdir.addScaledVector(_up, ulnar * 0.08);
+  _rdir.addScaledVector(_right, face * 0.08 - ulnar * 0.18 + wingMirror * 0.015 * contactW);
+  _rdir.addScaledVector(_up, ulnar * 0.06);
   if (_rdir.lengthSq() < 1e-8) {
     _rdir.copy(_fwd).multiplyScalar(Math.cos(elevRad));
     _rdir.y = Math.sin(elevRad);
   }
   _rdir.normalize();
 
-  out.racketTip.copy(out.hitHand).addScaledVector(_rdir, 0.58);
+  const RACKET_LEN = 0.58;
+  out.racketTip.copy(out.hitHand).addScaledVector(_rdir, RACKET_LEN);
 
-  // Keep tip on the BH wing during takeback (elevation must not flip it across the body)
-  if (j.shoulderAbduction < -20 && takebackW > 0.12 && overheadW < 0.45) {
+  // BH takeback tip lock only
+  if (j.shoulderAbduction < -25 && takebackW > 0.2 && wrapW < 0.15 && overheadW < 0.4) {
     const wingX = -mirror;
     if ((out.racketTip.x - out.hitElbow.x) * wingX < 0.04) {
-      out.racketTip.x = out.hitElbow.x + wingX * 0.22;
-      _rdir.subVectors(out.racketTip, out.hitHand).normalize();
-      out.racketTip.copy(out.hitHand).addScaledVector(_rdir, 0.58);
+      out.racketTip.x = out.hitElbow.x + wingX * 0.2;
+      _rdir.subVectors(out.racketTip, out.hitHand);
+      if (_rdir.lengthSq() > 1e-8) {
+        _rdir.normalize();
+        out.racketTip.copy(out.hitHand).addScaledVector(_rdir, RACKET_LEN);
+      }
     }
   }
 
   const irDeg = j.shoulderInternalRotation * mirror;
   recomputeFace(out, _fwd, _right, mirror, faceDeg, irDeg, ulnarDeg);
 
-  // Collision catcher — tip/shaft clear of head + torso
   clearRacketFromBody(out, mirror);
   recomputeFace(out, _fwd, _right, mirror, faceDeg, irDeg, ulnarDeg);
 
-  // --- Lead / non-hitting arm: point across on the coil, tuck as the hips fire ---
-  const nhFlex = deg(j.nonHittingShoulderFlexion);
-  const nhAbd = deg(j.nonHittingShoulderAbduction ?? 28);
+  // --- Lead / non-hitting arm: point UP at the ball, then soft tuck to the ribs ---
+  // Never yank the arm behind the body (that read as a backward swing).
+  const nhFlex = deg(Math.max(25, Math.min(175, j.nonHittingShoulderFlexion)));
+  const nhAbd = deg(Math.max(8, Math.min(90, j.nonHittingShoulderAbduction ?? 40)));
   const nhIr = deg((j.nonHittingShoulderInternalRotation ?? 0) * -mirror);
-  out.nonHitUpperTwist = nhIr * 0.55;
+  out.nonHitUpperTwist = nhIr * 0.4;
 
-  const nhOverheadW = smooth01((Math.abs(Math.cos(nhAbd) * Math.cos(nhFlex)) - 0.78) / 0.16);
+  const nhOverheadW = smooth01((j.nonHittingShoulderFlexion - 140) / 40);
   const pointW =
-    smooth01((j.nonHittingShoulderFlexion - 48) / 40) *
-    smooth01((40 - j.nonHittingElbowFlexion) / 28) *
-    (1 - nhOverheadW);
+    smooth01((j.nonHittingShoulderFlexion - 40) / 35) *
+    smooth01((55 - j.nonHittingElbowFlexion) / 35) *
+    (1 - nhOverheadW * 0.5);
   const tuckW =
-    smooth01((j.nonHittingElbowFlexion - 58) / 28) *
-    (1 - pointW) *
-    (1 - nhOverheadW);
-  const pullBackW =
-    smooth01((28 - j.nonHittingShoulderFlexion) / 24) *
-    smooth01(((j.nonHittingShoulderAbduction ?? 28) - 22) / 28);
+    smooth01((j.nonHittingElbowFlexion - 50) / 35) *
+    smooth01((70 - j.nonHittingShoulderFlexion) / 40) *
+    (1 - pointW * 0.5);
 
   _dir
     .set(0, 0, 0)
-    .addScaledVector(_right, -mirror * (Math.sin(nhAbd) + 0.1 * pointW))
-    .addScaledVector(_up, -Math.cos(nhAbd) * Math.cos(nhFlex) + 0.22 * pullBackW - 0.18 * tuckW)
+    .addScaledVector(_right, -mirror * (Math.sin(nhAbd) * 0.85 + 0.08 * pointW))
+    .addScaledVector(_up, -Math.cos(nhAbd) * Math.cos(nhFlex) + 0.35 * pointW - 0.1 * tuckW)
     .addScaledVector(
       _fwd,
-      Math.cos(nhAbd) * Math.sin(nhFlex) + 0.28 * pointW - 0.55 * pullBackW - 0.12 * tuckW,
+      Math.cos(nhAbd) * Math.sin(nhFlex) + 0.35 * pointW - 0.08 * tuckW,
     )
     .normalize();
+  // Keep lead elbow from dropping below the shoulder line on the point
+  if (pointW > 0.2 && _dir.y < 0.05) {
+    _dir.y = 0.05 + 0.25 * pointW;
+    _dir.normalize();
+  }
   out.nonHitElbow.copy(out.nonHitShoulder).addScaledVector(_dir, upperArm);
-  wingElbow(out.nonHitShoulder, out.nonHitElbow, out.chest, _right, -mirror, 0.14, upperArm);
+  wingElbow(out.nonHitShoulder, out.nonHitElbow, out.chest, _right, -mirror, 0.12, upperArm);
+  // Soft height floor — lead arm stays up through the hit like tour players
+  if (out.nonHitElbow.y < out.nonHitShoulder.y - 0.06 && tuckW < 0.55) {
+    out.nonHitElbow.y = out.nonHitShoulder.y - 0.04 + 0.1 * pointW;
+    restoreLen(out.nonHitShoulder, out.nonHitElbow, upperArm);
+  }
   _dir.subVectors(out.nonHitElbow, out.nonHitShoulder).normalize();
 
   _fdir.copy(_dir);
-  const nhElbow = deg(Math.max(5, Math.min(145, j.nonHittingElbowFlexion)));
-  elbowHingeAxis(_dir, _right, _fwd, -mirror, _axis, 0);
-  rotateAround(_fdir, _axis, -nhElbow * (0.72 + 0.2 * tuckW));
-  rotateAround(_fdir, _dir, nhIr * 0.45 + deg(-6) * -mirror * 0.15);
-  if (tuckW > 0.15) {
-    // Fold the forearm in toward the ribs — counterbalance, not a second hitting arm
-    _fdir.addScaledVector(_fwd, -0.25 * tuckW);
-    _fdir.addScaledVector(_up, -0.2 * tuckW);
-    _fdir.addScaledVector(_right, mirror * 0.12 * tuckW);
-  }
+  const nhElbow = deg(Math.max(8, Math.min(130, j.nonHittingElbowFlexion)));
+  elbowHingeAxis(_dir, _right, _fwd, -mirror, _axis, 0, 0);
+  rotateAround(_fdir, _axis, -nhElbow * (0.65 + 0.2 * tuckW));
+  rotateAround(_fdir, _dir, nhIr * 0.3);
   if (pointW > 0.15) {
-    _fdir.addScaledVector(_fwd, 0.2 * pointW);
-    _fdir.addScaledVector(_right, -mirror * 0.08 * pointW);
+    _fdir.addScaledVector(_fwd, 0.25 * pointW);
+    _fdir.addScaledVector(_up, 0.12 * pointW);
+    _fdir.addScaledVector(_right, -mirror * 0.06 * pointW);
+  }
+  if (tuckW > 0.2) {
+    // Fold in toward the sternum — not behind the back
+    _fdir.addScaledVector(_fwd, 0.05 * tuckW);
+    _fdir.addScaledVector(_up, -0.12 * tuckW);
+    _fdir.addScaledVector(_right, mirror * 0.18 * tuckW);
   }
   _fdir.normalize();
   out.nonHitWrist.copy(out.nonHitElbow).addScaledVector(_fdir, forearm);
