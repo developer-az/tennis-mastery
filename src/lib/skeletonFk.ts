@@ -131,20 +131,27 @@ function elbowHingeAxis(
   out: THREE.Vector3,
   takebackW = 0,
   swingW = 0,
+  bhWingW = 0,
 ): THREE.Vector3 {
   const overheadW = smooth01((Math.abs(upperDir.dot(_up)) - 0.78) / 0.16);
-  // Wing-out is the stable reference; blend a little up (loop) / forward (swing)
+  // Wing-out is the stable reference; blend a little up (loop) / forward (swing).
+  // BH across-body upper arm is nearly parallel to wing-out — add extra up/back
+  // bias so the hinge axis cannot flip hemisphere mid-finish.
   _preferred
     .copy(right)
     .multiplyScalar(mirror)
-    .addScaledVector(_up, 0.55 * takebackW * (1 - swingW) * (1 - overheadW))
-    .addScaledVector(forward, 0.35 * swingW + 0.1);
+    .addScaledVector(
+      _up,
+      0.55 * takebackW * (1 - swingW) * (1 - overheadW) + 0.35 * bhWingW + 0.12,
+    )
+    .addScaledVector(forward, 0.35 * swingW + 0.15 * (1 - 0.4 * bhWingW))
+    .addScaledVector(_back, 0.22 * bhWingW * (1 - swingW * 0.65));
   _preferred.addScaledVector(upperDir, -upperDir.dot(_preferred));
   if (_preferred.lengthSq() < 1e-8) {
     _preferred.copy(forward).addScaledVector(upperDir, -upperDir.dot(forward));
   }
   if (_preferred.lengthSq() < 1e-8) {
-    _preferred.copy(right).multiplyScalar(mirror);
+    _preferred.copy(_up);
   }
   _preferred.normalize();
   out.crossVectors(upperDir, _preferred);
@@ -884,7 +891,7 @@ export function solveSkeletonFk(
   );
   const swingW = Math.max(contactW, wrapW) * (1 - takebackW * 0.85);
 
-  elbowHingeAxis(_dir, _right, _fwd, wingMirror, _axis, takebackW * (1 - overheadW), swingW);
+  elbowHingeAxis(_dir, _right, _fwd, wingMirror, _axis, takebackW * (1 - overheadW), swingW, bhWingW);
   _fdir.copy(_dir);
   rotateAround(_fdir, _axis, -elbow);
 
@@ -1022,9 +1029,11 @@ export function solveSkeletonFk(
   rotateAround(_rdir, _axis, dPitch);
 
   // Soft floor: keep tip from dumping when elevation asks for level-or-up
-  if (elevRad > 0.12) {
+  if (elevRad > 0.05) {
     const minY =
-      Math.sin(Math.max(0.15, elevRad)) * (0.38 + 0.12 * takebackW) + 0.1 * takebackW;
+      Math.sin(Math.max(0.08, elevRad)) * (0.42 + 0.12 * takebackW) +
+      0.08 * takebackW +
+      0.12 * bhWingW * (1 - takebackW);
     if (_rdir.y < minY) {
       const blend = smooth01((minY - _rdir.y) / 0.4) * (0.75 + 0.2 * takebackW);
       _rdir.y = _rdir.y * (1 - blend) + minY * blend;
@@ -1059,19 +1068,21 @@ export function solveSkeletonFk(
   // BH: soft shaft bias — keep tip on BH wing without killing the takeback loop
   if (bhWingW > 0.02 && overheadW < 0.5) {
     const shaftOnBh = _rdir.x * worldWing;
-    const wantShaft = 0.08 + 0.2 * takebackW + 0.08 * contactW;
+    const wantShaft = 0.08 + 0.18 * takebackW + 0.1 * contactW;
     if (shaftOnBh < wantShaft) {
-      _rdir.x += worldWing * (wantShaft - shaftOnBh) * (0.35 + 0.35 * bhWingW);
+      _rdir.x += worldWing * (wantShaft - shaftOnBh) * (0.3 + 0.3 * bhWingW);
     }
-    // Takeback: tip loops UP and BACK on the BH wing (classic unit-turn coil)
-    if (takebackW > 0.15) {
-      _rdir.addScaledVector(_back, 0.35 * takebackW * bhWingW);
-      _rdir.y += 0.35 * takebackW * bhWingW;
-      if (_rdir.y < 0.15) _rdir.y = 0.15 + 0.25 * takebackW;
+    // Takeback only: tip loops UP and BACK — never during drive/finish or the
+    // tip teleports behind the body when takebackW cross-fades out.
+    const prepLoop = takebackW * (1 - contactW) * smooth01((takebackW - 0.2) / 0.25);
+    if (prepLoop > 0.05) {
+      _rdir.addScaledVector(_back, 0.28 * prepLoop * bhWingW);
+      _rdir.y += 0.28 * prepLoop * bhWingW;
+      if (_rdir.y < 0.12) _rdir.y = 0.12 + 0.2 * prepLoop;
     }
     // Finish: gentle lift — avoid a sky spike that teleports into recovery
-    if (j.shoulderFlexion > 95 && takebackW < 0.25) {
-      _rdir.y += 0.08 * bhWingW * smooth01((j.shoulderFlexion - 95) / 50);
+    if (j.shoulderFlexion > 92 && takebackW < 0.2 && contactW < 0.55) {
+      _rdir.y += 0.04 * bhWingW * smooth01((j.shoulderFlexion - 92) / 40);
     }
     _rdir.normalize();
   }
@@ -1110,15 +1121,35 @@ export function solveSkeletonFk(
     if (tipFromHand < minFromHand) {
       out.racketTip.x += worldWing * (minFromHand - tipFromHand) * 0.7;
     }
-    // After X correction, restore takeback loop depth/height
-    if (takebackW > 0.2) {
-      const wantBehind = out.hitHand.z + 0.15 + 0.32 * takebackW;
+    // After X correction, restore takeback loop depth/height (prep only —
+    // don't yank the tip behind the hand once the swing is driving forward)
+    if (takebackW > 0.35 && contactW < 0.25) {
+      const wantBehind = out.hitHand.z + 0.1 + 0.22 * takebackW;
       if (out.racketTip.z < wantBehind) {
-        out.racketTip.z += (wantBehind - out.racketTip.z) * Math.min(1, 0.75 * takebackW);
+        out.racketTip.z += (wantBehind - out.racketTip.z) * Math.min(1, 0.55 * takebackW);
       }
-      const wantUp = out.hitHand.y + 0.08 + 0.18 * takebackW;
+      const wantUp = out.hitHand.y + 0.06 + 0.14 * takebackW;
       if (out.racketTip.y < wantUp) {
-        out.racketTip.y += (wantUp - out.racketTip.y) * Math.min(1, 0.9 * takebackW);
+        out.racketTip.y += (wantUp - out.racketTip.y) * Math.min(1, 0.75 * takebackW);
+      }
+    }
+    // Drive/contact: keep tip in front of the chest on the BH wing (slot → ball)
+    const driveW = Math.max(contactW, smooth01((0.35 - takebackW) / 0.25)) * bhWingW;
+    if (driveW > 0.15 && takebackW < 0.45) {
+      const wantFront = out.chest.z - (0.28 + 0.35 * contactW);
+      if (out.racketTip.z > wantFront) {
+        out.racketTip.z += (wantFront - out.racketTip.z) * Math.min(0.75, 0.4 + 0.4 * driveW);
+      }
+      const minTipY = out.hitHand.y - 0.05;
+      if (out.racketTip.y < minTipY) {
+        out.racketTip.y += (minTipY - out.racketTip.y) * 0.55;
+      }
+    }
+    // Finish height soft cap — near head, not sky
+    if (takebackW < 0.25 && j.shoulderFlexion > 85) {
+      const maxTipY = out.head.y + 0.12;
+      if (out.racketTip.y > maxTipY) {
+        out.racketTip.y += (maxTipY - out.racketTip.y) * 0.45;
       }
     }
     _rdir.subVectors(out.racketTip, out.hitHand);
@@ -1206,10 +1237,32 @@ export function solveSkeletonFk(
   out.nonHitHand.copy(out.nonHitWrist).addScaledVector(_fdir, 0.05);
 
   if (!oneHanded) {
-    // 2HBH: hands share the grip — blend off-arm toward the hitting hand/elbow
-    out.nonHitHand.lerp(out.hitHand, 0.78);
-    out.nonHitWrist.lerp(out.hitWrist, 0.68);
-    out.nonHitElbow.lerp(out.hitElbow, 0.32);
+    // 2HBH: stack both hands on the shared grip. Weak elbow blends left the
+    // off-arm floating away while the hand snapped to the handle (split look).
+    const stackW = Math.max(bhWingW, smooth01((-j.shoulderAbduction - 8) / 25));
+    if (stackW > 0.08) {
+      // Top hand (non-dominant) sits just above the bottom hand on the grip
+      out.nonHitHand.copy(out.hitHand).addScaledVector(_up, 0.04 * stackW);
+      // Pull off-elbow toward the hitting elbow so both arms coil together
+      out.nonHitElbow.lerp(out.hitElbow, 0.42 + 0.28 * stackW);
+      restoreLen(out.nonHitShoulder, out.nonHitElbow, upperArm);
+      // Rebuild forearm toward the stacked hand (preserve bone length)
+      _fdir.subVectors(out.nonHitHand, out.nonHitElbow);
+      if (_fdir.lengthSq() < 1e-6) {
+        _fdir.copy(_fwd).addScaledVector(_right, worldWing * 0.3);
+      }
+      _fdir.normalize();
+      out.nonHitWrist.copy(out.nonHitElbow).addScaledVector(_fdir, forearm);
+      out.nonHitHand.copy(out.nonHitWrist).addScaledVector(_fdir, 0.05);
+      // Final grip stack — keep hands within ~6–8 cm
+      out.nonHitHand.lerp(out.hitHand, 0.72);
+      out.nonHitHand.y += 0.028;
+      out.nonHitWrist.lerpVectors(out.nonHitElbow, out.nonHitHand, forearm / (forearm + 0.05));
+    } else {
+      out.nonHitHand.lerp(out.hitHand, 0.78);
+      out.nonHitWrist.lerp(out.hitWrist, 0.68);
+      out.nonHitElbow.lerp(out.hitElbow, 0.4);
+    }
   }
 }
 

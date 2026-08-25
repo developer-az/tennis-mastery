@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PLAYERS } from "@/data/players";
 import { useCoachStore } from "@/store/coachStore";
 import type { StrokeType } from "@/types/biomechanics";
 
 const STROKES = new Set<StrokeType>(["forehand", "backhand", "serve", "slice", "volley"]);
+
+function readParam(searchParams: URLSearchParams, key: string): string | null {
+  const fromHook = searchParams.get(key);
+  if (fromHook) return fromHook;
+  // First client paint can briefly miss the query string — fall back to location.
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get(key);
+}
 
 /** Hydrate lab state from URL and keep the query string in sync. */
 export function LabUrlSync() {
@@ -15,33 +23,32 @@ export function LabUrlSync() {
   const pathname = usePathname();
   const playerId = useCoachStore((s) => s.playerId);
   const stroke = useCoachStore((s) => s.stroke);
-  const setPlayer = useCoachStore((s) => s.setPlayer);
-  const setStroke = useCoachStore((s) => s.setStroke);
+  const hydrated = useRef(false);
 
-  // Hydrate once from URL on mount / when search changes externally
+  // Hydrate from URL first — never let the store default overwrite a deep link.
   useEffect(() => {
-    const p = searchParams.get("player");
-    const s = searchParams.get("stroke") as StrokeType | null;
-    if (p && PLAYERS.some((pl) => pl.id === p) && p !== playerId) {
-      setPlayer(p);
+    const state = useCoachStore.getState();
+    const p = readParam(searchParams, "player");
+    const s = readParam(searchParams, "stroke") as StrokeType | null;
+    if (p && PLAYERS.some((pl) => pl.id === p) && p !== state.playerId) {
+      state.setPlayer(p);
     }
-    if (s && STROKES.has(s) && s !== stroke) {
-      setStroke(s);
+    if (s && STROKES.has(s) && s !== state.stroke) {
+      state.setStroke(s);
     }
-    // Intentionally only react to searchParams — store writes sync the other way.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    hydrated.current = true;
   }, [searchParams]);
 
-  // Mirror store → URL (shareable deep links)
+  // Mirror store → URL only after hydrate (shareable deep links)
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    if (!hydrated.current) return;
+    const params = new URLSearchParams(
+      typeof window !== "undefined" ? window.location.search : searchParams.toString(),
+    );
+    if (params.get("player") === playerId && params.get("stroke") === stroke) return;
     params.set("player", playerId);
     params.set("stroke", stroke);
-    const next = `${pathname}?${params.toString()}`;
-    const current = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
-    if (next !== current) {
-      router.replace(next, { scroll: false });
-    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [playerId, stroke, pathname, router, searchParams]);
 
   return null;
