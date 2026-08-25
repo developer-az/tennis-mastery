@@ -1,4 +1,5 @@
 import type { StringProfile, TensionOutcome } from "@/types/equipment";
+import { equipmentLabel } from "@/lib/equipment/labels";
 
 function clamp(v: number, a = 5, b = 98): number {
   return Math.max(a, Math.min(b, Math.round(v)));
@@ -204,22 +205,22 @@ export function findSimilarStrings(
     if (score < 55) continue;
 
     const bits: string[] = [];
-    if (s.material === reference.material) bits.push(`same ${materialLabel(s.material)}`);
+    if (s.material === reference.material) bits.push(materialLabel(s.material));
     else if (isPolyFamily(s.material) && isPolyFamily(reference.material)) {
       bits.push("poly family");
     }
-    if (s.shape === reference.shape) bits.push(`${shapeLabel(s.shape).toLowerCase()} profile`);
-    if (dSpin <= 6) bits.push("near spin");
-    if (dCtl <= 6) bits.push("near control");
-    if (dComf <= 8) bits.push("near comfort");
-    if (dStiff <= 8) bits.push("similar stiffness feel");
-    if (bits.length === 0) bits.push("closest overall score match");
+    if (s.shape === reference.shape) bits.push(shapeLabel(s.shape));
+    if (bits.length === 0) {
+      if (dSpin <= 6) bits.push("near spin");
+      else if (dCtl <= 6) bits.push("near control");
+      else bits.push("close match");
+    }
 
     out.push({
       string: s,
       score,
-      why: bits.join(" · "),
-      shopQuery: `${s.brand} ${s.name} tennis string`,
+      why: bits.slice(0, 2).join(" · "),
+      shopQuery: `${equipmentLabel(s.brand, s.name)} tennis string`,
     });
   }
 

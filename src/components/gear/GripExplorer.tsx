@@ -5,6 +5,8 @@ import type { EquipmentTab, GripProfile } from "@/types/equipment";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { gripImageUrl } from "@/lib/equipment/media/urls";
 import { hasExternalPhoto, photoFirst } from "@/lib/equipment/media/externalImages";
+import { brandAccent } from "@/lib/equipment/media/brandColors";
+import { equipmentLabel, modelWithoutBrand } from "@/lib/equipment/labels";
 import { GRIP_SIZES } from "@/lib/equipment/gripSize";
 import {
   MAX_OVERGRIPS,
@@ -95,7 +97,7 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
   const detailRef = useRef<HTMLDivElement>(null);
 
   const replaceStack = (g: GripProfile) => {
-    setGrip(g.id, `${g.brand} ${g.name}`, {
+    setGrip(g.id, equipmentLabel(g.brand, g.name), {
       tackiness: g.tackiness,
       cushion: g.cushion,
       absorbency: g.absorbency,
@@ -111,7 +113,7 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
       return;
     }
     addGripLayer(
-      { id: g.id, label: `${g.brand} ${g.name}`, kind: g.kind },
+      { id: g.id, label: equipmentLabel(g.brand, g.name), kind: g.kind },
       {
         tackiness: g.tackiness,
         cushion: g.cushion,
@@ -295,11 +297,12 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
             <ProductCard
               key={g.id}
               image={gripImageUrl(g)}
-              alt={`${g.brand} ${g.name}`}
+              alt={equipmentLabel(g.brand, g.name)}
               brand={g.brand}
-              name={g.name}
+              name={modelWithoutBrand(g.brand, g.name)}
               badge={g.kind === "overgrip" ? "Overgrip" : "Replacement"}
-              meta={`${g.texture} · ${g.thicknessMm} mm`}
+              meta={g.texture}
+              accent={brandAccent(g.brand)}
               scores={[
                 { label: "Tack", value: g.tackiness, color: "var(--chart-spin)" },
                 { label: "Cushion", value: g.cushion, color: "var(--chart-comfort)" },

@@ -19,6 +19,8 @@ import {
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { stringImageUrl } from "@/lib/equipment/media/urls";
 import { hasExternalPhoto, photoFirst } from "@/lib/equipment/media/externalImages";
+import { brandAccent } from "@/lib/equipment/media/brandColors";
+import { equipmentLabel, modelWithoutBrand } from "@/lib/equipment/labels";
 import { useGearStore } from "@/store/gearStore";
 import { SpinPotentialRing, TensionCurve } from "./StringVisuals";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
@@ -43,7 +45,8 @@ import {
   groupByBrand,
   matchesFeel,
   stringMaterialAisle,
-  stringMaterialShopLabel,
+  stringMaterialShortLabel,
+  stringShapeShortLabel,
   uniqueSortedBrands,
   type FeelKey,
   type StringMaterialAisle,
@@ -168,7 +171,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
     const t = tensionById[s.id] ?? s.recommendedTensionLbs;
     const g = gaugeById[s.id] ?? s.gaugesMm[0] ?? 1.25;
     const outcome = tensionOutcome(s, t, g);
-    setString(s.id, `${s.brand} ${s.name}`, {
+    setString(s.id, equipmentLabel(s.brand, s.name), {
       tensionLbs: t,
       gaugeMm: g,
       power: outcome.power,
@@ -741,11 +744,12 @@ function StringCard({
   return (
     <ProductCard
       image={stringImageUrl(string)}
-      alt={`${string.brand} ${string.name}`}
+      alt={equipmentLabel(string.brand, string.name)}
       brand={string.brand}
-      name={string.name}
-      badge={stringMaterialShopLabel(string.material)}
-      meta={`${string.recommendedTensionLbs} lbs rec`}
+      name={modelWithoutBrand(string.brand, string.name)}
+      badge={stringMaterialShortLabel(string.material)}
+      meta={stringShapeShortLabel(string.shape)}
+      accent={brandAccent(string.brand)}
       scores={[
         { label: "Spin", value: string.spin, color: "var(--chart-spin)" },
         { label: "Power", value: string.power, color: "var(--chart-power)" },

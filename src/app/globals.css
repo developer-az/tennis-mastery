@@ -352,6 +352,7 @@ input[type="range"]::-webkit-slider-thumb {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
+  min-width: 0;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 

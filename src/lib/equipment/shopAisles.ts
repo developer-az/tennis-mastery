@@ -107,6 +107,45 @@ export function stringMaterialShopLabel(material: StringMaterial): string {
   return STRING_MATERIAL_AISLES.find((x) => x.id === aisle)?.label ?? material;
 }
 
+/** Compact material chip for product cards / swap rails (not aisle blurbs). */
+export function stringMaterialShortLabel(material: StringMaterial): string {
+  switch (material) {
+    case "polyester":
+      return "Poly";
+    case "co-poly":
+      return "Co-poly";
+    case "multifilament":
+      return "Multi";
+    case "synthetic-gut":
+      return "Syn gut";
+    case "natural-gut":
+      return "Gut";
+    case "hybrid":
+      return "Hybrid";
+  }
+}
+
+export function stringShapeShortLabel(shape: string): string {
+  switch (shape) {
+    case "round":
+      return "Round";
+    case "octagonal":
+      return "Oct";
+    case "hexagonal":
+      return "Hex";
+    case "pentagonal":
+      return "Pent";
+    case "twisted":
+      return "Twist";
+    case "textured":
+      return "Texture";
+    case "triangular":
+      return "Tri";
+    default:
+      return shape;
+  }
+}
+
 export function matchesFeel(
   scores: Partial<Record<FeelKey, number>>,
   feel: FeelKey | "all",

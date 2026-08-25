@@ -4,13 +4,16 @@ import { useDeferredValue, useMemo, useState } from "react";
 import type { GripProfile, RacketProfile, StringProfile } from "@/types/equipment";
 import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search";
 import { gripImageUrl, racketImageUrl, stringImageUrl } from "@/lib/equipment/media/urls";
+import { brandAccent } from "@/lib/equipment/media/brandColors";
+import { equipmentLabel, modelWithoutBrand } from "@/lib/equipment/labels";
 import { useGearStore } from "@/store/gearStore";
 import { AisleChip, ChipRow, ProductCard, SearchField } from "@/components/gear/CatalogShop";
 import {
   RACKET_SHOP_TYPES,
   racketShopBadge,
   racketShopType,
-  stringMaterialShopLabel,
+  stringMaterialShortLabel,
+  stringShapeShortLabel,
   uniqueSortedBrands,
   type RacketShopType,
 } from "@/lib/equipment/shopAisles";
@@ -18,7 +21,7 @@ import {
 export type PickerKind = "racket" | "string" | "grip";
 
 export function saveRacketToBag(r: RacketProfile) {
-  useGearStore.getState().setRacket(r.slug, `${r.brand} ${r.model}`, {
+  useGearStore.getState().setRacket(r.slug, equipmentLabel(r.brand, r.model), {
     idealLaunchAngleDeg: r.idealLaunchAngleDeg,
     idealSwingPathDeg: r.idealSwingPathDeg,
     power: r.power,
@@ -32,7 +35,7 @@ export function saveRacketToBag(r: RacketProfile) {
 }
 
 export function saveStringToBag(s: StringProfile) {
-  useGearStore.getState().setString(s.id, `${s.brand} ${s.name}`, {
+  useGearStore.getState().setString(s.id, equipmentLabel(s.brand, s.name), {
     tensionLbs: s.recommendedTensionLbs,
     gaugeMm: s.gaugesMm[0],
     power: s.power,
@@ -43,7 +46,7 @@ export function saveStringToBag(s: StringProfile) {
 }
 
 export function saveGripToBag(g: GripProfile) {
-  useGearStore.getState().setGrip(g.id, `${g.brand} ${g.name}`, {
+  useGearStore.getState().setGrip(g.id, equipmentLabel(g.brand, g.name), {
     tackiness: g.tackiness,
     cushion: g.cushion,
     absorbency: g.absorbency,
@@ -52,7 +55,7 @@ export function saveGripToBag(g: GripProfile) {
   });
 }
 
-const VISIBLE = 18;
+const VISIBLE = 48;
 
 export function GearPickerSheet({
   kind,
@@ -134,140 +137,149 @@ export function GearPickerSheet({
         role="dialog"
         aria-modal
         aria-labelledby="picker-title"
-        className="relative z-[71] flex max-h-[92vh] w-full max-w-3xl flex-col border border-[var(--line)] bg-[var(--panel)] p-4 shadow-2xl sm:rounded-[var(--radius)]"
+        className="relative z-[71] flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden border border-[var(--line)] bg-[var(--panel)] shadow-2xl sm:rounded-[var(--radius)]"
       >
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 id="picker-title" className="font-[family-name:var(--font-display)] text-xl">
-            {title}
-          </h2>
-          <button type="button" onClick={onClose} className="text-sm text-[var(--muted)]">
-            Close
-          </button>
-        </div>
-        <SearchField
-          value={query}
-          onChange={setQuery}
-          placeholder={
-            kind === "racket"
-              ? "Search Blade, CX 200…"
-              : kind === "string"
-                ? "Search ALU Power, RPM…"
-                : "Search Tourna, Super Grap…"
-          }
-          label={title}
-        />
-        <div className="mt-3 space-y-3">
-          <ChipRow label="Brand">
-            <AisleChip label="All" active={brand === "all"} onClick={() => setBrand("all")} />
-            {brands.map((b) => (
-              <AisleChip key={b} label={b} active={brand === b} onClick={() => setBrand(b)} />
-            ))}
-          </ChipRow>
-          {kind === "racket" ? (
-            <ChipRow label="Type">
-              <AisleChip
-                label="All types"
-                active={shopType === "all"}
-                onClick={() => setShopType("all")}
-              />
-              {RACKET_SHOP_TYPES.map((t) => (
-                <AisleChip
-                  key={t.id}
-                  label={t.label}
-                  active={shopType === t.id}
-                  onClick={() => setShopType(t.id)}
-                />
+        <div className="shrink-0 space-y-3 border-b border-[var(--line)] p-4 pb-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="picker-title" className="font-[family-name:var(--font-display)] text-xl">
+              {title}
+            </h2>
+            <button type="button" onClick={onClose} className="text-sm text-[var(--muted)]">
+              Close
+            </button>
+          </div>
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            placeholder={
+              kind === "racket"
+                ? "Search Blade, CX 200…"
+                : kind === "string"
+                  ? "Search ALU Power, RPM…"
+                  : "Search Tourna, Super Grap…"
+            }
+            label={title}
+          />
+          <div className="space-y-3">
+            <ChipRow label="Brand">
+              <AisleChip label="All" active={brand === "all"} onClick={() => setBrand("all")} />
+              {brands.map((b) => (
+                <AisleChip key={b} label={b} active={brand === b} onClick={() => setBrand(b)} />
               ))}
             </ChipRow>
-          ) : null}
+            {kind === "racket" ? (
+              <ChipRow label="Type">
+                <AisleChip
+                  label="All types"
+                  active={shopType === "all"}
+                  onClick={() => setShopType("all")}
+                />
+                {RACKET_SHOP_TYPES.map((t) => (
+                  <AisleChip
+                    key={t.id}
+                    label={t.label}
+                    active={shopType === t.id}
+                    onClick={() => setShopType(t.id)}
+                  />
+                ))}
+              </ChipRow>
+            ) : null}
+          </div>
         </div>
-        <div className="mt-4 grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
-          {kind === "racket" &&
-            (items as RacketProfile[]).map((r) => (
-              <ProductCard
-                key={r.slug}
-                image={racketImageUrl(r)}
-                alt={`${r.brand} ${r.model}`}
-                brand={r.brand}
-                name={r.model}
-                badge={racketShopBadge(r)}
-                scores={[
-                  { label: "Spin", value: r.spin, color: "var(--chart-spin)" },
-                  { label: "Power", value: r.power, color: "var(--chart-power)" },
-                  { label: "Control", value: r.control, color: "var(--chart-control)" },
-                ]}
-                saved={setup.racketSlug === r.slug}
-                onSelect={() => {
-                  if (onPreviewPick) onPreviewPick(r.slug);
-                  else saveRacketToBag(r);
-                  onClose();
-                }}
-                onSave={() => {
-                  if (onPreviewPick) onPreviewPick(r.slug);
-                  else saveRacketToBag(r);
-                  onClose();
-                }}
-              />
-            ))}
-          {kind === "string" &&
-            (items as StringProfile[]).map((s) => (
-              <ProductCard
-                key={s.id}
-                image={stringImageUrl(s)}
-                alt={`${s.brand} ${s.name}`}
-                brand={s.brand}
-                name={s.name}
-                badge={stringMaterialShopLabel(s.material)}
-                scores={[
-                  { label: "Spin", value: s.spin, color: "var(--chart-spin)" },
-                  { label: "Power", value: s.power, color: "var(--chart-power)" },
-                  { label: "Control", value: s.control, color: "var(--chart-control)" },
-                ]}
-                saved={setup.stringId === s.id}
-                onSelect={() => {
-                  if (onPreviewPick) onPreviewPick(s.id);
-                  else saveStringToBag(s);
-                  onClose();
-                }}
-                onSave={() => {
-                  if (onPreviewPick) onPreviewPick(s.id);
-                  else saveStringToBag(s);
-                  onClose();
-                }}
-              />
-            ))}
-          {kind === "grip" &&
-            (items as GripProfile[]).map((g) => (
-              <ProductCard
-                key={g.id}
-                image={gripImageUrl(g)}
-                alt={`${g.brand} ${g.name}`}
-                brand={g.brand}
-                name={g.name}
-                badge={g.kind === "overgrip" ? "Overgrip" : "Replacement"}
-                scores={[
-                  { label: "Tack", value: g.tackiness, color: "var(--chart-spin)" },
-                  { label: "Cushion", value: g.cushion, color: "var(--chart-comfort)" },
-                  { label: "Grip", value: g.absorbency, color: "var(--chart-control)" },
-                ]}
-                saved={setup.gripId === g.id}
-                onSelect={() => {
-                  if (onPreviewPick) onPreviewPick(g.id);
-                  else saveGripToBag(g);
-                  onClose();
-                }}
-                onSave={() => {
-                  if (onPreviewPick) onPreviewPick(g.id);
-                  else saveGripToBag(g);
-                  onClose();
-                }}
-              />
-            ))}
-          {items.length === 0 ? (
-            <p className="col-span-full py-8 text-sm text-[var(--muted)]">
-              No matches — try another brand or a shorter search.
-            </p>
-          ) : null}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {kind === "racket" &&
+              (items as RacketProfile[]).map((r) => (
+                <ProductCard
+                  key={r.slug}
+                  image={racketImageUrl(r)}
+                  alt={equipmentLabel(r.brand, r.model)}
+                  brand={r.brand}
+                  name={modelWithoutBrand(r.brand, r.model)}
+                  badge={racketShopBadge(r)}
+                  accent={brandAccent(r.brand)}
+                  scores={[
+                    { label: "Spin", value: r.spin, color: "var(--chart-spin)" },
+                    { label: "Power", value: r.power, color: "var(--chart-power)" },
+                    { label: "Control", value: r.control, color: "var(--chart-control)" },
+                  ]}
+                  saved={setup.racketSlug === r.slug}
+                  onSelect={() => {
+                    if (onPreviewPick) onPreviewPick(r.slug);
+                    else saveRacketToBag(r);
+                    onClose();
+                  }}
+                  onSave={() => {
+                    if (onPreviewPick) onPreviewPick(r.slug);
+                    else saveRacketToBag(r);
+                    onClose();
+                  }}
+                />
+              ))}
+            {kind === "string" &&
+              (items as StringProfile[]).map((s) => (
+                <ProductCard
+                  key={s.id}
+                  image={stringImageUrl(s)}
+                  alt={equipmentLabel(s.brand, s.name)}
+                  brand={s.brand}
+                  name={modelWithoutBrand(s.brand, s.name)}
+                  badge={stringMaterialShortLabel(s.material)}
+                  meta={stringShapeShortLabel(s.shape)}
+                  accent={brandAccent(s.brand)}
+                  scores={[
+                    { label: "Spin", value: s.spin, color: "var(--chart-spin)" },
+                    { label: "Power", value: s.power, color: "var(--chart-power)" },
+                    { label: "Control", value: s.control, color: "var(--chart-control)" },
+                  ]}
+                  saved={setup.stringId === s.id}
+                  onSelect={() => {
+                    if (onPreviewPick) onPreviewPick(s.id);
+                    else saveStringToBag(s);
+                    onClose();
+                  }}
+                  onSave={() => {
+                    if (onPreviewPick) onPreviewPick(s.id);
+                    else saveStringToBag(s);
+                    onClose();
+                  }}
+                />
+              ))}
+            {kind === "grip" &&
+              (items as GripProfile[]).map((g) => (
+                <ProductCard
+                  key={g.id}
+                  image={gripImageUrl(g)}
+                  alt={equipmentLabel(g.brand, g.name)}
+                  brand={g.brand}
+                  name={modelWithoutBrand(g.brand, g.name)}
+                  badge={g.kind === "overgrip" ? "Overgrip" : "Replacement"}
+                  meta={g.texture}
+                  accent={brandAccent(g.brand)}
+                  scores={[
+                    { label: "Tack", value: g.tackiness, color: "var(--chart-spin)" },
+                    { label: "Cushion", value: g.cushion, color: "var(--chart-comfort)" },
+                    { label: "Grip", value: g.absorbency, color: "var(--chart-control)" },
+                  ]}
+                  saved={setup.gripId === g.id}
+                  onSelect={() => {
+                    if (onPreviewPick) onPreviewPick(g.id);
+                    else saveGripToBag(g);
+                    onClose();
+                  }}
+                  onSave={() => {
+                    if (onPreviewPick) onPreviewPick(g.id);
+                    else saveGripToBag(g);
+                    onClose();
+                  }}
+                />
+              ))}
+            {items.length === 0 ? (
+              <p className="col-span-full py-8 text-sm text-[var(--muted)]">
+                No matches — try another brand or a shorter search.
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

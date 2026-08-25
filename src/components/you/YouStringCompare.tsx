@@ -6,13 +6,23 @@ import type { MySetup } from "@/store/gearStore";
 import { useGearStore } from "@/store/gearStore";
 import type { CombinedSetupInsight } from "@/lib/equipment/setupSynthesis";
 import { findSimilarStrings, tensionOutcome } from "@/lib/equipment/strings";
+import { equipmentLabel, modelWithoutBrand, shortProductName } from "@/lib/equipment/labels";
+import { brandAccent } from "@/lib/equipment/media/brandColors";
+import { stringImageUrl } from "@/lib/equipment/media/urls";
+import {
+  stringMaterialShortLabel,
+  stringShapeShortLabel,
+} from "@/lib/equipment/shopAisles";
+import { EquipmentThumb } from "@/components/gear/EquipmentThumb";
 import { numericDelta } from "@/components/gear/CompareToSetup";
 import { GearPickerSheet } from "@/components/onboarding/GearPickerSheet";
 
 type Candidate = {
   id: string;
   label: string;
-  sub: string;
+  /** Short model for rail (no brand doubling) */
+  railName: string;
+  cue: string;
   string: StringProfile;
   isSaved: boolean;
 };
@@ -59,19 +69,28 @@ export function YouStringCompare({
       list.push(c);
     };
 
+    const cueFor = (s: StringProfile, hint?: string) =>
+      hint ??
+      `${stringMaterialShortLabel(s.material)} · ${stringShapeShortLabel(s.shape)}`;
+
     if (string) {
       push({
         id: string.id,
-        label: `${string.brand} ${string.name}`,
-        sub: "Saved bed",
+        label: equipmentLabel(string.brand, string.name),
+        railName: shortProductName(modelWithoutBrand(string.brand, string.name), 18),
+        cue: "Saved",
         string,
         isSaved: true,
       });
       for (const alt of findSimilarStrings(string, strings, { limit: 5 })) {
         push({
           id: alt.string.id,
-          label: `${alt.string.brand} ${alt.string.name}`,
-          sub: alt.why,
+          label: equipmentLabel(alt.string.brand, alt.string.name),
+          railName: shortProductName(
+            modelWithoutBrand(alt.string.brand, alt.string.name),
+            18,
+          ),
+          cue: cueFor(alt.string),
           string: alt.string,
           isSaved: false,
         });
@@ -86,8 +105,9 @@ export function YouStringCompare({
       for (const s of picks.length ? picks : strings.slice(0, 6)) {
         push({
           id: s.id,
-          label: `${s.brand} ${s.name}`,
-          sub: s.material,
+          label: equipmentLabel(s.brand, s.name),
+          railName: shortProductName(modelWithoutBrand(s.brand, s.name), 18),
+          cue: cueFor(s),
           string: s,
           isSaved: false,
         });
@@ -99,8 +119,9 @@ export function YouStringCompare({
       if (s) {
         push({
           id: s.id,
-          label: `${s.brand} ${s.name}`,
-          sub: "From browse",
+          label: equipmentLabel(s.brand, s.name),
+          railName: shortProductName(modelWithoutBrand(s.brand, s.name), 18),
+          cue: "Browse",
           string: s,
           isSaved: string?.id === s.id,
         });
@@ -127,7 +148,7 @@ export function YouStringCompare({
     const tension = setup.tensionLbs ?? active.string.recommendedTensionLbs;
     const gauge = setup.gaugeMm ?? active.string.gaugesMm[0];
     const bed = tensionOutcome(active.string, tension, gauge);
-    setString(active.string.id, `${active.string.brand} ${active.string.name}`, {
+    setString(active.string.id, equipmentLabel(active.string.brand, active.string.name), {
       tensionLbs: tension,
       gaugeMm: gauge,
       power: bed.power,
@@ -171,35 +192,65 @@ export function YouStringCompare({
         ) : null}
       </div>
 
-      <div className="mt-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="sf-aisle mt-4 -mx-1 px-1">
         {candidates.map((c) => {
           const on = c.id === active?.id;
+          const accent = brandAccent(c.string.brand);
           return (
             <button
               key={c.id}
               type="button"
               onClick={() => onSelectPreviewId(c.isSaved ? null : c.id)}
-              className="max-w-[11.5rem] shrink-0 px-3 py-2 text-left transition"
+              className="flex w-[9.5rem] shrink-0 snap-start flex-col gap-1.5 p-2 text-left transition"
               style={{
-                background: on ? "var(--accent)" : "var(--overlay-hover)",
-                color: on ? "var(--accent-fg)" : "var(--foreground)",
-                boxShadow: on ? "none" : "inset 0 0 0 1px var(--line)",
+                background: on ? "var(--accent-dim)" : "var(--overlay-hover)",
+                boxShadow: on
+                  ? `inset 0 0 0 1px var(--accent), inset 3px 0 0 ${accent}`
+                  : `inset 0 0 0 1px var(--line), inset 3px 0 0 ${accent}`,
               }}
             >
-              <p className="truncate text-xs font-semibold">{c.label}</p>
-              <p className={`mt-0.5 truncate text-[10px] ${on ? "opacity-75" : "text-[var(--muted)]"}`}>
-                {c.sub}
-              </p>
+              <span className="flex items-center gap-2">
+                <EquipmentThumb src={stringImageUrl(c.string)} alt="" size="sm" />
+                <span className="min-w-0">
+                  <span
+                    className="block text-[9px] font-bold tracking-[0.1em] uppercase"
+                    style={{ color: on ? "var(--accent)" : accent }}
+                  >
+                    {c.string.brand}
+                  </span>
+                  <span
+                    className="mt-0.5 block text-xs font-semibold leading-snug text-[var(--foreground)]"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                    title={c.label}
+                  >
+                    {c.railName}
+                  </span>
+                </span>
+              </span>
+              <span
+                className="w-fit rounded-sm px-1.5 py-0.5 text-[9px] font-semibold tracking-wide"
+                style={{
+                  color: accent,
+                  background: `color-mix(in srgb, ${accent} 16%, transparent)`,
+                }}
+              >
+                {c.cue}
+              </span>
             </button>
           );
         })}
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
-          className="shrink-0 px-3 py-2 text-xs font-semibold text-[var(--accent)]"
+          className="flex w-[5.5rem] shrink-0 snap-start items-center justify-center px-2 py-3 text-xs font-semibold text-[var(--accent)]"
           style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
         >
-          Browse all…
+          Browse…
         </button>
       </div>
 

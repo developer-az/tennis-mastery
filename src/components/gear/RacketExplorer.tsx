@@ -5,6 +5,8 @@ import type { EquipmentTab, RacketCatalogMeta, RacketProfile } from "@/types/equ
 import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
 import { hasExternalPhoto, photoFirst } from "@/lib/equipment/media/externalImages";
+import { brandAccent } from "@/lib/equipment/media/brandColors";
+import { equipmentLabel, modelWithoutBrand } from "@/lib/equipment/labels";
 import { useGearStore } from "@/store/gearStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
@@ -285,7 +287,7 @@ export function RacketExplorer({
   const detailRef = useRef<HTMLDivElement | null>(null);
 
   const saveRacket = (r: RacketProfile) => {
-    setRacket(r.slug, `${r.brand} ${r.model}`, {
+    setRacket(r.slug, equipmentLabel(r.brand, r.model), {
       idealLaunchAngleDeg: r.idealLaunchAngleDeg,
       idealSwingPathDeg: r.idealSwingPathDeg,
       power: r.power,
@@ -706,11 +708,12 @@ function RacketCard({
   return (
     <ProductCard
       image={racketImageUrl(racket)}
-      alt={`${racket.brand} ${racket.model}`}
+      alt={equipmentLabel(racket.brand, racket.model)}
       brand={racket.brand}
-      name={racket.model}
+      name={modelWithoutBrand(racket.brand, racket.model)}
       badge={racketShopBadge(racket)}
       meta={`${racket.year}${racket.headSizeSqIn ? ` · ${racket.headSizeSqIn}"` : ""}`}
+      accent={brandAccent(racket.brand)}
       scores={[
         { label: "Spin", value: racket.spin, color: "var(--chart-spin)" },
         { label: "Power", value: racket.power, color: "var(--chart-power)" },

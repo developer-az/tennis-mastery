@@ -162,6 +162,7 @@ export function ProductCard({
   saveLabel = "Add to bag",
   savedLabel = "In bag",
   compact = false,
+  accent,
 }: {
   image: string;
   alt: string;
@@ -177,38 +178,77 @@ export function ProductCard({
   saveLabel?: string;
   savedLabel?: string;
   compact?: boolean;
+  /** Optional brand accent for left rail / chip */
+  accent?: string;
 }) {
   return (
     <article
-      className={`sf-product-card ${compact ? "w-[11.5rem] shrink-0 snap-start" : "w-full"}`}
+      className={`sf-product-card ${compact ? "w-[12.5rem] shrink-0 snap-start" : "w-full"}`}
       data-active={selected ? "true" : "false"}
+      style={
+        accent
+          ? { boxShadow: selected ? undefined : `inset 3px 0 0 ${accent}` }
+          : undefined
+      }
     >
       <button
         type="button"
         onClick={onSelect}
-        className="flex w-full flex-col text-left"
+        className="flex w-full min-w-0 flex-col text-left"
         aria-pressed={selected}
+        aria-label={alt}
       >
-        <span className="sf-thumb-well flex h-36 w-full items-center justify-center">
-          <EquipmentThumb src={image} alt={alt} size="md" />
+        <span
+          className={`sf-thumb-well relative flex w-full items-center justify-center ${compact ? "h-28" : "h-36"}`}
+          style={
+            accent
+              ? {
+                  background: `linear-gradient(160deg, color-mix(in srgb, ${accent} 18%, var(--bg-scene)) 0%, var(--bg-scene) 70%)`,
+                }
+              : undefined
+          }
+        >
+          <EquipmentThumb src={image} alt="" size={compact ? "sm" : "md"} />
         </span>
-        <span className="flex flex-col gap-2 p-3">
-          <span className="block text-[11px] font-semibold text-[var(--muted)]">{brand}</span>
-          <span className="block font-[family-name:var(--font-display)] text-sm leading-snug tracking-tight">
+        <span className="flex min-w-0 flex-col gap-1.5 p-3">
+          <span
+            className="block text-[10px] font-bold tracking-[0.12em] uppercase"
+            style={{ color: accent ?? "var(--muted)" }}
+          >
+            {brand}
+          </span>
+          <span
+            className="block min-h-[2.5rem] font-[family-name:var(--font-display)] text-sm leading-snug tracking-tight text-[var(--foreground)]"
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+            title={name}
+          >
             {name}
           </span>
-          {badge ? (
-            <span
-              className="w-fit rounded-full px-2 py-0.5 text-[11px] font-medium"
-              style={{
-                color: "var(--accent)",
-                background: "var(--accent-dim)",
-              }}
-            >
-              {badge}
+          {(badge || meta) && (
+            <span className="flex flex-wrap items-center gap-1.5">
+              {badge ? (
+                <span
+                  className="w-fit rounded-sm px-1.5 py-0.5 text-[10px] font-semibold tracking-wide"
+                  style={{
+                    color: accent ?? "var(--accent)",
+                    background: accent
+                      ? `color-mix(in srgb, ${accent} 18%, transparent)`
+                      : "var(--accent-dim)",
+                  }}
+                >
+                  {badge}
+                </span>
+              ) : null}
+              {meta ? (
+                <span className="text-[10px] text-[var(--muted)]">{meta}</span>
+              ) : null}
             </span>
-          ) : null}
-          {meta ? <span className="text-[11px] text-[var(--muted)]">{meta}</span> : null}
+          )}
           <FeelBars scores={scores} />
         </span>
       </button>
