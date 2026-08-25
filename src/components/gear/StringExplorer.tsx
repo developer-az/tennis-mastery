@@ -14,9 +14,13 @@ import {
   tensionOutcome,
   tensionRangeOverlaps,
   findSimilarStrings,
+  stringCategoryBlurb,
 } from "@/lib/equipment/strings";
 import { matchesEquipmentSearch } from "@/lib/equipment/search";
 import { stringImageUrl } from "@/lib/equipment/media/urls";
+import { hasExternalPhoto, photoFirst } from "@/lib/equipment/media/externalImages";
+import { brandAccent } from "@/lib/equipment/media/brandColors";
+import { equipmentLabel, modelWithoutBrand } from "@/lib/equipment/labels";
 import { useGearStore } from "@/store/gearStore";
 import { SpinPotentialRing, TensionCurve } from "./StringVisuals";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
@@ -25,20 +29,24 @@ import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToS
 import { StringIntelligencePanel } from "./StringIntelligencePanel";
 import {
   AisleChip,
+  ActiveFilterChips,
   CatalogAisle,
   ChipRow,
+  MoreFilters,
   ProductCard,
   SearchField,
 } from "./CatalogShop";
 import {
   FEEL_MIN,
+  STRING_BRAND_PIN,
   STRING_FEELS,
   STRING_MATERIAL_AISLES,
   brandsByCount,
   groupByBrand,
   matchesFeel,
   stringMaterialAisle,
-  stringMaterialShopLabel,
+  stringMaterialShortLabel,
+  stringShapeShortLabel,
   uniqueSortedBrands,
   type FeelKey,
   type StringMaterialAisle,
@@ -94,7 +102,8 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
       .replace(/\s+/g, " ")
       .trim();
 
-    return strings.filter((s) => {
+    return strings
+      .filter((s) => {
       if (brand !== "all" && s.brand !== brand) return false;
       if (materialAisle !== "all" && stringMaterialAisle(s.material) !== materialAisle) return false;
       if (!matchesFeel(s, feel)) return false;
@@ -118,7 +127,8 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
         s.bestFor,
         s.feel,
       );
-    });
+    })
+      .sort((a, b) => photoFirst(hasExternalPhoto("string", a.id), hasExternalPhoto("string", b.id)));
   }, [strings, deferredQuery, brand, feel, materialAisle, shape, gaugeFilter, tensionFilter, targetTension]);
 
   const selected = filtered.find((s) => s.id === selectedId) ?? filtered[0] ?? null;
@@ -161,7 +171,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
     const t = tensionById[s.id] ?? s.recommendedTensionLbs;
     const g = gaugeById[s.id] ?? s.gaugesMm[0] ?? 1.25;
     const outcome = tensionOutcome(s, t, g);
-    setString(s.id, `${s.brand} ${s.name}`, {
+    setString(s.id, equipmentLabel(s.brand, s.name), {
       tensionLbs: t,
       gaugeMm: g,
       power: outcome.power,
@@ -171,8 +181,13 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
     });
   };
 
-  const brands = useMemo(() => uniqueSortedBrands(strings), [strings]);
-  const aisleBrands = useMemo(() => brandsByCount(strings, 8), [strings]);
+  const brands = useMemo(() => {
+    const all = uniqueSortedBrands(strings);
+    const pinned = STRING_BRAND_PIN.filter((b) => all.includes(b));
+    const pinSet = new Set(pinned);
+    return [...pinned, ...all.filter((b) => !pinSet.has(b))];
+  }, [strings]);
+  const aisleBrands = useMemo(() => brandsByCount(strings, 10, STRING_BRAND_PIN), [strings]);
   const selectString = (id: string) => {
     setSelectedId(id);
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
@@ -250,6 +265,15 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
             />
           ))}
         </ChipRow>
+        {materialAisle !== "all" || shape !== "all" || gaugeFilter !== "all" ? (
+          <p className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-xs leading-relaxed text-[var(--muted)]">
+            {stringCategoryBlurb(
+              materialAisle === "all" ? "all" : materialAisle,
+              gaugeFilter === "all" ? null : Number(gaugeFilter),
+              shape,
+            )}
+          </p>
+        ) : null}
         <ChipRow label="Feel">
           <AisleChip label="Any feel" active={feel === "all"} onClick={() => setFeel("all")} />
           {STRING_FEELS.map((f) => (
@@ -262,9 +286,38 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
             />
           ))}
         </ChipRow>
-        <details className="text-sm">
-          <summary className="cursor-pointer text-[var(--muted)]">More filters</summary>
-          <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+        <ActiveFilterChips
+          chips={[
+            ...(brand !== "all" ? [{ id: "brand", label: brand, onRemove: () => setBrand("all") }] : []),
+            ...(materialAisle !== "all"
+              ? [
+                  {
+                    id: "type",
+                    label: STRING_MATERIAL_AISLES.find((t) => t.id === materialAisle)?.label ?? materialAisle,
+                    onRemove: () => setMaterialAisle("all"),
+                  },
+                ]
+              : []),
+            ...(feel !== "all" ? [{ id: "feel", label: feel, onRemove: () => setFeel("all") }] : []),
+            ...(shape !== "all" ? [{ id: "shape", label: shape, onRemove: () => setShape("all") }] : []),
+            ...(gaugeFilter !== "all"
+              ? [{ id: "gauge", label: `${gaugeFilter} mm`, onRemove: () => setGaugeFilter("all") }]
+              : []),
+            ...(tensionFilter !== "all"
+              ? [{ id: "tension", label: tensionFilter, onRemove: () => setTensionFilter("all") }]
+              : []),
+          ]}
+          onClear={() => {
+            setBrand("all");
+            setMaterialAisle("all");
+            setFeel("all");
+            setShape("all");
+            setGaugeFilter("all");
+            setTensionFilter("all");
+            setQuery("");
+          }}
+        />
+        <MoreFilters>
             <select value={shape} onChange={(e) => setShape(e.target.value)} aria-label="Shape" className="sf-select w-full">
               <option value="all">Any shape</option>
               <option value="round">Round</option>
@@ -305,15 +358,14 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                 <span className="shrink-0 text-xs text-[var(--muted)]">lbs</span>
               </label>
             ) : null}
-          </div>
-        </details>
+        </MoreFilters>
         <p className="text-xs text-[var(--muted)]">
           {filtered.length} string{filtered.length === 1 ? "" : "s"}
           {feel !== "all" ? ` · ${feel} ${FEEL_MIN}+` : ""}
         </p>
         {showAisles ? (
           <div className="space-y-6">
-            {groupByBrand(strings)
+            {groupByBrand(strings, STRING_BRAND_PIN)
               .filter((g) => aisleBrands.includes(g.brand))
               .map((g) => (
                 <CatalogAisle
@@ -322,7 +374,12 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                   actionLabel={`See all ${g.brand}`}
                   onAction={() => setBrand(g.brand)}
                 >
-                  {g.items.slice(0, 8).map((s) => (
+                  {[...g.items]
+                    .sort((a, b) =>
+                      photoFirst(hasExternalPhoto("string", a.id), hasExternalPhoto("string", b.id)),
+                    )
+                    .slice(0, 8)
+                    .map((s) => (
                     <StringCard
                       key={s.id}
                       string={s}
@@ -385,8 +442,8 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                   className="rounded-md px-2.5 py-1 font-medium tabular-nums"
                   style={{
                     color: "var(--chart-control)",
-                    background: "color-mix(in srgb, #c8f560 12%, transparent)",
-                    boxShadow: "inset 0 0 0 1px color-mix(in srgb, #c8f560 40%, transparent)",
+                    background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+                    boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent)",
                   }}
                 >
                   Rec. {selected.recommendedTensionLbs} lbs
@@ -687,11 +744,12 @@ function StringCard({
   return (
     <ProductCard
       image={stringImageUrl(string)}
-      alt={`${string.brand} ${string.name}`}
+      alt={equipmentLabel(string.brand, string.name)}
       brand={string.brand}
-      name={string.name}
-      badge={stringMaterialShopLabel(string.material)}
-      meta={`${string.recommendedTensionLbs} lbs rec`}
+      name={modelWithoutBrand(string.brand, string.name)}
+      badge={stringMaterialShortLabel(string.material)}
+      meta={stringShapeShortLabel(string.shape)}
+      accent={brandAccent(string.brand)}
       scores={[
         { label: "Spin", value: string.spin, color: "var(--chart-spin)" },
         { label: "Power", value: string.power, color: "var(--chart-power)" },

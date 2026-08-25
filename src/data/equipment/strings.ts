@@ -219,7 +219,7 @@ export const STRINGS: StringProfile[] = [
   {
     id: "wilson-champions-choice",
     brand: "Wilson",
-    name: "Champions Choice (Gut/ALU hybrid)",
+    name: "Champions Choice",
     material: "hybrid",
     shape: "round",
     gaugesMm: [1.3, 1.25],
@@ -314,7 +314,7 @@ export const STRINGS: StringProfile[] = [
   {
     id: "prince-synthetic-gut-with-duraflex",
     brand: "Prince",
-    name: "Synthetic Gut with Duraflex 16",
+    name: "Synthetic Gut Duraflex 16",
     material: "synthetic-gut",
     shape: "round",
     gaugesMm: [1.3, 1.35],
@@ -579,8 +579,8 @@ export const STRINGS: StringProfile[] = [
   },
   {
     id: "hybrid-rpm-vs",
-    brand: "Hybrid setup",
-    name: "RPM Blast mains / VS Touch crosses",
+    brand: "Hybrid",
+    name: "RPM Blast / VS Touch",
     material: "hybrid",
     shape: "octagonal",
     gaugesMm: [1.25, 1.3],
@@ -598,8 +598,8 @@ export const STRINGS: StringProfile[] = [
   },
   {
     id: "hybrid-alu-multi",
-    brand: "Hybrid setup",
-    name: "ALU Power mains / X-One crosses",
+    brand: "Hybrid",
+    name: "ALU Power / X-One",
     material: "hybrid",
     shape: "round",
     gaugesMm: [1.25, 1.24],

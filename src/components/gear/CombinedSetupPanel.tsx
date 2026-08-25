@@ -6,6 +6,12 @@ import type { EquipmentTab, GripProfile, RacketProfile, StringProfile } from "@/
 import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
 import { LEAD_TAPE_ZONES } from "@/lib/equipment/leadTape";
 import { findSimilarStrings } from "@/lib/equipment/strings";
+import { modelWithoutBrand } from "@/lib/equipment/labels";
+import { brandAccent } from "@/lib/equipment/media/brandColors";
+import {
+  stringMaterialShortLabel,
+  stringShapeShortLabel,
+} from "@/lib/equipment/shopAisles";
 import { gripSizeLabel } from "@/lib/equipment/gripSize";
 import { summarizeGripLayers } from "@/lib/equipment/gripStack";
 import { useGearStore } from "@/store/gearStore";
@@ -713,19 +719,39 @@ export function CombinedSetupPanel({
             online at a local stringer or retailer.
           </p>
           <ul className="mt-3 space-y-2">
-            {stringAlts.map((a) => (
+            {stringAlts.map((a) => {
+              const accent = brandAccent(a.string.brand);
+              return (
               <li
                 key={a.string.id}
                 className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] pb-2 text-sm last:border-0"
               >
-                <div className="min-w-0">
-                  <p className="font-[family-name:var(--font-display)] tracking-tight">
-                    {a.string.brand} {a.string.name}
-                    <span className="ml-2 text-[11px] tabular-nums text-[var(--sky)]">
-                      {a.score}% match
-                    </span>
-                  </p>
-                  <p className="text-[11px] text-[var(--muted)]">{a.why}</p>
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <EquipmentThumb src={stringImageUrl(a.string)} alt="" size="sm" />
+                  <div className="min-w-0">
+                    <p className="font-[family-name:var(--font-display)] tracking-tight text-[var(--foreground)]">
+                      <span className="text-[10px] font-bold tracking-[0.1em] uppercase" style={{ color: accent }}>
+                        {a.string.brand}{" "}
+                      </span>
+                      {modelWithoutBrand(a.string.brand, a.string.name)}
+                      <span className="ml-2 text-[11px] tabular-nums text-[var(--sky)]">
+                        {a.score}%
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-[var(--muted)]">
+                      <span
+                        className="mr-1.5 inline-block rounded-sm px-1 py-0.5 text-[9px] font-semibold"
+                        style={{
+                          color: accent,
+                          background: `color-mix(in srgb, ${accent} 16%, transparent)`,
+                        }}
+                      >
+                        {stringMaterialShortLabel(a.string.material)} ·{" "}
+                        {stringShapeShortLabel(a.string.shape)}
+                      </span>
+                      {a.why}
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -737,10 +763,11 @@ export function CombinedSetupPanel({
                   style={{ boxShadow: "0 0 0 1px color-mix(in srgb, var(--sky) 40%, transparent)" }}
                   title="Copy shop search and open Strings"
                 >
-                  Copy “{a.shopQuery}”
+                  Copy search
                 </button>
               </li>
-            ))}
+              );
+            })}
           </ul>
           <button
             type="button"

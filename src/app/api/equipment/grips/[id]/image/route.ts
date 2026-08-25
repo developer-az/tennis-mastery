@@ -9,15 +9,16 @@ export async function GET(
   const { id } = await context.params;
   const format = new URL(request.url).searchParams.get("format");
 
+  const grip = GRIPS.find((g) => g.id === id);
+  if (!grip) {
+    return new Response("Not found", { status: 404 });
+  }
+
   const external = externalGripImage(id);
   if (external && format !== "svg") {
     return Response.redirect(external, 302);
   }
 
-  const grip = GRIPS.find((g) => g.id === id);
-  if (!grip) {
-    return new Response("Not found", { status: 404 });
-  }
   const svg = gripPortraitSvg(grip);
   return new Response(svg, {
     headers: {

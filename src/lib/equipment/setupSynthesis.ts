@@ -17,6 +17,7 @@ import {
   type ScorePieceDeltas,
 } from "@/lib/equipment/moldPhysics";
 import { buildInBandPlan, healthyBandsFor, type InBandPlan } from "@/lib/equipment/inBandImprove";
+import { equipmentLabel } from "@/lib/equipment/labels";
 
 export type { FlightMetrics, ScorePieceDeltas };
 export { computeFlightMetrics, scoreDeltasFromTape, stringLaunchOffsets };
@@ -554,7 +555,7 @@ export function synthesizeCombinedSetup(
     const o = tensionOutcome(string, setup.tensionLbs, setup.gaugeMm ?? undefined);
     const gauge = setup.gaugeMm ?? string.gaugesMm[0];
     pros.push(
-      `${string.brand} ${string.name}${gauge != null ? ` ${gauge}mm` : ""} @ ${setup.tensionLbs} lbs — ${o.dwellHint}`,
+      `${equipmentLabel(string.brand, string.name)}${gauge != null ? ` ${gauge}mm` : ""} @ ${setup.tensionLbs} lbs — ${o.dwellHint}`,
     );
     pros.push(
       `Bed @ this tension: power ${o.power} · spin ${o.spin} · control ${o.control} · comfort ${o.comfort} · durability ${o.durability}.`,
@@ -1310,7 +1311,7 @@ export function previewSetupWithString(
   return {
     ...setup,
     stringId: string.id,
-    stringLabel: `${string.brand} ${string.name}`,
+    stringLabel: equipmentLabel(string.brand, string.name),
     tensionLbs: tension,
     gaugeMm: gauge,
     stringPower: bed.power,

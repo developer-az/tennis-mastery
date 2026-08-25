@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PLAYERS } from "@/data/players";
 import { useCoachStore } from "@/store/coachStore";
@@ -15,34 +15,51 @@ export function LabUrlSync() {
   const pathname = usePathname();
   const playerId = useCoachStore((s) => s.playerId);
   const stroke = useCoachStore((s) => s.stroke);
-  const setPlayer = useCoachStore((s) => s.setPlayer);
-  const setStroke = useCoachStore((s) => s.setStroke);
+  const readyToMirror = useRef(false);
+  const skipNextHydrate = useRef(false);
 
-  // Hydrate once from URL on mount / when search changes externally
+  // Synchronously apply window URL before paint / before any mirror write.
+  useLayoutEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const state = useCoachStore.getState();
+    const p = params.get("player");
+    const s = params.get("stroke") as StrokeType | null;
+    if (p && PLAYERS.some((pl) => pl.id === p) && p !== state.playerId) {
+      state.setPlayer(p);
+    }
+    if (s && STROKES.has(s) && s !== state.stroke) {
+      state.setStroke(s);
+    }
+    readyToMirror.current = true;
+  }, []);
+
+  // External navigations (back/forward, pasted URL while mounted)
   useEffect(() => {
+    if (skipNextHydrate.current) {
+      skipNextHydrate.current = false;
+      return;
+    }
+    const state = useCoachStore.getState();
     const p = searchParams.get("player");
     const s = searchParams.get("stroke") as StrokeType | null;
-    if (p && PLAYERS.some((pl) => pl.id === p) && p !== playerId) {
-      setPlayer(p);
+    if (p && PLAYERS.some((pl) => pl.id === p) && p !== state.playerId) {
+      state.setPlayer(p);
     }
-    if (s && STROKES.has(s) && s !== stroke) {
-      setStroke(s);
+    if (s && STROKES.has(s) && s !== state.stroke) {
+      state.setStroke(s);
     }
-    // Intentionally only react to searchParams — store writes sync the other way.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Mirror store → URL (shareable deep links)
+  // Mirror store → URL only after mount hydrate
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    if (!readyToMirror.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("player") === playerId && params.get("stroke") === stroke) return;
     params.set("player", playerId);
     params.set("stroke", stroke);
-    const next = `${pathname}?${params.toString()}`;
-    const current = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
-    if (next !== current) {
-      router.replace(next, { scroll: false });
-    }
-  }, [playerId, stroke, pathname, router, searchParams]);
+    skipNextHydrate.current = true;
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [playerId, stroke, pathname, router]);
 
   return null;
 }

@@ -146,7 +146,8 @@ export function LeadTapeLab({
             {baseRacket.brand} {baseRacket.model}
           </h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Tap the hoop to add mass. Tip/12 adds plow; 3 and 9 add stability; neck solidifies; handle speeds the whip.
+            Place strips on the hoop or mold toward a target. Tip/12 = plow; 3/9 = stability; neck =
+            solid; handle = whip.
           </p>
         </header>
 
@@ -246,13 +247,23 @@ export function LeadTapeLab({
       </div>
 
       <div className="space-y-4">
-        <MoldTowardPanel
-          rackets={rackets}
-          stock={baseRacket}
-          onApplyPlan={(plan: TapeTowardPlan) => {
-            updatePieces(plan.pieces);
-          }}
-        />
+        <details open className="rounded-md border border-[var(--line)]">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-[var(--foreground)] hover:text-[var(--accent)] [&::-webkit-details-marker]:hidden">
+            Mold toward a target frame
+            <span className="ml-2 text-[11px] font-normal text-[var(--muted)]">
+              calculated tip / handle plan
+            </span>
+          </summary>
+          <div className="border-t border-[var(--line)] px-3 pb-3 pt-2">
+            <MoldTowardPanel
+              rackets={rackets}
+              stock={baseRacket}
+              onApplyPlan={(plan: TapeTowardPlan) => {
+                updatePieces(plan.pieces);
+              }}
+            />
+          </div>
+        </details>
 
         {effect.hints.length > 0 ? (
           <section className="rounded-md border border-[var(--line)] px-4 py-3">

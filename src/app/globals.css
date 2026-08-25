@@ -3,45 +3,45 @@
 /* Neutral retail canvas; court green is accent only. Spin/power/control stay shoppable. */
 :root,
 [data-theme="light"] {
-  --background: #f7f6f3;
-  --foreground: #1a1a18;
+  --background: #f3f6f4;
+  --foreground: #0d1f18;
   --panel: #ffffff;
   --panel-raised: #ffffff;
-  --bg-sunken: #eeece7;
-  --bg-scene: #e8e6e0;
-  --muted: #5c5a54;
-  --label: #3a3934;
-  --line: rgba(26, 26, 24, 0.1);
-  --line-strong: rgba(26, 26, 24, 0.18);
-  --accent: #4f8a2a;
-  --accent-dim: rgba(79, 138, 42, 0.12);
+  --bg-sunken: #e6ebe8;
+  --bg-scene: #dfe8e2;
+  --muted: #4a5c54;
+  --label: #24352d;
+  --line: rgba(13, 31, 24, 0.1);
+  --line-strong: rgba(13, 31, 24, 0.18);
+  --accent: #3f7a24;
+  --accent-dim: rgba(63, 122, 36, 0.12);
   --accent-fg: #ffffff;
   --accent-ink: #ffffff;
   --court: #2d6a4f;
   --amber: #c47a2c;
   --sky: #2a7a9b;
   --danger: #c45a4a;
-  --overlay-hover: rgba(26, 26, 24, 0.04);
-  --body-glow: rgba(79, 138, 42, 0.08);
-  --body-top: #f7f6f3;
-  --body-bottom: #efece6;
+  --overlay-hover: rgba(13, 31, 24, 0.04);
+  --body-glow: rgba(63, 122, 36, 0.08);
+  --body-top: #f3f6f4;
+  --body-bottom: #e8efe9;
   --radius: 12px;
   --header-h: 64px;
   --gear-tab-h: 52px;
   --shadow-soft: 0 12px 40px rgba(26, 26, 24, 0.07);
   --chart-power: #c47a2c;
   --chart-spin: #2a7a9b;
-  --chart-control: #4f8a2a;
+  --chart-control: #3f7a24;
   --chart-comfort: #b0892e;
-  --chart-fill: rgba(79, 138, 42, 0.14);
-  --silhouette: #2a2a26;
-  --silhouette-rim: #4a4944;
+  --chart-fill: rgba(63, 122, 36, 0.14);
+  --silhouette: #1a2e24;
+  --silhouette-rim: #3a4a40;
   --hero-wash:
-    linear-gradient(100deg, rgba(247, 246, 243, 0.2) 0%, rgba(247, 246, 243, 0.62) 52%, rgba(238, 236, 230, 0.94) 100%),
-    radial-gradient(ellipse 70% 60% at 72% 38%, rgba(79, 138, 42, 0.12) 0%, transparent 62%),
+    linear-gradient(100deg, rgba(243, 246, 244, 0.2) 0%, rgba(243, 246, 244, 0.62) 52%, rgba(232, 239, 233, 0.94) 100%),
+    radial-gradient(ellipse 70% 60% at 72% 38%, rgba(63, 122, 36, 0.12) 0%, transparent 62%),
     radial-gradient(ellipse 45% 35% at 18% 78%, rgba(42, 122, 155, 0.08) 0%, transparent 55%),
-    linear-gradient(180deg, #f7f6f3 0%, #efece6 100%);
-  --hero-grid: rgba(26, 26, 24, 0.4);
+    linear-gradient(180deg, #f3f6f4 0%, #e8efe9 100%);
+  --hero-grid: rgba(13, 31, 24, 0.4);
   --hero-grid-opacity: 0.08;
 }
 
@@ -279,13 +279,24 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 0.15rem;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  padding-bottom: 0.35rem;
+  scrollbar-width: thin;
+  cursor: grab;
+}
+
+.sf-chip-row:active {
+  cursor: grabbing;
 }
 
 .sf-chip-row::-webkit-scrollbar {
-  display: none;
+  height: 4px;
+}
+
+.sf-chip-row::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-radius: 999px;
 }
 
 .sf-chip {
@@ -317,14 +328,20 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   gap: 0.75rem;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   padding-bottom: 0.35rem;
   scroll-snap-type: x proximity;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  scrollbar-width: thin;
 }
 
 .sf-aisle::-webkit-scrollbar {
-  display: none;
+  height: 4px;
+}
+
+.sf-aisle::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-radius: 999px;
 }
 
 .sf-product-card {
@@ -335,6 +352,7 @@ input[type="range"]::-webkit-slider-thumb {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
+  min-width: 0;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 

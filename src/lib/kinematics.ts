@@ -1,4 +1,5 @@
 import type { JointAngles, PhaseKeyframe, StrokePhase, StrokeProfile } from "@/types/biomechanics";
+import { applyStrokeStyle } from "@/lib/strokeStyle";
 
 const JOINT_KEYS = Object.keys({
   hipYaw: 0,
@@ -104,7 +105,7 @@ export function sampleStroke(stroke: StrokeProfile, t: number): SampledPose {
     return {
       t: x,
       phase: frames[0].phase,
-      joints: frames[0].joints,
+      joints: applyStrokeStyle(frames[0].joints, stroke, frames[0].phase),
       racketSpeedMs: frames[0].racketSpeedMs,
       spinRpm: frames[0].spinRpm,
       coachingCue: frames[0].coachingCue,
@@ -117,7 +118,7 @@ export function sampleStroke(stroke: StrokeProfile, t: number): SampledPose {
     return {
       t: x,
       phase: last.phase,
-      joints: last.joints,
+      joints: applyStrokeStyle(last.joints, stroke, last.phase),
       racketSpeedMs: last.racketSpeedMs,
       spinRpm: last.spinRpm,
       coachingCue: last.coachingCue,
@@ -132,11 +133,14 @@ export function sampleStroke(stroke: StrokeProfile, t: number): SampledPose {
   const b = frames[i + 1];
   const span = b.t - a.t || 1;
   const local = (x - a.t) / span;
+  // Style each keyframe from metrics, then lerp — avoids phase-band pops mid-blend
+  const styledA = applyStrokeStyle(a.joints, stroke, a.phase);
+  const styledB = applyStrokeStyle(b.joints, stroke, b.phase);
 
   return {
     t: x,
     phase: local < 0.5 ? a.phase : b.phase,
-    joints: lerpJoints(a.joints, b.joints, local),
+    joints: lerpJoints(styledA, styledB, local),
     racketSpeedMs: lerp(a.racketSpeedMs, b.racketSpeedMs, local),
     spinRpm: local < 0.5 ? a.spinRpm : b.spinRpm,
     coachingCue: local < 0.5 ? a.coachingCue : b.coachingCue,

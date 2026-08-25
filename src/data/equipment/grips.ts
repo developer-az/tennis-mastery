@@ -41,7 +41,7 @@ export const GRIPS: GripProfile[] = [
   {
     id: "tourna-grip",
     brand: "Tourna",
-    name: "Tourna Grip",
+    name: "Original",
     kind: "overgrip",
     tackiness: 35,
     cushion: 42,

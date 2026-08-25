@@ -13,15 +13,41 @@ import { GripExplorer } from "./GripExplorer";
 import { LeadTapeLab } from "./LeadTapeLab";
 import { AccountabilityStrip } from "./AccountabilityStrip";
 
-const TABS: { id: EquipmentTab; label: string; short: string }[] = [
-  { id: "overview", label: "Setup", short: "Setup" },
-  { id: "rackets", label: "Rackets", short: "Frames" },
-  { id: "strings", label: "Strings", short: "Strings" },
-  { id: "grips", label: "Grips", short: "Grips" },
-  { id: "lead-tape", label: "Lead tape", short: "Tape" },
+const TABS: { id: EquipmentTab; label: string; short: string; blurb: string }[] = [
+  {
+    id: "overview",
+    label: "Setup",
+    short: "Setup",
+    blurb: "Tension, gauge, grip size — then molded leave and substitutes.",
+  },
+  {
+    id: "rackets",
+    label: "Rackets",
+    short: "Frames",
+    blurb: "Filter frames, compare to your bag, save what you hit with.",
+  },
+  {
+    id: "strings",
+    label: "Strings",
+    short: "Strings",
+    blurb: "Poly, multi, gut — compare beds; dials move the scores.",
+  },
+  {
+    id: "grips",
+    label: "Grips",
+    short: "Grips",
+    blurb: "Overgrips and replacements — tack, cushion, sweat feel.",
+  },
+  {
+    id: "lead-tape",
+    label: "Lead tape",
+    short: "Tape",
+    blurb: "Mold toward a target or place strips — SW and leave update live.",
+  },
 ];
 
 const TAB_IDS = new Set<EquipmentTab>(TABS.map((t) => t.id));
+const SHOW_DIALS = new Set<EquipmentTab>(["overview", "strings"]);
 
 export function GearLab({
   rackets,
@@ -61,6 +87,8 @@ export function GearLab({
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
+  const activeBlurb = TABS.find((t) => t.id === tab)?.blurb;
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 md:px-10 md:py-8">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-5 md:mb-6">
@@ -78,13 +106,13 @@ export function GearLab({
 
       <AccountabilityStrip />
 
-      {tab === "overview" || tab === "strings" || tab === "grips" ? (
+      {SHOW_DIALS.has(tab) ? (
         <div className="mb-3">
-          <SetupDials strings={strings} compact hideStringDials={false} />
+          <SetupDials strings={strings} compact hideStringDials={tab === "strings"} />
         </div>
       ) : null}
 
-      <div className="sticky top-0 z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 backdrop-blur md:static md:mx-0 md:bg-transparent md:px-0 md:backdrop-blur-none">
+      <div className="gear-sticky-tabs sticky top-0 z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 backdrop-blur md:static md:mx-0 md:bg-transparent md:px-0 md:backdrop-blur-none">
         <div className="sf-tab-track" role="tablist" aria-label="Equipment category">
           {TABS.map((t) => {
             const active = tab === t.id;
@@ -116,6 +144,11 @@ export function GearLab({
             );
           })}
         </div>
+        {activeBlurb ? (
+          <p className="max-w-3xl pb-3 pt-1 text-xs leading-relaxed text-[var(--muted)] md:pb-0">
+            {activeBlurb}
+          </p>
+        ) : null}
       </div>
 
       <div className="relative z-10 mt-4 md:mt-6">

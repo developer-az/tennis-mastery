@@ -50,16 +50,17 @@ function PlaybackDriver() {
 
 function CameraRig() {
   const mode = useCoachStore((s) => s.cameraMode);
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
+  const narrow = size.width < 1024;
 
   useEffect(() => {
+    const zPull = narrow ? 1.4 : 0;
     const positions: Record<typeof mode, [number, number, number]> = {
-      orbit: [3.2, 2.1, PLAYER_Z + 4.2],
-      side: [5.5, 1.6, PLAYER_Z + 0.2],
-      behind: [0.3, 1.8, PLAYER_Z + 5.5],
-      front: [0.2, 1.7, PLAYER_Z - 4.8],
-      // Over dominant shoulder / hand — first-person mapping for face & contact
+      orbit: [3.2, 2.1, PLAYER_Z + 4.2 + zPull],
+      side: [5.5 + (narrow ? 1.2 : 0), 1.6, PLAYER_Z + 0.2],
+      behind: [0.3, 1.8, PLAYER_Z + 5.5 + zPull],
+      front: [0.2, 1.7, PLAYER_Z - 4.8 - zPull],
       firstPerson: [0.55, 1.55, PLAYER_Z + 0.35],
     };
     const targets: Record<typeof mode, [number, number, number]> = {
@@ -72,21 +73,27 @@ function CameraRig() {
     camera.position.set(...positions[mode]);
     controls.current?.target.set(...targets[mode]);
     controls.current?.update();
-  }, [mode, camera]);
+  }, [mode, camera, narrow]);
 
   return (
-    <OrbitControls
-      ref={controls}
-      target={LOOK_AT}
-      maxPolarAngle={Math.PI * 0.49}
-      minDistance={mode === "firstPerson" ? 0.4 : 1.5}
-      maxDistance={mode === "firstPerson" ? 4 : 14}
-      enablePan
-      // Cheaper orbit interaction
-      enableDamping
-      dampingFactor={0.12}
-      rotateSpeed={0.7}
-    />
+    <>
+      <PerspectiveCamera makeDefault fov={narrow ? 50 : 42} position={[3.2, 2.1, PLAYER_Z + 4.2]} />
+      <OrbitControls
+        ref={controls}
+        target={LOOK_AT}
+        maxPolarAngle={Math.PI * 0.49}
+        minDistance={mode === "firstPerson" ? 0.4 : 1.5}
+        maxDistance={mode === "firstPerson" ? 4 : 16}
+        enablePan={!narrow}
+        enableDamping
+        dampingFactor={0.12}
+        rotateSpeed={narrow ? 0.9 : 0.7}
+        touches={{
+          ONE: THREE.TOUCH.ROTATE,
+          TWO: THREE.TOUCH.DOLLY_PAN,
+        }}
+      />
+    </>
   );
 }
 
@@ -261,9 +268,9 @@ export function FormCanvas() {
   }, []);
 
   return (
-    <div className="relative h-full min-h-[420px] w-full" style={{ background: bg }}>
+    <div className="relative h-full min-h-[240px] w-full touch-none lg:min-h-[420px]" style={{ background: bg }}>
       <Canvas
-        className="!absolute inset-0"
+        className="!absolute inset-0 touch-none"
         dpr={[1, 1.5]}
         frameloop="always"
         gl={{
@@ -278,7 +285,6 @@ export function FormCanvas() {
           gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         }}
       >
-        <PerspectiveCamera makeDefault position={[3.2, 2.1, PLAYER_Z + 4.2]} fov={42} />
         <Suspense fallback={null}>
           <SceneContent bg={bg} />
         </Suspense>

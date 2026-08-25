@@ -194,6 +194,49 @@ export function LeadTapeRacketDiagram({
           fill="color-mix(in srgb, var(--foreground) 45%, var(--panel))"
         />
 
+        {/* Metallic lead laps along the hoop when mass is present */}
+        {(["tip", "twelve"] as LeadTapeZone[]).map((id) => {
+          const mass = massByZone[id] ?? 0;
+          if (mass <= 0) return null;
+          const laps = Math.min(4, Math.max(1, Math.round(mass)));
+          return Array.from({ length: laps }).map((_, i) => (
+            <path
+              key={`lap-top-${id}-${i}`}
+              d={
+                id === "tip"
+                  ? `M ${78 - i} ${18 + i * 2} A ${22 + i} ${14 + i} 0 0 1 ${122 + i} ${18 + i * 2}`
+                  : `M ${72 - i} ${28 + i * 2} A ${28 + i} ${16 + i} 0 0 1 ${128 + i} ${28 + i * 2}`
+              }
+              fill="none"
+              stroke={`url(#ltTape-${uid})`}
+              strokeWidth={2.2}
+              strokeLinecap="round"
+              opacity={0.85 - i * 0.12}
+            />
+          ));
+        })}
+        {(["three", "nine"] as LeadTapeZone[]).map((id) => {
+          const mass = massByZone[id] ?? 0;
+          if (mass <= 0) return null;
+          const laps = Math.min(3, Math.max(1, Math.round(mass)));
+          const right = id === "three";
+          return Array.from({ length: laps }).map((_, i) => (
+            <path
+              key={`lap-side-${id}-${i}`}
+              d={
+                right
+                  ? `M ${148 + i} ${48 + i} A ${14 + i} ${26 + i} 0 0 1 ${148 + i} ${108 - i}`
+                  : `M ${52 - i} ${48 + i} A ${14 + i} ${26 + i} 0 0 0 ${52 - i} ${108 - i}`
+              }
+              fill="none"
+              stroke={`url(#ltTape-${uid})`}
+              strokeWidth={2.2}
+              strokeLinecap="round"
+              opacity={0.85 - i * 0.12}
+            />
+          ));
+        })}
+
         {/* Tape zones — pills anchored on the frame */}
         {ZONE_ORDER.map((id) => {
           const z = LEAD_TAPE_ZONES[id];
@@ -204,6 +247,7 @@ export function LeadTapeRacketDiagram({
           const onHoop = id !== "handle" && id !== "throat";
           const isSide = id === "three" || id === "nine";
           const hasTape = massHere > 0;
+          const laps = hasTape && onHoop ? Math.max(1, Math.round(massHere)) : 0;
 
           const pillW = id === "handle" ? 22 : id === "throat" ? 24 : isSide ? 14 : 22;
           const pillH = id === "handle" ? 14 : id === "throat" ? 10 : isSide ? 22 : 10;
@@ -221,7 +265,11 @@ export function LeadTapeRacketDiagram({
               ? "#4a5560"
               : "color-mix(in srgb, var(--foreground) 22%, transparent)";
 
-          const label = hasTape ? `${massHere}g` : shortZone(id);
+          const label = hasTape
+            ? laps > 0
+              ? `${massHere}g · ${laps}L`
+              : `${massHere}g`
+            : shortZone(id);
           const labelY = isSide ? cy + 3 : cy + (id === "handle" ? 4 : 3.5);
 
           return (
@@ -230,17 +278,6 @@ export function LeadTapeRacketDiagram({
               style={{ cursor: interactive ? "pointer" : "default" }}
               onClick={interactive ? () => onZoneClick?.(id) : undefined}
             >
-              {onHoop && hasTape ? (
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={isSide ? 11 : 10}
-                  fill="none"
-                  stroke="var(--accent)"
-                  strokeWidth="1.2"
-                  opacity="0.45"
-                />
-              ) : null}
               <rect
                 x={px}
                 y={py}
@@ -262,7 +299,7 @@ export function LeadTapeRacketDiagram({
                       ? "var(--accent)"
                       : "color-mix(in srgb, var(--foreground) 70%, var(--muted))"
                 }
-                fontSize={hasTape ? "7.5" : "8"}
+                fontSize={hasTape ? "6.5" : "8"}
                 fontWeight="600"
               >
                 {label}
@@ -273,9 +310,9 @@ export function LeadTapeRacketDiagram({
       </svg>
       <p className="mt-3 text-center text-xs leading-relaxed text-[var(--muted)]">
         {interactive
-          ? "Tap 12, 3, 9, neck, or handle to add tape."
+          ? "Tap a zone to add a strip (~1 g ≈ one lap)."
           : totalG > 0
-            ? `${totalG.toFixed(1)} g total on this hoop`
+            ? `${totalG.toFixed(1)} g on frame`
             : "No lead tape yet"}
       </p>
     </div>
@@ -298,3 +335,6 @@ function shortZone(id: LeadTapeZone): string {
       return "grip";
   }
 }
+
+/** Plan alias — realistic hoop map with metallic laps / zone taps. */
+export const LeadTapeHoopMap = LeadTapeRacketDiagram;

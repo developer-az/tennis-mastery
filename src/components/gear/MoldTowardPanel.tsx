@@ -10,6 +10,7 @@ import {
   type TapeTowardPlan,
 } from "@/lib/equipment/leadTapePlan";
 import { LEAD_TAPE_ZONES } from "@/lib/equipment/leadTape";
+import { equipmentLabel } from "@/lib/equipment/labels";
 import { useGearStore } from "@/store/gearStore";
 
 /**
@@ -101,7 +102,7 @@ export function MoldTowardPanel({
   }, [rackets, target, stock.slug]);
 
   const saveBudgetFrame = (r: RacketProfile, apply?: TapeTowardPlan) => {
-    setRacket(r.slug, `${r.brand} ${r.model}`, {
+    setRacket(r.slug, equipmentLabel(r.brand, r.model), {
       idealLaunchAngleDeg: r.idealLaunchAngleDeg,
       idealSwingPathDeg: r.idealSwingPathDeg,
       power: r.power,

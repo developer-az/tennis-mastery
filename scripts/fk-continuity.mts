@@ -7,13 +7,16 @@
 import { createSkeletonPose, solveSkeletonFk } from "../src/lib/skeletonFk.ts";
 import { sampleStroke } from "../src/lib/kinematics.ts";
 import {
+  alcarazForehand,
   alcarazVolley,
   djokovicBackhand,
+  djokovicForehand,
   federerForehand,
   federerOneHandedBackhand,
   federerSlice,
   nadalForehand,
   serenaServe,
+  sinnerForehand,
 } from "../src/data/strokes.ts";
 import type { StrokeProfile } from "../src/types/biomechanics.ts";
 import * as THREE from "three";
@@ -61,7 +64,7 @@ function scan(stroke: StrokeProfile, steps = 250) {
     const w = pose.hitWrist.clone();
     const tip = pose.racketTip.clone();
     const faceN = pose.racketFaceNormal.clone();
-    if (prevFace && faceN.dot(prevFace) < -0.05) faceN.negate();
+    if (prevFace && faceN.dot(prevFace) < -0.2) faceN.negate();
     const roll = pose.racketFaceRoll;
     const fore = w.clone().sub(e).normalize();
     _u.copy(e).sub(pose.hitShoulder).normalize();
@@ -126,6 +129,9 @@ function scan(stroke: StrokeProfile, steps = 250) {
 const strokes = [
   federerForehand,
   nadalForehand,
+  djokovicForehand,
+  alcarazForehand,
+  sinnerForehand,
   djokovicBackhand,
   federerOneHandedBackhand,
   serenaServe,

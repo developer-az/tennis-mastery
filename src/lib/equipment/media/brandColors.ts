@@ -11,6 +11,7 @@ const BRAND_COLORS: Record<string, string> = {
   solinco: "#f36c00",
   luxilon: "#c4a000",
   signum: "#1a1a2e",
+  "signum pro": "#1a1a2e",
   tourna: "#00a651",
   gamma: "#0033a0",
   kirschbaum: "#111111",
@@ -19,6 +20,14 @@ const BRAND_COLORS: Record<string, string> = {
   diadem: "#1c1c1c",
   "pro kennex": "#e87722",
   prokennex: "#e87722",
+  msv: "#c41230",
+  toroline: "#2d6a4f",
+  grapplesnake: "#1b4332",
+  "weiss cannon": "#4a5568",
+  weisscannon: "#4a5568",
+  karakal: "#0b3d2e",
+  hybrid: "#5c6b7a",
+  "hybrid setup": "#5c6b7a",
 };
 
 export function brandAccent(brand: string): string {

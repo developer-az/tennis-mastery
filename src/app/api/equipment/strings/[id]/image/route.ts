@@ -9,15 +9,16 @@ export async function GET(
   const { id } = await context.params;
   const format = new URL(request.url).searchParams.get("format");
 
+  const string = STRINGS.find((s) => s.id === id);
+  if (!string) {
+    return new Response("Not found", { status: 404 });
+  }
+
   const external = externalStringImage(id);
   if (external && format !== "svg") {
     return Response.redirect(external, 302);
   }
 
-  const string = STRINGS.find((s) => s.id === id);
-  if (!string) {
-    return new Response("Not found", { status: 404 });
-  }
   const svg = stringPortraitSvg(string);
   return new Response(svg, {
     headers: {

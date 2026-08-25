@@ -46,8 +46,8 @@ const geo = {
 };
 
 /**
- * Place a capsule between two joints, inset so hemispheres tuck into the joint
- * spheres — this removes the jagged V where two full-span limbs meet at a point.
+ * Place a capsule between two joints. Small inset so limbs read as continuous
+ * through the bend — joint spheres cover the meeting point.
  */
 function placeCapsule(
   mesh: THREE.Mesh | null,
@@ -55,15 +55,15 @@ function placeCapsule(
   end: THREE.Vector3,
   radius: number,
   twistRad = 0,
-  inset = 0.028,
+  inset = 0.014,
 ) {
   if (!mesh) return;
   _dir.subVectors(end, start);
   const full = _dir.length();
   if (full < 1e-5) return;
   _dir.multiplyScalar(1 / full);
-  const pad = Math.min(inset, full * 0.28);
-  const length = Math.max(0.05, full - pad * 2);
+  const pad = Math.min(inset, full * 0.18);
+  const length = Math.max(0.04, full - pad * 2);
   _mid.copy(start).addScaledVector(_dir, pad + length * 0.5);
   mesh.position.copy(_mid);
   _quat.setFromUnitVectors(_yAxis, _dir);
@@ -238,8 +238,8 @@ export function BiomechanicalSkeleton({
     const m = meshes.current;
     const p = pose;
 
-    placeCapsule(m.torso, p.pelvis, p.chest, 0.068, 0, 0.04);
-    placeCapsule(m.neck, p.chest, p.head, 0.032, 0, 0.03);
+    placeCapsule(m.torso, p.pelvis, p.chest, 0.068, 0, 0.02);
+    placeCapsule(m.neck, p.chest, p.head, 0.032, 0, 0.018);
 
     placeAt(m.head, p.head);
     if (m.head) m.head.scale.setScalar(0.105);
@@ -248,64 +248,65 @@ export function BiomechanicalSkeleton({
     placeAt(m.chest, p.chest);
     if (m.chest) m.chest.scale.setScalar(0.06);
 
-    placeCapsule(m.leadThigh, p.leadHip, p.leadKnee, 0.05, 0, 0.032);
-    placeCapsule(m.leadShank, p.leadKnee, p.leadAnkle, 0.04, 0, 0.03);
-    placeCapsule(m.trailThigh, p.trailHip, p.trailKnee, 0.05, 0, 0.032);
-    placeCapsule(m.trailShank, p.trailKnee, p.trailAnkle, 0.04, 0, 0.03);
+    // Legs: thigh→knee→shank meet inside joint spheres (human plantigrade chain)
+    placeCapsule(m.leadThigh, p.leadHip, p.leadKnee, 0.05, 0, 0.012);
+    placeCapsule(m.leadShank, p.leadKnee, p.leadAnkle, 0.04, 0, 0.012);
+    placeCapsule(m.trailThigh, p.trailHip, p.trailKnee, 0.05, 0, 0.012);
+    placeCapsule(m.trailShank, p.trailKnee, p.trailAnkle, 0.04, 0, 0.012);
 
     placeAt(m.leadHip, p.leadHip);
-    if (m.leadHip) m.leadHip.scale.setScalar(0.048);
+    if (m.leadHip) m.leadHip.scale.setScalar(0.052);
     placeAt(m.trailHip, p.trailHip);
-    if (m.trailHip) m.trailHip.scale.setScalar(0.048);
+    if (m.trailHip) m.trailHip.scale.setScalar(0.052);
     placeAt(m.leadKnee, p.leadKnee);
-    if (m.leadKnee) m.leadKnee.scale.setScalar(0.05);
+    if (m.leadKnee) m.leadKnee.scale.setScalar(0.054);
     placeAt(m.trailKnee, p.trailKnee);
-    if (m.trailKnee) m.trailKnee.scale.setScalar(0.05);
+    if (m.trailKnee) m.trailKnee.scale.setScalar(0.054);
     placeAt(m.leadAnkle, p.leadAnkle);
-    if (m.leadAnkle) m.leadAnkle.scale.setScalar(0.038);
+    if (m.leadAnkle) m.leadAnkle.scale.setScalar(0.04);
     placeAt(m.trailAnkle, p.trailAnkle);
-    if (m.trailAnkle) m.trailAnkle.scale.setScalar(0.038);
+    if (m.trailAnkle) m.trailAnkle.scale.setScalar(0.04);
 
     if (m.leadFoot) {
-      // Toes toward the net with a hint of the plant line — not spun with the hips
-      _dir.set(p.leadAnkle.x - p.leadHip.x, 0, p.leadAnkle.z - p.leadHip.z);
-      _dir.z -= 0.55;
+      // Toes along FK plantigrade stance forward
+      _dir.copy(p.leadFootFwd);
+      _dir.y = 0;
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.leadFoot.position.set(
-        p.leadAnkle.x + _dir.x * 0.07,
+        p.leadAnkle.x + _dir.x * 0.06,
         0.022,
-        p.leadAnkle.z + _dir.z * 0.07,
+        p.leadAnkle.z + _dir.z * 0.06,
       );
       m.leadFoot.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
-      m.leadFoot.scale.set(1.15, 0.55, 1.85);
+      m.leadFoot.scale.set(0.85, 0.5, 1.55);
     }
     if (m.trailFoot) {
-      _dir.set(p.trailAnkle.x - p.trailHip.x, 0, p.trailAnkle.z - p.trailHip.z);
-      _dir.z -= 0.4;
+      _dir.copy(p.trailFootFwd);
+      _dir.y = 0;
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.trailFoot.position.set(
-        p.trailAnkle.x + _dir.x * 0.06,
+        p.trailAnkle.x + _dir.x * 0.05,
         0.022,
-        p.trailAnkle.z + _dir.z * 0.06,
+        p.trailAnkle.z + _dir.z * 0.05,
       );
       m.trailFoot.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
-      m.trailFoot.scale.set(1.1, 0.55, 1.75);
+      m.trailFoot.scale.set(0.8, 0.5, 1.45);
     }
 
-    // Arms inset at elbows so the fold reads as a joint, not a sharp V
-    placeCapsule(m.hitUpper, p.hitShoulder, p.hitElbow, 0.038, p.hitUpperTwist, 0.03);
-    placeCapsule(m.hitFore, p.hitElbow, p.hitWrist, 0.032, p.hitUpperTwist * 0.55, 0.028);
-    placeCapsule(m.hitHand, p.hitWrist, p.hitHand, 0.028, p.hitUpperTwist * 0.4, 0.012);
-    placeCapsule(m.nonHitUpper, p.nonHitShoulder, p.nonHitElbow, 0.038, p.nonHitUpperTwist, 0.03);
-    placeCapsule(m.nonHitFore, p.nonHitElbow, p.nonHitWrist, 0.032, p.nonHitUpperTwist * 0.45, 0.028);
-    placeCapsule(m.nonHitHand, p.nonHitWrist, p.nonHitHand, 0.026, p.nonHitUpperTwist * 0.3, 0.012);
+    // Arms: continuous through elbow / wrist — joint spheres cover the fold
+    placeCapsule(m.hitUpper, p.hitShoulder, p.hitElbow, 0.038, p.hitUpperTwist, 0.012);
+    placeCapsule(m.hitFore, p.hitElbow, p.hitWrist, 0.032, p.hitUpperTwist * 0.55, 0.012);
+    placeCapsule(m.hitHand, p.hitWrist, p.hitHand, 0.028, p.hitUpperTwist * 0.4, 0.008);
+    placeCapsule(m.nonHitUpper, p.nonHitShoulder, p.nonHitElbow, 0.038, p.nonHitUpperTwist, 0.012);
+    placeCapsule(m.nonHitFore, p.nonHitElbow, p.nonHitWrist, 0.032, p.nonHitUpperTwist * 0.45, 0.012);
+    placeCapsule(m.nonHitHand, p.nonHitWrist, p.nonHitHand, 0.026, p.nonHitUpperTwist * 0.3, 0.008);
 
     placeAt(m.hitShoulder, p.hitShoulder);
-    if (m.hitShoulder) m.hitShoulder.scale.setScalar(0.05);
+    if (m.hitShoulder) m.hitShoulder.scale.setScalar(0.052);
     placeAt(m.hitElbow, p.hitElbow);
-    if (m.hitElbow) m.hitElbow.scale.setScalar(0.046);
+    if (m.hitElbow) m.hitElbow.scale.setScalar(0.048);
     placeAt(m.hitWrist, p.hitWrist);
     if (m.hitWrist) m.hitWrist.scale.setScalar(0.034);
     placeAt(m.nonHitShoulder, p.nonHitShoulder);
@@ -316,9 +317,9 @@ export function BiomechanicalSkeleton({
     if (m.nonHitWrist) m.nonHitWrist.scale.setScalar(0.032);
 
     if (racketGroup.current) {
-      // Racket owned by the HAND — grip butt sits in the palm, not the wrist joint
+      // Racket owned by the HAND — group origin = palm; local +Y toward tip
       _dir.subVectors(p.racketTip, p.hitHand);
-      const len = Math.max(0.35, _dir.length());
+      const len = Math.max(0.4, _dir.length());
       _dir.normalize();
 
       if (!hasPrevRacket.current) {
@@ -330,16 +331,11 @@ export function BiomechanicalSkeleton({
         if (_prevY.lengthSq() < 1e-8) _prevY.copy(_yAxis);
         else _prevY.normalize();
         const align = _prevY.dot(_dir);
-        // Large shaft jump (loop / scrub): re-seed instead of twisting through a singularity
-        if (align < -0.5 && _prevY.distanceTo(_dir) > 1.2) {
+        // Prefer continuous tracking — only hard re-seed on near-180° flips
+        if (align < -0.85) {
           _quat.setFromUnitVectors(_yAxis, _dir);
           prevFace.current.copy(p.racketFaceNormal);
-        } else if (align < -0.999) {
-          _xAxis.set(Math.abs(_prevY.x) < 0.9 ? 1 : 0, 0, Math.abs(_prevY.x) < 0.9 ? 0 : 1);
-          _zAxis.crossVectors(_prevY, _xAxis).normalize();
-          _swing.setFromAxisAngle(_zAxis, Math.PI);
-          _quat.copy(_swing).multiply(prevRacketQuat.current);
-        } else if (align > 0.9999) {
+        } else if (align > 0.9995) {
           _quat.copy(prevRacketQuat.current);
         } else {
           _swing.setFromUnitVectors(_prevY, _dir);
@@ -347,7 +343,6 @@ export function BiomechanicalSkeleton({
         }
       }
 
-      // Desired face: continuous roll scalar preferred; FK normal as direction hint
       _faceStable.copy(p.racketFaceNormal);
       _faceStable.addScaledVector(_dir, -_faceStable.dot(_dir));
       if (_faceStable.lengthSq() < 1e-6) {
@@ -356,13 +351,15 @@ export function BiomechanicalSkeleton({
         if (_zAxis.lengthSq() < 1e-8) _zAxis.set(1, 0, 0);
         else _zAxis.normalize();
         _faceStable.copy(_zAxis);
-        _rollQ.setFromAxisAngle(_dir, p.racketFaceRoll);
-        _faceStable.applyQuaternion(_rollQ);
-        _faceStable.addScaledVector(_dir, -_faceStable.dot(_dir));
       }
       _faceStable.normalize();
-      // Temporal hemisphere lock (hysteresis): only flip when clearly opposite prev face
-      if (_faceStable.dot(prevFace.current) < -0.05) _faceStable.negate();
+      // Stronger hysteresis so face doesn't chatter / teleport through the swing
+      if (_faceStable.dot(prevFace.current) < -0.2) _faceStable.negate();
+      // Soft blend toward previous face to kill frame-to-frame pops
+      _faceStable.multiplyScalar(0.65).addScaledVector(prevFace.current, 0.35);
+      _faceStable.addScaledVector(_dir, -_faceStable.dot(_dir));
+      if (_faceStable.lengthSq() > 1e-8) _faceStable.normalize();
+      else _faceStable.copy(prevFace.current);
       prevFace.current.copy(_faceStable);
 
       _xAxis.crossVectors(_dir, _faceStable);
@@ -383,20 +380,23 @@ export function BiomechanicalSkeleton({
       }
       prevRacketQuat.current.copy(_quat);
 
-      _mid.addVectors(p.hitHand, p.racketTip).multiplyScalar(0.5);
-      racketGroup.current.position.copy(_mid);
+      // Palm at the butt — meshes sit along +Y toward the tip
+      racketGroup.current.position.copy(p.hitHand);
       racketGroup.current.quaternion.copy(_quat);
 
+      const handleLen = len * 0.3;
+      const throatLen = len * 0.16;
       if (m.handle) {
-        m.handle.position.set(0, -len * 0.28, 0);
-        m.handle.scale.set(1, len * 0.35, 1);
+        m.handle.position.set(0, handleLen * 0.5, 0);
+        m.handle.scale.set(1, handleLen, 1);
       }
       if (m.throat) {
-        m.throat.position.set(0, -len * 0.05, 0);
-        m.throat.scale.set(1, len * 0.2, 1);
+        m.throat.position.set(0, handleLen + throatLen * 0.5, 0);
+        m.throat.scale.set(1, throatLen, 1);
       }
-      if (m.hoop) m.hoop.position.set(0, len * 0.22, 0);
-      if (m.strings) m.strings.position.set(0, len * 0.22, 0);
+      const hoopY = handleLen + throatLen + len * 0.22;
+      if (m.hoop) m.hoop.position.set(0, hoopY, 0);
+      if (m.strings) m.strings.position.set(0, hoopY, 0);
 
       const glow = Math.min(1, driver.racketSpeedMs / 40);
       hoopMat.emissiveIntensity = 0.08 + glow * 0.35;

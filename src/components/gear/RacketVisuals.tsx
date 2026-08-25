@@ -8,6 +8,7 @@
 import { useId } from "react";
 import type { ForehandMoldAdvice } from "@/lib/equipment/forehandMold";
 import type { FlightMetrics } from "@/lib/equipment/setupSynthesis";
+import { AthleteSilhouette, RacketHoopPhoto } from "@/components/gear/AthleteSilhouette";
 import {
   computeBallTrajectory,
   contactHeightWindowM,
@@ -162,123 +163,46 @@ function FootRuler({
 }
 
 /**
- * Measured side-view at contact: feet on the court, arm to the hoop, face closed
- * past vertical (clockwise = top of hoop toward the net / +x).
+ * Measured side-view at contact: filled athlete cutout + photo-style hoop.
+ * Face closed past vertical (clockwise = top of hoop toward the net / +x).
  */
 function ContactStroke({
   baseX,
-  sy,
   ground,
   contactX,
   contactY,
   closedDeg,
 }: {
   baseX: number;
-  sy: (m: number) => number;
+  sy?: (m: number) => number;
   ground: number;
   contactX: number;
   contactY: number;
   closedDeg: number;
 }) {
-  const hipY = sy(0.92);
-  const shoulderY = sy(1.38);
-  const headCy = sy(1.66);
-  const fill = "var(--silhouette)";
   const closed = Math.max(0, Math.min(28, closedDeg));
+  const scale = Math.max(0.55, Math.min(0.95, (ground - 40) / 90));
   return (
     <g>
-      <ellipse cx={baseX - 9} cy={ground - 2} rx="8" ry="2.5" fill={fill} />
-      <ellipse cx={baseX + 8} cy={ground - 2} rx="8.5" ry="2.5" fill={fill} />
-      <path
-        d={`M ${baseX - 2} ${hipY} L ${baseX - 9} ${sy(0.5)} L ${baseX - 9} ${ground - 3}`}
-        fill="none"
-        stroke={fill}
-        strokeWidth="4.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d={`M ${baseX + 3} ${hipY} L ${baseX + 8} ${sy(0.48)} L ${baseX + 8} ${ground - 3}`}
-        fill="none"
-        stroke={fill}
-        strokeWidth="4.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      <AthleteSilhouette x={baseX} y={ground - 4} scale={scale} opacity={0.92} />
+      <RacketHoopPhoto
+        cx={contactX}
+        cy={contactY}
+        rot={-14}
+        faceClosed={closed}
+        scale={0.68}
+        frame="var(--chart-control)"
+        strings="color-mix(in srgb, var(--foreground) 32%, transparent)"
       />
       <line
-        x1={baseX}
-        y1={hipY}
-        x2={baseX + 2}
-        y2={shoulderY}
-        stroke={fill}
-        strokeWidth="7.5"
-        strokeLinecap="round"
-      />
-      <circle cx={baseX + 2} cy={headCy} r="6.8" fill={fill} />
-      <path
-        d={`M ${baseX + 4} ${shoulderY} Q ${(baseX + contactX) / 2} ${(shoulderY + contactY) / 2 + 10}, ${contactX - 7} ${contactY + 6}`}
-        fill="none"
-        stroke={fill}
-        strokeWidth="3.4"
-        strokeLinecap="round"
-      />
-      <ClosedFaceRacket cx={contactX} cy={contactY} closedDeg={closed} />
-    </g>
-  );
-}
-
-/** Edge-on hoop. 0° = vertical bed; +closedDeg tips the top toward the net. */
-function ClosedFaceRacket({
-  cx,
-  cy,
-  closedDeg,
-}: {
-  cx: number;
-  cy: number;
-  closedDeg: number;
-}) {
-  return (
-    <g>
-      <line
-        x1={cx}
-        y1={cy - 18}
-        x2={cx}
-        y2={cy + 16}
-        stroke="color-mix(in srgb, var(--foreground) 28%, transparent)"
+        x1={contactX}
+        y1={contactY - 20}
+        x2={contactX}
+        y2={contactY + 18}
+        stroke="color-mix(in srgb, var(--foreground) 22%, transparent)"
         strokeWidth="1"
         strokeDasharray="2 2"
       />
-      <g transform={`rotate(${closedDeg} ${cx} ${cy})`}>
-        <ellipse
-          cx={cx}
-          cy={cy}
-          rx="5.2"
-          ry="13.5"
-          fill="#141414"
-          stroke="var(--chart-control)"
-          strokeWidth="2.3"
-        />
-        {[-9, -4.5, 0, 4.5, 9].map((dy) => (
-          <line
-            key={dy}
-            x1={cx - 3}
-            y1={cy + dy}
-            x2={cx + 3}
-            y2={cy + dy}
-            stroke="color-mix(in srgb, var(--foreground) 40%, transparent)"
-            strokeWidth="0.5"
-          />
-        ))}
-        <line
-          x1={cx}
-          y1={cy + 13}
-          x2={cx - 7}
-          y2={cy + 26}
-          stroke="#2a2a2a"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-      </g>
     </g>
   );
 }
@@ -502,9 +426,8 @@ export function LaunchAngleVisual({
             </span>
           </p>
           <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-            Contact {formatFt(z.outFrontM)} in front of the baseline at {formatFt(z.heightM)}. Face{" "}
-            {closed.toFixed(1)}° closed. Ball center at the net is {formatFt(traj.heightAtNet)} (
-            {traj.netClearIn.toFixed(1)}″ of air over the tape).
+            {formatFt(z.outFrontM)} out · {formatFt(z.heightM)} high · face {closed.toFixed(1)}° closed · +
+            {traj.netClearIn.toFixed(1)}″ over tape.
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             <FlightGauge label="Plow" value={plow} color="var(--chart-comfort)" hint="Mass through hit" />
@@ -676,8 +599,8 @@ export function SwingPathVisual({
       </p>
       {!compact ? (
         <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-          Sweet-spot window {formatFt(z.heightLoM)}–{formatFt(z.heightHiM)} high and {formatFt(z.outFrontLoM)}–
-          {formatFt(z.outFrontHiM)} in front of the torso. {z.detail}
+          Window {formatFt(z.heightLoM)}–{formatFt(z.heightHiM)} · {formatFt(z.outFrontLoM)}–
+          {formatFt(z.outFrontHiM)} out. {z.detail}
         </p>
       ) : (
         <p className="mt-1 text-xs text-[var(--muted)]">
@@ -760,124 +683,106 @@ export function StrikeCoachingBullets({
  * Octagonal handle bevel map — highlights the index-knuckle bevel for the
  * recommended forehand grip.
  */
+/**
+ * Product-manual bevel chart — unrolled butt-cap faces with knuckle marker.
+ * Bevel 1 = continental … bevel 4/5 = western / extreme western.
+ */
 export function ForehandGripBevelVisual({
   advice,
 }: {
   advice: ForehandMoldAdvice;
 }) {
-  const uid = useId().replace(/:/g, "");
   const bevel = advice.bevel;
-  const labels = [
-    { n: 1, name: "Cont." },
-    { n: 2, name: "East." },
-    { n: 3, name: "Semi" },
-    { n: 4, name: "West." },
-    { n: 5, name: "X-West" },
+  const faces = [
+    { n: 1, name: "Continental" },
+    { n: 2, name: "Eastern" },
+    { n: 3, name: "Semi-western" },
+    { n: 4, name: "Western" },
+    { n: 5, name: "X-Western" },
     { n: 6, name: "—" },
     { n: 7, name: "—" },
     { n: 8, name: "—" },
   ];
-  const cx = 110;
-  const cy = 78;
-  const r = 44;
+  const x0 = 18;
+  const y0 = 36;
+  const w = 22;
+  const h = 54;
+  const gap = 3;
 
   return (
     <div className="relative">
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
         Optimal FH grip for this mold
       </p>
-      <svg viewBox="0 0 220 160" className="h-auto w-full max-w-md" aria-hidden>
-        <defs>
-          <linearGradient id={`bevelFace-${uid}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#3d5c4a" />
-            <stop offset="100%" stopColor="#1a3328" />
-          </linearGradient>
-          <linearGradient id={`bevelEdge-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#c5c9c6" />
-            <stop offset="100%" stopColor="#6a726c" />
-          </linearGradient>
-        </defs>
-        <polygon
-          points={Array.from({ length: 8 }, (_, i) => {
-            const a = (-90 + i * 45) * (Math.PI / 180);
-            return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
-          }).join(" ")}
-          fill={`url(#bevelFace-${uid})`}
-          stroke={`url(#bevelEdge-${uid})`}
-          strokeWidth="2.2"
-        />
-        {labels.map((lab, i) => {
-          const mid = (-90 + i * 45 + 22.5) * (Math.PI / 180);
-          const fx = cx + (r - 6) * Math.cos(mid);
-          const fy = cy + (r - 6) * Math.sin(mid);
-          const tx = cx + (r + 20) * Math.cos(mid);
-          const ty = cy + (r + 20) * Math.sin(mid);
-          const active = lab.n === bevel;
-          const a0 = (-90 + i * 45) * (Math.PI / 180);
-          const a1 = (-90 + (i + 1) * 45) * (Math.PI / 180);
-          const p0x = cx + r * Math.cos(a0);
-          const p0y = cy + r * Math.sin(a0);
-          const p1x = cx + r * Math.cos(a1);
-          const p1y = cy + r * Math.sin(a1);
-          const inner = r - 10;
+      <svg viewBox="0 0 220 150" className="h-auto w-full max-w-md" aria-hidden>
+        <text x="18" y="18" fill="var(--muted)" fontSize="8">
+          Butt-cap bevels (unrolled) · index knuckle on highlighted face
+        </text>
+        {faces.map((f, i) => {
+          const x = x0 + i * (w + gap);
+          const active = f.n === bevel;
           return (
-            <g key={lab.n}>
+            <g key={f.n}>
+              <rect
+                x={x}
+                y={y0}
+                width={w}
+                height={h}
+                rx="2"
+                fill={
+                  active
+                    ? "color-mix(in srgb, var(--accent) 38%, var(--panel))"
+                    : "color-mix(in srgb, var(--foreground) 8%, var(--panel))"
+                }
+                stroke={active ? "var(--chart-control)" : "color-mix(in srgb, var(--foreground) 22%, transparent)"}
+                strokeWidth={active ? 1.6 : 0.9}
+              />
+              {/* Facet highlight ridge */}
               <line
-                x1={cx + inner * Math.cos(a0)}
-                y1={cy + inner * Math.sin(a0)}
-                x2={p0x}
-                y2={p0y}
+                x1={x + 3}
+                y1={y0 + 6}
+                x2={x + 3}
+                y2={y0 + h - 6}
                 stroke="color-mix(in srgb, var(--foreground) 18%, transparent)"
-                strokeWidth="0.8"
+                strokeWidth="1"
               />
-              {active ? (
-                <path
-                  d={`M ${cx} ${cy} L ${p0x} ${p0y} L ${p1x} ${p1y} Z`}
-                  fill="color-mix(in srgb, var(--accent) 35%, transparent)"
-                  stroke="var(--chart-control)"
-                  strokeWidth="1.4"
-                >
-                  <animate attributeName="opacity" values="0.75;1;0.75" dur="2.2s" repeatCount="indefinite" />
-                </path>
-              ) : null}
-              <circle
-                cx={fx}
-                cy={fy}
-                r={active ? 4 : 1.8}
-                fill={active ? "var(--chart-control)" : "rgba(232,239,233,0.25)"}
-              />
-              {lab.n <= 5 ? (
+              <text
+                x={x + w / 2}
+                y={y0 + h / 2 + 3}
+                textAnchor="middle"
+                fill={active ? "var(--accent)" : "var(--muted)"}
+                fontSize={active ? 11 : 9}
+                fontWeight={active ? 700 : 500}
+              >
+                {f.n}
+              </text>
+              {f.n <= 5 ? (
                 <text
-                  x={tx}
-                  y={ty + 3}
+                  x={x + w / 2}
+                  y={y0 + h + 14}
                   textAnchor="middle"
                   fill={active ? "var(--chart-control)" : "var(--muted)"}
-                  fontSize={active ? 9 : 8}
-                  fontWeight={active ? 600 : 400}
+                  fontSize="6.5"
                 >
-                  {lab.n}
-                  {active ? ` · ${lab.name}` : ""}
+                  {active ? f.name.slice(0, 4) : f.n}
                 </text>
+              ) : null}
+              {active ? (
+                <g>
+                  <path
+                    d={`M ${x + w / 2} ${y0 - 4} L ${x + w / 2 - 5} ${y0 - 12} L ${x + w / 2 + 5} ${y0 - 12} Z`}
+                    fill="var(--chart-power)"
+                  />
+                  <text x={x + w / 2} y={y0 - 16} textAnchor="middle" fill="var(--chart-power)" fontSize="7">
+                    knuckle
+                  </text>
+                </g>
               ) : null}
             </g>
           );
         })}
-        <circle cx={cx} cy={cy} r="14" fill="#0e1814" stroke="color-mix(in srgb, var(--foreground) 25%, transparent)" strokeWidth="1" />
-        <text x={cx} y={cy - 2} textAnchor="middle" fill="var(--foreground)" fontSize="9">
-          butt
-        </text>
-        <text x={cx} y={cy + 10} textAnchor="middle" fill="var(--muted)" fontSize="7">
-          knuckle → {bevel}
-        </text>
-        <path
-          d={`M ${cx + 10} ${cy + r + 6} q 18 14, 34 6`}
-          fill="none"
-          stroke="var(--chart-power)"
-          strokeWidth="1.4"
-          strokeDasharray="3 2"
-        />
-        <text x={cx + 46} y={cy + r + 20} fill="var(--chart-power)" fontSize="8">
-          index knuckle
+        <text x="18" y="128" fill="var(--muted)" fontSize="7.5">
+          1 Cont. → 2 East. → 3 Semi → 4 West. → 5 Extreme
         </text>
       </svg>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
@@ -898,33 +803,8 @@ export function FaceAngleAtContactVisual({
 }) {
   const uid = useId().replace(/:/g, "");
   const closed = advice.face.closedDeg;
-  // 0° = vertical stringbed; positive closed tips top toward +x (flight / opponent)
-  const rad = (closed * Math.PI) / 180;
-  const cx = 88;
-  const cy = 72;
-  const rx = 15;
-  const ry = 26;
-  // Normal from stringbed toward ball
-  const nx = Math.sin(rad);
-  const ny = -Math.cos(rad);
-  // Back of hoop (opposite)
-  const bx = -nx;
-  const by = -ny;
-  const ballX = cx + nx * 50;
-  const ballY = cy + ny * 50;
-  // Throat stub toward bottom of hoop in local face coords
-  const throatLocal = [0, ry + 10] as const;
-  const throatX = cx + (throatLocal[0] * Math.cos(rad) - throatLocal[1] * Math.sin(rad));
-  const throatY = cy + (throatLocal[0] * Math.sin(rad) + throatLocal[1] * Math.cos(rad));
-  const buttX = cx + (0 * Math.cos(rad) - (ry + 28) * Math.sin(rad));
-  const buttY = cy + (0 * Math.sin(rad) + (ry + 28) * Math.cos(rad));
-
-  // Transform helper for ellipse outline points
-  const xf = (lx: number, ly: number) => {
-    const x = cx + (lx * Math.cos(rad) - ly * Math.sin(rad));
-    const y = cy + (lx * Math.sin(rad) + ly * Math.cos(rad));
-    return `${x},${y}`;
-  };
+  const cx = 96;
+  const cy = 58;
 
   return (
     <div className="relative">
@@ -933,144 +813,110 @@ export function FaceAngleAtContactVisual({
       </p>
       <svg viewBox="0 0 220 160" className="h-auto w-full max-w-md" aria-hidden>
         <defs>
-          <linearGradient id={`stringsFront-${uid}`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="rgba(197,232,90,0.55)" />
-            <stop offset="100%" stopColor="rgba(197,232,90,0.2)" />
-          </linearGradient>
-          <linearGradient id={`frameBack-${uid}`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="rgba(244,162,97,0.15)" />
-            <stop offset="100%" stopColor="rgba(244,162,97,0.45)" />
+          <linearGradient id={`macroFrame-${uid}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#d8ddd9" />
+            <stop offset="45%" stopColor="#3a4a40" />
+            <stop offset="100%" stopColor="#1a2820" />
           </linearGradient>
         </defs>
         <line
-          x1="20"
+          x1="24"
           y1="148"
           x2="200"
           y2="148"
           stroke="color-mix(in srgb, var(--foreground) 22%, transparent)"
           strokeWidth="1.2"
         />
-        <text x="168" y="144" fill="var(--muted)" fontSize="8">
+        <text x="150" y="144" fill="var(--muted)" fontSize="8">
           toward opponent →
         </text>
+        {/* Vertical reference */}
         <line
           x1={cx}
-          y1={cy - 40}
+          y1={18}
           x2={cx}
-          y2={cy + 34}
-          stroke="color-mix(in srgb, var(--foreground) 30%, transparent)"
+          y2={118}
+          stroke="color-mix(in srgb, var(--foreground) 28%, transparent)"
           strokeWidth="1.2"
           strokeDasharray="3 3"
         />
-        <text x={cx - 26} y={cy - 44} fill="var(--muted)" fontSize="8">
+        <text x={cx - 28} y={16} fill="var(--muted)" fontSize="8">
           vertical
         </text>
         <path
-          d={`M ${cx} ${cy - 34} A 34 34 0 0 1 ${cx + Math.sin(rad) * 34} ${cy - Math.cos(rad) * 34}`}
+          d={`M ${cx} ${cy - 36} A 36 36 0 0 1 ${cx + Math.sin((closed * Math.PI) / 180) * 36} ${cy - Math.cos((closed * Math.PI) / 180) * 36}`}
           fill="none"
           stroke="var(--chart-spin)"
           strokeWidth="1.6"
         />
-        <text x={cx + 8 + closed * 0.35} y={cy - 40} fill="var(--chart-spin)" fontSize="9">
+        <text x={cx + 10} y={cy - 42} fill="var(--chart-spin)" fontSize="9">
           {closed.toFixed(1)}° closed
         </text>
 
-        {/* Frame back (amber) — slight offset away from ball */}
-        <ellipse
-          cx={cx + bx * 3}
-          cy={cy + by * 3}
-          rx={rx + 1}
-          ry={ry + 1}
-          transform={`rotate(${closed} ${cx + bx * 3} ${cy + by * 3})`}
-          fill={`url(#frameBack-${uid})`}
-          stroke="var(--chart-power)"
-          strokeWidth="2.2"
-        />
-        {/* Stringbed front (lime) */}
-        <ellipse
-          cx={cx + nx * 1.5}
-          cy={cy + ny * 1.5}
-          rx={rx}
-          ry={ry}
-          transform={`rotate(${closed} ${cx + nx * 1.5} ${cy + ny * 1.5})`}
-          fill={`url(#stringsFront-${uid})`}
-          stroke="var(--chart-control)"
-          strokeWidth="1.8"
-        />
-        {/* Cross strings */}
-        {[-16, -8, 0, 8, 16].map((oy) => (
-          <line
-            key={`h-${oy}`}
-            x1={parseFloat(xf(-rx + 3, oy).split(",")[0])}
-            y1={parseFloat(xf(-rx + 3, oy).split(",")[1])}
-            x2={parseFloat(xf(rx - 3, oy).split(",")[0])}
-            y2={parseFloat(xf(rx - 3, oy).split(",")[1])}
-            stroke="rgba(197,232,90,0.45)"
+        {/* Macro edge-on racket */}
+        <g transform={`rotate(${closed} ${cx} ${cy})`}>
+          <ellipse
+            cx={cx}
+            cy={cy}
+            rx="9"
+            ry="28"
+            fill="color-mix(in srgb, var(--bg-scene) 70%, #0a1410)"
+            stroke={`url(#macroFrame-${uid})`}
+            strokeWidth="4.5"
+          />
+          {[-18, -9, 0, 9, 18].map((dy) => (
+            <line
+              key={dy}
+              x1={cx - 5}
+              y1={cy + dy}
+              x2={cx + 5}
+              y2={cy + dy}
+              stroke="color-mix(in srgb, var(--accent) 45%, transparent)"
+              strokeWidth="0.55"
+            />
+          ))}
+          <rect
+            x={cx - 3.2}
+            y={cy + 26}
+            width="6.4"
+            height="16"
+            rx="1.2"
+            fill={`url(#macroFrame-${uid})`}
+          />
+          <rect
+            x={cx - 2.4}
+            y={cy + 42}
+            width="4.8"
+            height="36"
+            rx="1.4"
+            fill="#2a1c14"
+            stroke="color-mix(in srgb, var(--foreground) 25%, transparent)"
             strokeWidth="0.7"
           />
-        ))}
-        {/* Throat + handle stub */}
-        <line
-          x1={throatX}
-          y1={throatY}
-          x2={buttX}
-          y2={buttY}
-          stroke="color-mix(in srgb, var(--foreground) 50%, transparent)"
-          strokeWidth="3.2"
-          strokeLinecap="round"
-        />
-        <circle cx={cx} cy={cy} r="3" fill="var(--chart-control)">
-          <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" />
-        </circle>
-        <circle cx={ballX} cy={ballY} r="7" fill="rgba(244,162,97,0.9)" />
-        <line
-          x1={cx + nx * 10}
-          y1={cy + ny * 10}
-          x2={ballX - nx * 8}
-          y2={ballY - ny * 8}
-          stroke="var(--chart-power)"
-          strokeWidth="1.4"
-          strokeDasharray="3 2"
-        />
+          <rect x={cx - 3} y={cy + 76} width="6" height="5" rx="1" fill="#1a120c" />
+        </g>
 
-        {/* Front / back legend */}
-        <rect x="14" y="18" width="10" height="10" rx="2" fill="rgba(197,232,90,0.45)" stroke="var(--chart-control)" />
-        <text x="28" y="27" fill="var(--chart-control)" fontSize="8">
-          Strings · front (hits ball)
-        </text>
-        <rect x="14" y="34" width="10" height="10" rx="2" fill="rgba(244,162,97,0.35)" stroke="var(--chart-power)" />
-        <text x="28" y="43" fill="var(--chart-power)" fontSize="8">
-          Frame · back
+        {/* Ball ahead of closed face */}
+        <circle
+          cx={cx + Math.sin((closed * Math.PI) / 180) * 42 + 8}
+          cy={cy - Math.cos((closed * Math.PI) / 180) * 42}
+          r="5"
+          fill="var(--chart-power)"
+          opacity="0.85"
+        />
+        <text x="24" y={compact ? 138 : 132} fill="var(--muted)" fontSize="7.5">
+          Face closed past vertical — top of hoop tips toward the net
         </text>
       </svg>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
-        {advice.face.label}
-        <span className="ml-2 text-base text-[var(--muted)]">
-          · ~{advice.face.closedDeg.toFixed(1)}° past vertical
-        </span>
-      </p>
       {!compact ? (
-        <>
-          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{advice.face.detail}</p>
-          <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">
-            Pair with {advice.prefersHeight}-high contact on the{" "}
-            <span className="text-[var(--accent)]">{advice.gripLabel.toLowerCase()}</span>.{" "}
-            {advice.avoid}
-          </p>
-        </>
-      ) : (
-        <p className="mt-1 text-xs text-[var(--muted)]">
-          Lime = strings (hits ball). Amber = frame back. Pair with {advice.prefersHeight}-high contact ·{" "}
-          {advice.gripLabel.toLowerCase()}.
+        <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+          {advice.face.label}: ~{closed.toFixed(1)}° closed. Prefer {advice.prefersHeight}-high contact.
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
 
-/**
- * Contact height × face lean — shows why the grip and face belong together.
- */
 export function ContactGeometryVisual({
   advice,
 }: {

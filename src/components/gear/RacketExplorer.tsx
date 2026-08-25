@@ -4,6 +4,9 @@ import { useDeferredValue, useMemo, useRef, useState } from "react";
 import type { EquipmentTab, RacketCatalogMeta, RacketProfile } from "@/types/equipment";
 import { matchesEquipmentSearch, searchMatchScore } from "@/lib/equipment/search";
 import { racketImageUrl } from "@/lib/equipment/media/urls";
+import { hasExternalPhoto, photoFirst } from "@/lib/equipment/media/externalImages";
+import { brandAccent } from "@/lib/equipment/media/brandColors";
+import { equipmentLabel, modelWithoutBrand } from "@/lib/equipment/labels";
 import { useGearStore } from "@/store/gearStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
@@ -16,13 +19,16 @@ import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
 import {
   AisleChip,
+  ActiveFilterChips,
   CatalogAisle,
   ChipRow,
+  MoreFilters,
   ProductCard,
   SearchField,
 } from "./CatalogShop";
 import {
   FEEL_MIN,
+  RACKET_BRAND_PIN,
   RACKET_FEELS,
   RACKET_SHOP_TYPES,
   brandsByCount,
@@ -72,7 +78,6 @@ export function RacketExplorer({
   const setup = useGearStore((s) => s.setup);
   const setupSlug = setup.racketSlug;
   const setRacket = useGearStore((s) => s.setRacket);
-  const setTab = useGearStore((s) => s.setTab);
   const playerGrip = usePlayerStore((s) => s.profile.grips.forehand);
   const [selectedSlug, setSelectedSlug] = useState(
     setupSlug && initialRackets.some((r) => r.slug === setupSlug)
@@ -82,8 +87,13 @@ export function RacketExplorer({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const deferredQuery = useDeferredValue(query);
 
-  const brands = useMemo(() => uniqueSortedBrands(initialRackets), [initialRackets]);
-  const aisleBrands = useMemo(() => brandsByCount(initialRackets, 8), [initialRackets]);
+  const brands = useMemo(() => {
+    const all = uniqueSortedBrands(initialRackets);
+    const pinned = RACKET_BRAND_PIN.filter((b) => all.includes(b));
+    const pinSet = new Set(pinned);
+    return [...pinned, ...all.filter((b) => !pinSet.has(b))];
+  }, [initialRackets]);
+  const aisleBrands = useMemo(() => brandsByCount(initialRackets, 10, RACKET_BRAND_PIN), [initialRackets]);
   const styles = useMemo(
     () => Array.from(new Set(initialRackets.map((r) => r.style))).sort(),
     [initialRackets],
@@ -123,6 +133,8 @@ export function RacketExplorer({
 
     const sorted = [...list];
     sorted.sort((a, b) => {
+      const photo = photoFirst(hasExternalPhoto("racket", a.slug), hasExternalPhoto("racket", b.slug));
+      if (photo !== 0) return photo;
       if (q) {
         const scoreDelta =
           searchMatchScore(q, b.brand, b.model, b.slug) -
@@ -275,7 +287,7 @@ export function RacketExplorer({
   const detailRef = useRef<HTMLDivElement | null>(null);
 
   const saveRacket = (r: RacketProfile) => {
-    setRacket(r.slug, `${r.brand} ${r.model}`, {
+    setRacket(r.slug, equipmentLabel(r.brand, r.model), {
       idealLaunchAngleDeg: r.idealLaunchAngleDeg,
       idealSwingPathDeg: r.idealSwingPathDeg,
       power: r.power,
@@ -359,9 +371,42 @@ export function RacketExplorer({
             />
           ))}
         </ChipRow>
-        <details className="text-sm">
-          <summary className="cursor-pointer text-[var(--muted)]">More filters</summary>
-          <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+        <ActiveFilterChips
+          chips={[
+            ...(brand !== "all" ? [{ id: "brand", label: brand, onRemove: () => setBrand("all") }] : []),
+            ...(shopType !== "all"
+              ? [
+                  {
+                    id: "type",
+                    label: RACKET_SHOP_TYPES.find((t) => t.id === shopType)?.label ?? shopType,
+                    onRemove: () => setShopType("all"),
+                  },
+                ]
+              : []),
+            ...(feel !== "all" ? [{ id: "feel", label: feel, onRemove: () => setFeel("all") }] : []),
+            ...(style !== "all" ? [{ id: "style", label: style, onRemove: () => setStyle("all") }] : []),
+            ...(weightBand !== "all"
+              ? [{ id: "weight", label: weightBand, onRemove: () => setWeightBand("all") }]
+              : []),
+            ...(headBand !== "all"
+              ? [{ id: "head", label: headBand, onRemove: () => setHeadBand("all") }]
+              : []),
+            ...(pattern !== "all"
+              ? [{ id: "pattern", label: pattern, onRemove: () => setPattern("all") }]
+              : []),
+          ]}
+          onClear={() => {
+            setBrand("all");
+            setShopType("all");
+            setFeel("all");
+            setStyle("all");
+            setWeightBand("all");
+            setHeadBand("all");
+            setPattern("all");
+            setQuery("");
+          }}
+        />
+        <MoreFilters>
             <select value={style} onChange={(e) => setStyle(e.target.value)} aria-label="Style" className="sf-select w-full">
               <option value="all">All styles</option>
               {styles.map((s) => (
@@ -393,8 +438,7 @@ export function RacketExplorer({
               <option value="power">Most power</option>
               <option value="weight">Heaviest</option>
             </select>
-          </div>
-        </details>
+        </MoreFilters>
 
         <p className="text-xs text-[var(--muted)]">
           {shown.length} of {filtered.length}
@@ -404,7 +448,7 @@ export function RacketExplorer({
 
         {showAisles ? (
           <div className="space-y-6">
-            {groupByBrand(initialRackets)
+            {groupByBrand(initialRackets, RACKET_BRAND_PIN)
               .filter((g) => aisleBrands.includes(g.brand))
               .map((g) => (
                 <CatalogAisle
@@ -413,7 +457,12 @@ export function RacketExplorer({
                   actionLabel={`See all ${g.brand}`}
                   onAction={() => setBrand(g.brand)}
                 >
-                  {g.items.slice(0, AISLE_CARDS).map((r) => (
+                  {[...g.items]
+                    .sort((a, b) =>
+                      photoFirst(hasExternalPhoto("racket", a.slug), hasExternalPhoto("racket", b.slug)),
+                    )
+                    .slice(0, AISLE_CARDS)
+                    .map((r) => (
                     <RacketCard
                       key={r.slug}
                       racket={r}
@@ -514,14 +563,7 @@ export function RacketExplorer({
               <button
                 type="button"
                 onClick={() => {
-                  if (onSelectTab) onSelectTab("lead-tape", { mold: selected.slug });
-                  else {
-                    setTab("lead-tape");
-                    const url = new URL(window.location.href);
-                    url.searchParams.set("tab", "lead-tape");
-                    url.searchParams.set("mold", selected.slug);
-                    window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}`);
-                  }
+                  onSelectTab?.("lead-tape", { mold: selected.slug });
                 }}
                 className="mt-2 w-full rounded-md px-4 py-2 text-xs text-[var(--muted)] transition hover:bg-white/5 hover:text-[var(--foreground)] sm:w-auto"
                 style={{ boxShadow: "0 0 0 1px var(--line)" }}
@@ -666,11 +708,12 @@ function RacketCard({
   return (
     <ProductCard
       image={racketImageUrl(racket)}
-      alt={`${racket.brand} ${racket.model}`}
+      alt={equipmentLabel(racket.brand, racket.model)}
       brand={racket.brand}
-      name={racket.model}
+      name={modelWithoutBrand(racket.brand, racket.model)}
       badge={racketShopBadge(racket)}
       meta={`${racket.year}${racket.headSizeSqIn ? ` · ${racket.headSizeSqIn}"` : ""}`}
+      accent={brandAccent(racket.brand)}
       scores={[
         { label: "Spin", value: racket.spin, color: "var(--chart-spin)" },
         { label: "Power", value: racket.power, color: "var(--chart-power)" },
