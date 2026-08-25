@@ -791,7 +791,7 @@ export function solveSkeletonFk(
     .normalize();
   // Extra court-lateral drive onto the BH wing — torso yaw alone under-pulls the elbow
   if (bhWingW > 0.05 && overheadAuth < 0.5) {
-    _dir.x += worldWing * (0.14 + 0.18 * takebackW) * bhWingW;
+    _dir.x += worldWing * (0.18 + 0.22 * takebackW) * bhWingW;
     _dir.normalize();
   }
   // Cap upper-arm elevation on groundstrokes so the elbow never sits above the shoulder
@@ -810,7 +810,9 @@ export function solveSkeletonFk(
   // Soft world-X lock: elbow stays on the BH side of the chest through the swing
   if (bhWingW > 0.05 && overheadAuth < 0.5) {
     const elOnBh = (out.hitElbow.x - out.chest.x) * worldWing;
-    const wantEl = (0.08 + 0.16 * takebackW + 0.05 * contactW) * bhWingW;
+    // Reach-limited: righty shoulder sits ~0.2 m on FH side, so elbow can only
+    // cross ~0.10–0.18 m onto the BH wing before upper-arm length fails.
+    const wantEl = (0.1 + 0.12 * takebackW + 0.06 * contactW) * bhWingW;
     if (elOnBh < wantEl) {
       out.hitElbow.x += worldWing * (wantEl - elOnBh);
       restoreLen(out.hitShoulder, out.hitElbow, upperArm);
@@ -822,7 +824,8 @@ export function solveSkeletonFk(
   {
     _tmp.subVectors(out.hitElbow, out.hitShoulder);
     const behind = -_tmp.dot(_fwd); // +behind = toward back fence
-    const maxBehind = 0.04 + 0.035 * takebackW;
+    const maxBehind =
+      bhWingW > 0.25 ? 0.07 + 0.08 * takebackW : 0.04 + 0.035 * takebackW;
     if (behind > maxBehind) {
       out.hitElbow.addScaledVector(_fwd, behind - maxBehind);
       restoreLen(out.hitShoulder, out.hitElbow, upperArm);
@@ -1203,10 +1206,10 @@ export function solveSkeletonFk(
   out.nonHitHand.copy(out.nonHitWrist).addScaledVector(_fdir, 0.05);
 
   if (!oneHanded) {
-    // 2HBH: hands share the grip — blend toward hitting hand without yanking elbow across
-    out.nonHitHand.lerp(out.hitHand, 0.72);
-    out.nonHitWrist.lerp(out.hitWrist, 0.62);
-    out.nonHitElbow.lerp(out.hitElbow, 0.22);
+    // 2HBH: hands share the grip — blend off-arm toward the hitting hand/elbow
+    out.nonHitHand.lerp(out.hitHand, 0.78);
+    out.nonHitWrist.lerp(out.hitWrist, 0.68);
+    out.nonHitElbow.lerp(out.hitElbow, 0.32);
   }
 }
 
