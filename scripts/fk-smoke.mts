@@ -122,11 +122,12 @@ run("bhC", {
 run("bhFT", {
   hipYaw: -32,
   spineTwist: -28,
-  shoulderFlexion: 150,
-  shoulderAbduction: 35,
-  elbowFlexion: 70,
-  wristExtension: -8,
-  racketPathElevation: 70,
+  shoulderFlexion: 105,
+  shoulderAbduction: -32,
+  shoulderInternalRotation: 22,
+  elbowFlexion: 48,
+  wristExtension: -4,
+  racketPathElevation: 52,
 });
 run("srvT", {
   hipYaw: -32,

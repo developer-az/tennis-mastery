@@ -331,11 +331,11 @@ export function BiomechanicalSkeleton({
         if (_prevY.lengthSq() < 1e-8) _prevY.copy(_yAxis);
         else _prevY.normalize();
         const align = _prevY.dot(_dir);
-        // Large shaft jump (scrub): re-seed instead of twisting through a singularity
-        if (align < -0.35) {
+        // Prefer continuous tracking — only hard re-seed on near-180° flips
+        if (align < -0.85) {
           _quat.setFromUnitVectors(_yAxis, _dir);
           prevFace.current.copy(p.racketFaceNormal);
-        } else if (align > 0.9999) {
+        } else if (align > 0.9995) {
           _quat.copy(prevRacketQuat.current);
         } else {
           _swing.setFromUnitVectors(_prevY, _dir);
@@ -353,7 +353,13 @@ export function BiomechanicalSkeleton({
         _faceStable.copy(_zAxis);
       }
       _faceStable.normalize();
-      if (_faceStable.dot(prevFace.current) < -0.05) _faceStable.negate();
+      // Stronger hysteresis so face doesn't chatter / teleport through the swing
+      if (_faceStable.dot(prevFace.current) < -0.2) _faceStable.negate();
+      // Soft blend toward previous face to kill frame-to-frame pops
+      _faceStable.multiplyScalar(0.65).addScaledVector(prevFace.current, 0.35);
+      _faceStable.addScaledVector(_dir, -_faceStable.dot(_dir));
+      if (_faceStable.lengthSq() > 1e-8) _faceStable.normalize();
+      else _faceStable.copy(prevFace.current);
       prevFace.current.copy(_faceStable);
 
       _xAxis.crossVectors(_dir, _faceStable);

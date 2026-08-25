@@ -61,7 +61,7 @@ function scan(stroke: StrokeProfile, steps = 250) {
     const w = pose.hitWrist.clone();
     const tip = pose.racketTip.clone();
     const faceN = pose.racketFaceNormal.clone();
-    if (prevFace && faceN.dot(prevFace) < -0.05) faceN.negate();
+    if (prevFace && faceN.dot(prevFace) < -0.2) faceN.negate();
     const roll = pose.racketFaceRoll;
     const fore = w.clone().sub(e).normalize();
     _u.copy(e).sub(pose.hitShoulder).normalize();
