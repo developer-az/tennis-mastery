@@ -279,7 +279,7 @@ export function BiomechanicalSkeleton({
         p.leadAnkle.z + _dir.z * 0.06,
       );
       m.leadFoot.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
-      m.leadFoot.scale.set(1.15, 0.55, 1.85);
+      m.leadFoot.scale.set(0.85, 0.5, 1.55);
     }
     if (m.trailFoot) {
       _dir.copy(p.trailFootFwd);
@@ -287,12 +287,12 @@ export function BiomechanicalSkeleton({
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.trailFoot.position.set(
-        p.trailAnkle.x + _dir.x * 0.055,
+        p.trailAnkle.x + _dir.x * 0.05,
         0.022,
-        p.trailAnkle.z + _dir.z * 0.055,
+        p.trailAnkle.z + _dir.z * 0.05,
       );
       m.trailFoot.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
-      m.trailFoot.scale.set(1.1, 0.55, 1.75);
+      m.trailFoot.scale.set(0.8, 0.5, 1.45);
     }
 
     // Arms: continuous through elbow / wrist — joint spheres cover the fold
