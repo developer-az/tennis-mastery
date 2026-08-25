@@ -268,9 +268,9 @@ export function BiomechanicalSkeleton({
     if (m.trailAnkle) m.trailAnkle.scale.setScalar(0.04);
 
     if (m.leadFoot) {
-      // Toes along plant forward from ankle (plantigrade), hinged at ankle joint
-      _dir.set(p.leadAnkle.x - p.leadHip.x, 0, p.leadAnkle.z - p.leadHip.z);
-      _dir.z -= 0.55;
+      // Toes along FK plantigrade stance forward
+      _dir.copy(p.leadFootFwd);
+      _dir.y = 0;
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.leadFoot.position.set(
@@ -282,8 +282,8 @@ export function BiomechanicalSkeleton({
       m.leadFoot.scale.set(1.15, 0.55, 1.85);
     }
     if (m.trailFoot) {
-      _dir.set(p.trailAnkle.x - p.trailHip.x, 0, p.trailAnkle.z - p.trailHip.z);
-      _dir.z -= 0.4;
+      _dir.copy(p.trailFootFwd);
+      _dir.y = 0;
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.trailFoot.position.set(
