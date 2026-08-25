@@ -111,7 +111,7 @@ function smooth01(t: number): number {
 
 /**
  * Elbow hinge: fold the forearm in a human swing plane.
- * Takeback → tip rises in a loop (up + slight back). Contact → forearm stays on the wing.
+ * Takeback → tip rises in a loop. Swing/contact → crease faces down/forward (never sky).
  * Never fold the elbow across the chest or behind the ribcage.
  */
 function elbowHingeAxis(
@@ -121,14 +121,17 @@ function elbowHingeAxis(
   mirror: number,
   out: THREE.Vector3,
   takebackW = 0,
+  swingW = 0,
 ): THREE.Vector3 {
   const overheadW = smooth01((Math.abs(upperDir.dot(_up)) - 0.78) / 0.16);
-  // Prefer world-up so the hinge opens the racket into a loop, not a chicken wing
-  _preferred.copy(_up).multiplyScalar(1.35 - overheadW * 0.5 + takebackW * 0.4);
-  // Mild wing bias — elbow points out, not into the torso
-  _preferred.addScaledVector(right, mirror * (0.18 + 0.1 * takebackW) * (1 - overheadW * 0.45));
-  // Slightly behind on takeback for the loop — keep it small so the elbow stays beside the body
-  _preferred.addScaledVector(forward, -0.12 * takebackW * (1 - overheadW));
+  const loopW = takebackW * (1 - swingW) * (1 - overheadW);
+  // Swing through: fold toward court-forward / slightly down so the olecranon doesn't face up
+  _preferred
+    .copy(forward)
+    .multiplyScalar(0.55 + 0.85 * swingW)
+    .addScaledVector(_up, 0.95 * loopW - 0.35 * swingW * (1 - overheadW))
+    .addScaledVector(right, mirror * (0.22 + 0.08 * takebackW) * (1 - overheadW * 0.5))
+    .addScaledVector(forward, -0.1 * loopW);
   if (_preferred.lengthSq() < 1e-8) {
     _preferred.copy(right).multiplyScalar(mirror);
   }
@@ -141,6 +144,11 @@ function elbowHingeAxis(
     out.crossVectors(upperDir, forward);
   }
   out.normalize();
+  // Keep hinge so positive fold doesn't invert the crease skyward on groundstrokes
+  if (overheadW < 0.55 && swingW > 0.2) {
+    _tmp.crossVectors(upperDir, out);
+    if (_tmp.y > 0.25) out.multiplyScalar(-1);
+  }
   return out;
 }
 
@@ -216,7 +224,114 @@ function anteriorScore(
   _tmp2.subVectors(knee, hip);
   const t = _tmp2.dot(_tmp) / haLenSq;
   _tmp2.addScaledVector(_tmp, -t);
-  return _tmp2.dot(stanceFwd) * 2.2 + _tmp2.y * 0.35;
+  // Anterior toes matter most; lightly penalize knees that climb above the hip
+  return _tmp2.dot(stanceFwd) * 2.2 + Math.min(0, hip.y - knee.y) * 1.4;
+}
+
+/**
+ * Place knee on the two-sphere intersection with locked hip + ankle.
+ * Always prefers plantigrade (toes) and never leaves the knee above the hip.
+ * Any polish rotates about hip→ankle so BOTH bone lengths stay exact.
+ */
+function placeKneeTwoBone(
+  hip: THREE.Vector3,
+  ankle: THREE.Vector3,
+  thighLen: number,
+  shankLen: number,
+  stanceFwd: THREE.Vector3,
+  right: THREE.Vector3,
+  outKnee: THREE.Vector3,
+): void {
+  const maxR = thighLen + shankLen - 0.006;
+  const minR = Math.abs(thighLen - shankLen) + 0.03;
+  _thigh.subVectors(ankle, hip);
+  const realDist = _thigh.length();
+  if (realDist < 1e-6) {
+    outKnee.copy(hip).addScaledVector(stanceFwd, 0.1);
+    outKnee.y = hip.y - thighLen * 0.55;
+    restoreLen(hip, outKnee, thighLen);
+    return;
+  }
+  _dir.copy(_thigh).multiplyScalar(1 / realDist);
+
+  if (realDist >= maxR) {
+    outKnee.copy(hip).addScaledVector(_dir, thighLen);
+    return;
+  }
+  if (realDist <= minR) {
+    outKnee.copy(hip).addScaledVector(stanceFwd, thighLen * 0.35);
+    outKnee.y = hip.y - thighLen * 0.75;
+    if (outKnee.y < FOOT_Y + 0.12) outKnee.y = FOOT_Y + 0.12;
+    restoreLen(hip, outKnee, thighLen);
+    return;
+  }
+
+  const cosThigh =
+    (thighLen * thighLen + realDist * realDist - shankLen * shankLen) /
+    (2 * thighLen * realDist);
+  const along = thighLen * Math.max(-1, Math.min(1, cosThigh));
+  const rise = Math.sqrt(Math.max(0, thighLen * thighLen - along * along));
+  // Circle center in _shank — anteriorScore clobbers _tmp/_tmp2
+  _shank.copy(hip).addScaledVector(_dir, along);
+
+  _preferred.copy(stanceFwd).addScaledVector(_dir, -_dir.dot(stanceFwd));
+  if (_preferred.lengthSq() < 1e-8) {
+    _preferred.copy(_up).addScaledVector(_dir, -_dir.dot(_up));
+  }
+  if (_preferred.lengthSq() < 1e-8) {
+    _preferred.copy(right).addScaledVector(_dir, -_dir.dot(right));
+  }
+  _preferred.normalize();
+  _axis.crossVectors(_dir, _preferred);
+  if (_axis.lengthSq() < 1e-8) {
+    _axis.set(1, 0, 0).addScaledVector(_dir, -_dir.x);
+    if (_axis.lengthSq() < 1e-8) _axis.set(0, 0, 1);
+  }
+  _axis.normalize();
+
+  let bestScore = -Infinity;
+  let bestAng = 0;
+  for (let i = 0; i < 24; i++) {
+    const ang = (i / 24) * Math.PI * 2;
+    const c = Math.cos(ang);
+    const s = Math.sin(ang);
+    outKnee
+      .copy(_shank)
+      .addScaledVector(_preferred, rise * c)
+      .addScaledVector(_axis, rise * s);
+    const ant = anteriorScore(outKnee, hip, ankle, stanceFwd);
+    const below = hip.y - outKnee.y;
+    const score = ant + (below >= 0.025 ? 4 : below * 16) - Math.max(0, -below) * 25;
+    if (score > bestScore) {
+      bestScore = score;
+      bestAng = ang;
+    }
+  }
+  {
+    const c = Math.cos(bestAng);
+    const s = Math.sin(bestAng);
+    outKnee
+      .copy(_shank)
+      .addScaledVector(_preferred, rise * c)
+      .addScaledVector(_axis, rise * s);
+  }
+
+  if (outKnee.y > hip.y - 0.02 && rise > 1e-5) {
+    _clear.copy(_up).multiplyScalar(-1).addScaledVector(_dir, _dir.dot(_up));
+    if (_clear.lengthSq() < 1e-8) {
+      _clear.copy(stanceFwd).addScaledVector(_dir, -_dir.dot(stanceFwd));
+    }
+    if (_clear.lengthSq() > 1e-8) {
+      _clear.normalize();
+      _thigh.subVectors(outKnee, _shank);
+      _thigh.multiplyScalar(0.35).addScaledVector(_clear, rise * 0.65);
+      _thigh.addScaledVector(_dir, -_thigh.dot(_dir));
+      if (_thigh.lengthSq() > 1e-8) {
+        _thigh.normalize().multiplyScalar(rise);
+        outKnee.copy(_shank).add(_thigh);
+      }
+    }
+  }
 }
 
 function plantLegIk(
@@ -233,162 +348,39 @@ function plantLegIk(
   outKnee: THREE.Vector3,
   outAnkle: THREE.Vector3,
 ): void {
-  const maxR = thighLen + shankLen - 0.012;
-  const minR = Math.abs(thighLen - shankLen) + 0.05;
   const flex = Math.max(0.12, Math.min(2.35, targetKneeFlexRad));
   const dorsi = Math.max(0, Math.min(0.55, ankleDorsiRad));
+  const maxR = thighLen + shankLen - 0.012;
+  const minR = Math.abs(thighLen - shankLen) + 0.05;
 
-  // Feet stay planted — do NOT slide ankles under the hip to chase flexion
-  // (that was the left/right knee pop). Authored flexion sets pelvis height upstream.
+  // Feet stay planted — do NOT slide ankles under the hip (that popped knees L/R).
   outAnkle.set(plantX, FOOT_Y, plantZ);
   outAnkle.addScaledVector(stanceFwd, dorsi * 0.02);
 
   _tmp.subVectors(outAnkle, hip);
   let dist = _tmp.length();
-  // Emergency reach only — true unreachable, not chord matching
-  if (dist > maxR && dist > 1e-6) {
-    const s = maxR / dist;
-    outAnkle.set(hip.x + _tmp.x * s, FOOT_Y, hip.z + _tmp.z * s);
-    _tmp.subVectors(outAnkle, hip);
-    dist = _tmp.length();
-  } else if (dist < minR && dist > 1e-6) {
-    const s = minR / dist;
-    outAnkle.set(hip.x + _tmp.x * s, FOOT_Y, hip.z + _tmp.z * s);
-    _tmp.subVectors(outAnkle, hip);
-    dist = _tmp.length();
-  }
-  dist = Math.max(minR, Math.min(maxR, dist));
-  // Prefer a chord near authored flexion when the plant is slightly long:
-  // shorten by a few cm toward the hip without a hard snap (blend).
+  // Soft chord trim only when plant is clearly longer than authored flexion
   const targetChord = Math.max(minR, Math.min(maxR, legChord(thighLen, shankLen, flex)));
-  if (dist > targetChord + 0.04) {
+  if (dist > targetChord + 0.05) {
     const hipH = Math.max(0.05, hip.y - FOOT_Y);
     const wantHoriz = Math.sqrt(Math.max(0, targetChord * targetChord - hipH * hipH));
     _tmp2.set(outAnkle.x - hip.x, 0, outAnkle.z - hip.z);
     const h = _tmp2.length();
-    if (h > wantHoriz + 0.02 && h > 1e-6) {
-      // Move only 35% of the way — soft, no frame pop
-      const s = 1 - (0.35 * (h - wantHoriz)) / h;
+    if (h > wantHoriz + 0.025 && h > 1e-6) {
+      const s = 1 - (0.28 * (h - wantHoriz)) / h;
       outAnkle.x = hip.x + _tmp2.x * s;
       outAnkle.z = hip.z + _tmp2.z * s;
-      _tmp.subVectors(outAnkle, hip);
-      dist = Math.max(minR, Math.min(maxR, _tmp.length()));
+      outAnkle.y = FOOT_Y;
     }
   }
 
-  _dir.copy(_tmp).normalize();
+  placeKneeTwoBone(hip, outAnkle, thighLen, shankLen, stanceFwd, right, outKnee);
 
-  // Sagittal-primary bend: hip→ankle × up keeps knees tracking over the feet
-  // (stanceFwd-only hinges duck-foot the knees when toes splay).
-  _axis.crossVectors(_dir, _up);
-  if (_axis.lengthSq() < 1e-6) _axis.crossVectors(_dir, right);
-  if (_axis.lengthSq() < 1e-6) _axis.set(1, 0, 0);
-  _axis.normalize();
-  // Nudge the hinge so +α still prefers toes (plantigrade), without full stance yaw
-  _tmp2.copy(stanceFwd);
-  _tmp2.y = 0;
-  if (_tmp2.lengthSq() > 1e-8) {
-    _tmp2.normalize();
-    _preferred.crossVectors(_dir, _tmp2);
-    if (_preferred.lengthSq() > 1e-6) {
-      _preferred.normalize();
-      _axis.lerp(_preferred, 0.28).normalize();
-    }
-  }
-  _thigh.copy(_dir).applyAxisAngle(_axis, 0.15);
-  _tmp.copy(hip).addScaledVector(_thigh, thighLen);
-  if (anteriorScore(_tmp, hip, outAnkle, stanceFwd) < 0) {
-    _axis.multiplyScalar(-1);
-  }
-
-  const cosThigh =
-    (thighLen * thighLen + dist * dist - shankLen * shankLen) / (2 * thighLen * dist);
-  const alpha = Math.acos(Math.max(-1, Math.min(1, cosThigh)));
-
-  _thigh.copy(_dir).applyAxisAngle(_axis, alpha);
-  outKnee.copy(hip).addScaledVector(_thigh, thighLen);
-  const scoreA = anteriorScore(outKnee, hip, outAnkle, stanceFwd);
-
-  _thigh.copy(_dir).applyAxisAngle(_axis, -alpha);
-  _tmp.copy(hip).addScaledVector(_thigh, thighLen);
-  const scoreB = anteriorScore(_tmp, hip, outAnkle, stanceFwd);
-  if (scoreB > scoreA) outKnee.copy(_tmp);
-
-  restoreLen(hip, outKnee, thighLen);
-
-  // Lock ankle to the authored plant — never slide it past the foot (platypus spread)
-  outAnkle.set(plantX, FOOT_Y, plantZ);
-  outAnkle.addScaledVector(stanceFwd, dorsi * 0.02);
-  // Re-fit knee on the thigh sphere so shank length matches the locked plant
-  _tmp.subVectors(outAnkle, hip);
-  dist = Math.max(minR, Math.min(maxR, _tmp.length()));
-  _dir.copy(_tmp).normalize();
-  _axis.crossVectors(_dir, _up);
-  if (_axis.lengthSq() < 1e-6) _axis.crossVectors(_dir, right);
-  _axis.normalize();
-  _tmp2.copy(stanceFwd);
-  _tmp2.y = 0;
-  if (_tmp2.lengthSq() > 1e-8) {
-    _tmp2.normalize();
-    _preferred.crossVectors(_dir, _tmp2);
-    if (_preferred.lengthSq() > 1e-6) {
-      _preferred.normalize();
-      _axis.lerp(_preferred, 0.28).normalize();
-    }
-  }
-  _thigh.copy(_dir).applyAxisAngle(_axis, 0.12);
-  _tmp.copy(hip).addScaledVector(_thigh, thighLen);
-  if (anteriorScore(_tmp, hip, outAnkle, stanceFwd) < 0) _axis.multiplyScalar(-1);
-  const cos2 =
-    (thighLen * thighLen + dist * dist - shankLen * shankLen) / (2 * thighLen * dist);
-  const alpha2 = Math.acos(Math.max(-1, Math.min(1, cos2)));
-  _thigh.copy(_dir).applyAxisAngle(_axis, alpha2);
-  outKnee.copy(hip).addScaledVector(_thigh, thighLen);
-  _thigh.copy(_dir).applyAxisAngle(_axis, -alpha2);
-  _tmp.copy(hip).addScaledVector(_thigh, thighLen);
-  if (anteriorScore(_tmp, hip, outAnkle, stanceFwd) > anteriorScore(outKnee, hip, outAnkle, stanceFwd)) {
-    outKnee.copy(_tmp);
-  }
-  restoreLen(hip, outKnee, thighLen);
-  restoreLen(outKnee, outAnkle, shankLen);
-  outAnkle.y = FOOT_Y;
-  // Final plant lock (shank restore may nudge slightly — snap XZ back)
+  // Re-lock plant after any numeric drift — never stretch the shank by moving the ankle
   outAnkle.x = plantX + stanceFwd.x * dorsi * 0.02;
   outAnkle.z = plantZ + stanceFwd.z * dorsi * 0.02;
   outAnkle.y = FOOT_Y;
-  restoreLen(outKnee, outAnkle, shankLen);
-  outAnkle.y = FOOT_Y;
-
-  if (anteriorScore(outKnee, hip, outAnkle, stanceFwd) < 0) {
-    _tmp.subVectors(outAnkle, hip);
-    const t = Math.max(0.2, Math.min(0.8, thighLen / (thighLen + shankLen)));
-    _tmp2.copy(hip).addScaledVector(_tmp, t);
-    outKnee.x = _tmp2.x * 2 - outKnee.x;
-    outKnee.y = Math.max(FOOT_Y + 0.12, _tmp2.y * 2 - outKnee.y);
-    outKnee.z = _tmp2.z * 2 - outKnee.z;
-    restoreLen(hip, outKnee, thighLen);
-    restoreLen(outKnee, outAnkle, shankLen);
-    outAnkle.y = FOOT_Y;
-    outAnkle.x = plantX + stanceFwd.x * dorsi * 0.02;
-    outAnkle.z = plantZ + stanceFwd.z * dorsi * 0.02;
-  }
-
-  // After polarity: keep knee in the vertical plane of hip→plant (no bow / knock)
-  _tmp.set(outAnkle.x - hip.x, 0, outAnkle.z - hip.z);
-  if (_tmp.lengthSq() > 1e-8) {
-    _tmp.normalize();
-    _tmp2.set(-_tmp.z, 0, _tmp.x);
-    _preferred.subVectors(outKnee, hip);
-    const lat = _preferred.dot(_tmp2);
-    if (Math.abs(lat) > 0.045) {
-      outKnee.addScaledVector(_tmp2, -lat + Math.sign(lat) * 0.045);
-      restoreLen(hip, outKnee, thighLen);
-      restoreLen(outKnee, outAnkle, shankLen);
-      outAnkle.y = FOOT_Y;
-      outAnkle.x = plantX + stanceFwd.x * dorsi * 0.02;
-      outAnkle.z = plantZ + stanceFwd.z * dorsi * 0.02;
-    }
-  }
+  placeKneeTwoBone(hip, outAnkle, thighLen, shankLen, stanceFwd, right, outKnee);
 }
 
 function shiftY(out: SkeletonPose, dy: number) {
@@ -412,7 +404,7 @@ function shiftY(out: SkeletonPose, dy: number) {
   out.nonHitHand.y += dy;
 }
 
-/** Dual-support floor plant — lock feet, keep knees in the foot line. */
+/** Dual-support polish — re-solve knees with locked plants (no stretch / shoot-up). */
 function groundPose(
   out: SkeletonPose,
   thighLen: number,
@@ -420,70 +412,32 @@ function groundPose(
   leadFwd: THREE.Vector3,
   trailFwd: THREE.Vector3,
 ): void {
-  const fixLeg = (
-    hip: THREE.Vector3,
-    knee: THREE.Vector3,
-    ankle: THREE.Vector3,
-    stanceFwd: THREE.Vector3,
-    lockX: number,
-    lockZ: number,
-  ) => {
-    ankle.x = lockX;
-    ankle.z = lockZ;
-    ankle.y = FOOT_Y;
-
-    const horiz = Math.hypot(ankle.x - hip.x, ankle.z - hip.z);
-    if (horiz < 0.09) {
-      // Nearly stacked over the foot — bend forward along stance, never sideways
-      knee.copy(hip);
-      knee.addScaledVector(stanceFwd, 0.1 + (1 - horiz / 0.09) * 0.06);
-      knee.y = hip.y - thighLen * 0.55;
-      restoreLen(hip, knee, thighLen);
-    } else {
-      // Strip lateral offset from the hip→ankle floor line
-      _tmp.set(ankle.x - hip.x, 0, ankle.z - hip.z).normalize();
-      _tmp2.set(-_tmp.z, 0, _tmp.x);
-      _preferred.subVectors(knee, hip);
-      _preferred.addScaledVector(_tmp2, -_preferred.dot(_tmp2));
-      // Ensure some upward / anterior component so normalize doesn't go pure horizontal
-      if (_preferred.y < 0.08) _preferred.y = 0.12;
-      const along = _preferred.dot(_tmp);
-      if (along < 0.02) _preferred.addScaledVector(_tmp, 0.08 - along);
-      if (_preferred.lengthSq() < 1e-6) {
-        _preferred.copy(_up).addScaledVector(stanceFwd, 0.4);
-      }
-      _preferred.normalize();
-      knee.copy(hip).addScaledVector(_preferred, thighLen);
-    }
-
-    if (knee.y < FOOT_Y + 0.1) {
-      knee.y = FOOT_Y + 0.12;
-      restoreLen(hip, knee, thighLen);
-    }
-    if (anteriorScore(knee, hip, ankle, stanceFwd) < 0) {
-      knee.addScaledVector(stanceFwd, 0.12);
-      if (knee.y < hip.y - 0.05) knee.y = hip.y - thighLen * 0.4;
-      restoreLen(hip, knee, thighLen);
-    }
-    // Final lateral kill
-    _tmp.set(ankle.x - hip.x, 0, ankle.z - hip.z);
-    if (_tmp.lengthSq() > 1e-8) {
-      _tmp.normalize();
-      _tmp2.set(-_tmp.z, 0, _tmp.x);
-      _preferred.subVectors(knee, hip);
-      const lat = _preferred.dot(_tmp2);
-      if (Math.abs(lat) > 0.015) {
-        knee.addScaledVector(_tmp2, -lat);
-        restoreLen(hip, knee, thighLen);
-      }
-    }
-    ankle.x = lockX;
-    ankle.z = lockZ;
-    ankle.y = FOOT_Y;
-  };
-
-  fixLeg(out.leadHip, out.leadKnee, out.leadAnkle, leadFwd, out.leadAnkle.x, out.leadAnkle.z);
-  fixLeg(out.trailHip, out.trailKnee, out.trailAnkle, trailFwd, out.trailAnkle.x, out.trailAnkle.z);
+  const lockXLead = out.leadAnkle.x;
+  const lockZLead = out.leadAnkle.z;
+  const lockXTrail = out.trailAnkle.x;
+  const lockZTrail = out.trailAnkle.z;
+  out.leadAnkle.set(lockXLead, FOOT_Y, lockZLead);
+  out.trailAnkle.set(lockXTrail, FOOT_Y, lockZTrail);
+  placeKneeTwoBone(
+    out.leadHip,
+    out.leadAnkle,
+    thighLen,
+    shankLen,
+    leadFwd,
+    _courtRight,
+    out.leadKnee,
+  );
+  placeKneeTwoBone(
+    out.trailHip,
+    out.trailAnkle,
+    thighLen,
+    shankLen,
+    trailFwd,
+    _courtRight,
+    out.trailKnee,
+  );
+  out.leadAnkle.set(lockXLead, FOOT_Y, lockZLead);
+  out.trailAnkle.set(lockXTrail, FOOT_Y, lockZTrail);
 }
 
 /**
@@ -749,15 +703,37 @@ export function solveSkeletonFk(
   const takebackW =
     erLoad * smooth01((abdMag - 30) / 50) * smooth01((90 - Math.abs(j.shoulderFlexion - 45)) / 70);
   const contactW = smooth01((j.shoulderInternalRotation - 8) / 40) * (1 - takebackW);
+  // Authored overhead (serve trophy/accel) — high flex WITH high abduction
+  const overheadAuth =
+    smooth01((j.shoulderFlexion - 125) / 45) * smooth01((abdMag - 55) / 35);
+  // Wrap finish: high flex + low/neg abd (FH across-body) — do not treat as vertical upper arm
+  const wrapW =
+    smooth01((j.shoulderFlexion - 95) / 45) *
+    smooth01((35 - j.shoulderAbduction) / 40) *
+    (1 - overheadAuth);
 
-  // Authored abduction drives the wing; tiny bias only so the arm never collapses into the pocket
+  // Authored abduction drives the wing; wrap finish keeps the elbow beside/across, not skyward
   const wing = 0.05 + 0.04 * contactW;
   _dir
     .set(0, 0, 0)
-    .addScaledVector(_right, mirror * (Math.sin(abd) * 0.92 + wing))
-    .addScaledVector(_up, -Math.cos(abd) * Math.cos(flex) + 0.08 * takebackW)
-    .addScaledVector(_fwd, Math.cos(abd) * Math.sin(flex) + 0.06 * takebackW + 0.14 * contactW)
+    .addScaledVector(_right, mirror * (Math.sin(abd) * 0.92 + wing - 0.35 * wrapW))
+    .addScaledVector(
+      _up,
+      -Math.cos(abd) * Math.cos(flex) + 0.08 * takebackW - 0.55 * wrapW + 0.15 * overheadAuth,
+    )
+    .addScaledVector(
+      _fwd,
+      Math.cos(abd) * Math.sin(flex) + 0.06 * takebackW + 0.14 * contactW + 0.22 * wrapW,
+    )
     .normalize();
+  // Cap upper-arm elevation on groundstrokes so the elbow never sits above the shoulder
+  {
+    const maxUp = 0.22 + 0.55 * overheadAuth + 0.18 * takebackW * (1 - wrapW);
+    if (_dir.y > maxUp) {
+      _dir.y = maxUp;
+      _dir.normalize();
+    }
+  }
   // IR mostly rolls the face — keep it off the upper-arm orbit on takeback
   rotateAround(_dir, _right, ir * 0.02 * (1 - takebackW * 0.85));
   _dir.normalize();
@@ -779,7 +755,7 @@ export function solveSkeletonFk(
       out.chest,
       _right,
       mirror,
-      0.14 + 0.06 * takebackW,
+      0.14 + 0.06 * takebackW - 0.04 * wrapW,
       upperArm,
     );
     // Re-enforce behind cap after wing push
@@ -787,6 +763,13 @@ export function solveSkeletonFk(
     const behind2 = -_tmp.dot(_fwd);
     if (behind2 > maxBehind) {
       out.hitElbow.addScaledVector(_fwd, behind2 - maxBehind);
+      restoreLen(out.hitShoulder, out.hitElbow, upperArm);
+    }
+    // Soft height clamp: groundstroke elbow stays at/below shoulder (+small takeback lift)
+    const maxElbowY =
+      out.hitShoulder.y + 0.04 + 0.1 * takebackW + 0.22 * overheadAuth - 0.02 * wrapW;
+    if (out.hitElbow.y > maxElbowY) {
+      out.hitElbow.y = maxElbowY;
       restoreLen(out.hitShoulder, out.hitElbow, upperArm);
     }
   }
@@ -797,9 +780,13 @@ export function solveSkeletonFk(
   const elbowAuth = Math.max(12, Math.min(145, j.elbowFlexion));
   const elbowCap = takebackW > 0.25 ? Math.min(elbowAuth, 72 + takebackW * 10) : elbowAuth;
   const elbow = deg(elbowCap);
-  const overheadW = smooth01((Math.abs(_dir.dot(_up)) - 0.78) / 0.16);
+  const overheadW = Math.max(
+    overheadAuth,
+    smooth01((Math.abs(_dir.dot(_up)) - 0.78) / 0.16),
+  );
+  const swingW = Math.max(contactW, wrapW) * (1 - takebackW * 0.85);
 
-  elbowHingeAxis(_dir, _right, _fwd, mirror, _axis, takebackW * (1 - overheadW));
+  elbowHingeAxis(_dir, _right, _fwd, mirror, _axis, takebackW * (1 - overheadW), swingW);
   _fdir.copy(_dir);
   rotateAround(_fdir, _axis, -elbow);
 
@@ -816,6 +803,13 @@ export function solveSkeletonFk(
     _fdir.addScaledVector(_right, mirror * 0.05 * takebackW);
     _fdir.normalize();
   }
+  // Wrap finish: forearm continues slightly up/across — tip high, elbow still beside torso
+  if (wrapW > 0.1 && overheadW < 0.5) {
+    _fdir.addScaledVector(_up, 0.2 * wrapW);
+    _fdir.addScaledVector(_right, -mirror * 0.18 * wrapW);
+    _fdir.addScaledVector(_fwd, 0.08 * wrapW);
+    _fdir.normalize();
+  }
   // Hand stays on the hitting side of the elbow
   if (overheadW < 0.45) {
     _tmp.copy(out.hitElbow).addScaledVector(_fdir, forearm);
@@ -826,6 +820,11 @@ export function solveSkeletonFk(
       rotateAround(_fdir, _dir, deg(18) * mirror);
       _fdir.normalize();
     }
+  }
+  // If swing fold left the forearm climbing while upper arm is high, pitch it down slightly
+  if (swingW > 0.25 && overheadW < 0.5 && _fdir.y > 0.55 && _dir.y > 0.15) {
+    _fdir.y -= 0.25 * swingW;
+    _fdir.normalize();
   }
   out.hitWrist.copy(out.hitElbow).addScaledVector(_fdir, forearm);
 

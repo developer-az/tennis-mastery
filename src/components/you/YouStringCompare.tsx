@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { GripProfile, StringProfile } from "@/types/equipment";
+import type { StringProfile } from "@/types/equipment";
 import type { MySetup } from "@/store/gearStore";
 import { useGearStore } from "@/store/gearStore";
 import type { CombinedSetupInsight } from "@/lib/equipment/setupSynthesis";
