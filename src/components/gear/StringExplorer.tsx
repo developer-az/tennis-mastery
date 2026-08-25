@@ -27,8 +27,10 @@ import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToS
 import { StringIntelligencePanel } from "./StringIntelligencePanel";
 import {
   AisleChip,
+  ActiveFilterChips,
   CatalogAisle,
   ChipRow,
+  MoreFilters,
   ProductCard,
   SearchField,
 } from "./CatalogShop";
@@ -281,9 +283,38 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
             />
           ))}
         </ChipRow>
-        <details className="text-sm">
-          <summary className="cursor-pointer text-[var(--muted)]">More filters</summary>
-          <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+        <ActiveFilterChips
+          chips={[
+            ...(brand !== "all" ? [{ id: "brand", label: brand, onRemove: () => setBrand("all") }] : []),
+            ...(materialAisle !== "all"
+              ? [
+                  {
+                    id: "type",
+                    label: STRING_MATERIAL_AISLES.find((t) => t.id === materialAisle)?.label ?? materialAisle,
+                    onRemove: () => setMaterialAisle("all"),
+                  },
+                ]
+              : []),
+            ...(feel !== "all" ? [{ id: "feel", label: feel, onRemove: () => setFeel("all") }] : []),
+            ...(shape !== "all" ? [{ id: "shape", label: shape, onRemove: () => setShape("all") }] : []),
+            ...(gaugeFilter !== "all"
+              ? [{ id: "gauge", label: `${gaugeFilter} mm`, onRemove: () => setGaugeFilter("all") }]
+              : []),
+            ...(tensionFilter !== "all"
+              ? [{ id: "tension", label: tensionFilter, onRemove: () => setTensionFilter("all") }]
+              : []),
+          ]}
+          onClear={() => {
+            setBrand("all");
+            setMaterialAisle("all");
+            setFeel("all");
+            setShape("all");
+            setGaugeFilter("all");
+            setTensionFilter("all");
+            setQuery("");
+          }}
+        />
+        <MoreFilters>
             <select value={shape} onChange={(e) => setShape(e.target.value)} aria-label="Shape" className="sf-select w-full">
               <option value="all">Any shape</option>
               <option value="round">Round</option>
@@ -324,8 +355,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                 <span className="shrink-0 text-xs text-[var(--muted)]">lbs</span>
               </label>
             ) : null}
-          </div>
-        </details>
+        </MoreFilters>
         <p className="text-xs text-[var(--muted)]">
           {filtered.length} string{filtered.length === 1 ? "" : "s"}
           {feel !== "all" ? ` · ${feel} ${FEEL_MIN}+` : ""}

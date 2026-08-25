@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
 import { EquipmentThumb } from "./EquipmentThumb";
 
 /** Horizontal chip rail with touch + drag scroll. */
@@ -259,5 +259,65 @@ export function SearchField({
         className="sf-input"
       />
     </label>
+  );
+}
+
+/** Active filter chips + Clear — used when filter panels are collapsed on small screens. */
+export function ActiveFilterChips({
+  chips,
+  onClear,
+}: {
+  chips: { id: string; label: string; onRemove: () => void }[];
+  onClear: () => void;
+}) {
+  if (chips.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 md:hidden">
+      {chips.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          onClick={c.onRemove}
+          className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-medium text-[var(--foreground)]"
+          aria-label={`Remove filter ${c.label}`}
+        >
+          {c.label}
+          <span aria-hidden className="text-[var(--muted)]">
+            ×
+          </span>
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={onClear}
+        className="text-[11px] font-semibold text-[var(--muted)] hover:text-[var(--foreground)]"
+      >
+        Clear
+      </button>
+    </div>
+  );
+}
+
+/** More-filters panel: open by default from md up. */
+export function MoreFilters({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setOpen(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  return (
+    <details
+      className="text-sm"
+      open={open}
+      onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
+    >
+      <summary className="cursor-pointer text-[var(--muted)]">More filters</summary>
+      <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">{children}</div>
+    </details>
   );
 }

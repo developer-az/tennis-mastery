@@ -17,8 +17,10 @@ import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
 import {
   AisleChip,
+  ActiveFilterChips,
   CatalogAisle,
   ChipRow,
+  MoreFilters,
   ProductCard,
   SearchField,
 } from "./CatalogShop";
@@ -367,9 +369,42 @@ export function RacketExplorer({
             />
           ))}
         </ChipRow>
-        <details className="text-sm">
-          <summary className="cursor-pointer text-[var(--muted)]">More filters</summary>
-          <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+        <ActiveFilterChips
+          chips={[
+            ...(brand !== "all" ? [{ id: "brand", label: brand, onRemove: () => setBrand("all") }] : []),
+            ...(shopType !== "all"
+              ? [
+                  {
+                    id: "type",
+                    label: RACKET_SHOP_TYPES.find((t) => t.id === shopType)?.label ?? shopType,
+                    onRemove: () => setShopType("all"),
+                  },
+                ]
+              : []),
+            ...(feel !== "all" ? [{ id: "feel", label: feel, onRemove: () => setFeel("all") }] : []),
+            ...(style !== "all" ? [{ id: "style", label: style, onRemove: () => setStyle("all") }] : []),
+            ...(weightBand !== "all"
+              ? [{ id: "weight", label: weightBand, onRemove: () => setWeightBand("all") }]
+              : []),
+            ...(headBand !== "all"
+              ? [{ id: "head", label: headBand, onRemove: () => setHeadBand("all") }]
+              : []),
+            ...(pattern !== "all"
+              ? [{ id: "pattern", label: pattern, onRemove: () => setPattern("all") }]
+              : []),
+          ]}
+          onClear={() => {
+            setBrand("all");
+            setShopType("all");
+            setFeel("all");
+            setStyle("all");
+            setWeightBand("all");
+            setHeadBand("all");
+            setPattern("all");
+            setQuery("");
+          }}
+        />
+        <MoreFilters>
             <select value={style} onChange={(e) => setStyle(e.target.value)} aria-label="Style" className="sf-select w-full">
               <option value="all">All styles</option>
               {styles.map((s) => (
@@ -401,8 +436,7 @@ export function RacketExplorer({
               <option value="power">Most power</option>
               <option value="weight">Heaviest</option>
             </select>
-          </div>
-        </details>
+        </MoreFilters>
 
         <p className="text-xs text-[var(--muted)]">
           {shown.length} of {filtered.length}

@@ -335,3 +335,6 @@ function shortZone(id: LeadTapeZone): string {
       return "grip";
   }
 }
+
+/** Plan alias — realistic hoop map with metallic laps / zone taps. */
+export const LeadTapeHoopMap = LeadTapeRacketDiagram;

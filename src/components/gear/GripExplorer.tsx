@@ -17,7 +17,7 @@ import { GripFeelVisual } from "./GripVisuals";
 import { ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
-import { AisleChip, ChipRow, ProductCard, SearchField } from "./CatalogShop";
+import { AisleChip, ActiveFilterChips, ChipRow, ProductCard, SearchField } from "./CatalogShop";
 import { GRIP_BRAND_PIN, uniqueSortedBrands } from "@/lib/equipment/shopAisles";
 
 const MAX_COMPARE = 3;
@@ -211,6 +211,21 @@ export function GripExplorer({ grips, onSelectTab }: { grips: GripProfile[]; onS
               <AisleChip key={t} label={t} active={texture === t} onClick={() => setTexture(t)} />
             ))}
           </ChipRow>
+          <ActiveFilterChips
+            chips={[
+              ...(brand !== "all" ? [{ id: "brand", label: brand, onRemove: () => setBrand("all") }] : []),
+              ...(kind !== "all" ? [{ id: "kind", label: kind, onRemove: () => setKind("all") }] : []),
+              ...(texture !== "all"
+                ? [{ id: "texture", label: texture, onRemove: () => setTexture("all") }]
+                : []),
+            ]}
+            onClear={() => {
+              setBrand("all");
+              setKind("all");
+              setTexture("all");
+              setQuery("");
+            }}
+          />
         </div>
 
         {layers.length > 0 ? (
