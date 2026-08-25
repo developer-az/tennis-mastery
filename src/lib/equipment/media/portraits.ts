@@ -31,14 +31,14 @@ function patternLines(pattern: string | null, cx: number, cy: number, rx: number
     const t = (i + 1) / (mCount + 1);
     const x = cx - rx * 0.75 + t * rx * 1.5;
     lines.push(
-      `<line x1="${x.toFixed(1)}" y1="${(cy - ry * 0.72).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(cy + ry * 0.72).toFixed(1)}" stroke="rgba(232,239,233,0.28)" stroke-width="0.8"/>`,
+      `<line x1="${x.toFixed(1)}" y1="${(cy - ry * 0.72).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(cy + ry * 0.72).toFixed(1)}" stroke="rgba(42,50,48,0.28)" stroke-width="0.85"/>`,
     );
   }
   for (let i = 0; i < cCount; i++) {
     const t = (i + 1) / (cCount + 1);
     const y = cy - ry * 0.7 + t * ry * 1.4;
     lines.push(
-      `<line x1="${(cx - rx * 0.72).toFixed(1)}" y1="${y.toFixed(1)}" x2="${(cx + rx * 0.72).toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(232,239,233,0.22)" stroke-width="0.7"/>`,
+      `<line x1="${(cx - rx * 0.72).toFixed(1)}" y1="${y.toFixed(1)}" x2="${(cx + rx * 0.72).toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(42,50,48,0.22)" stroke-width="0.75"/>`,
     );
   }
   return lines.join("");
@@ -48,29 +48,55 @@ export function racketPortraitSvg(r: RacketProfile): string {
   const accent = brandAccent(r.brand);
   const { rx, ry } = headScale(r.headSizeSqIn);
   const cx = 100;
-  const cy = 78;
+  const cy = 72;
   const label = esc(`${r.brand} ${r.model}`.slice(0, 28));
   const year = r.year ? String(r.year) : "";
+  const head = r.headSizeSqIn != null ? `${r.headSizeSqIn}″` : "";
+  const pattern = r.stringPattern ? esc(r.stringPattern) : "";
 
+  const rxS = rx.toFixed(1);
+  const ryS = ry.toFixed(1);
+  // Curated product-card portrait: soft well + crafted hoop (scales cleanly; not AI collage).
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260" width="200" height="260" role="img" aria-label="${label}">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0f241c"/>
-      <stop offset="100%" stop-color="#071510"/>
+    <linearGradient id="well" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f2f6f3"/>
+      <stop offset="100%" stop-color="#e0e9e3"/>
     </linearGradient>
-    <linearGradient id="frame" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${accent}"/>
-      <stop offset="100%" stop-color="#1b4332"/>
+    <linearGradient id="frame" x1="0.15" y1="0" x2="0.9" y2="1">
+      <stop offset="0%" stop-color="#2a2f34"/>
+      <stop offset="45%" stop-color="${accent}"/>
+      <stop offset="100%" stop-color="#1a2220"/>
     </linearGradient>
+    <linearGradient id="grip" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2a1c14"/>
+      <stop offset="50%" stop-color="#4a3224"/>
+      <stop offset="100%" stop-color="#2a1c14"/>
+    </linearGradient>
+    <clipPath id="bed">
+      <ellipse cx="${cx}" cy="${cy}" rx="${(rx - 7).toFixed(1)}" ry="${(ry - 7).toFixed(1)}"/>
+    </clipPath>
   </defs>
-  <rect width="200" height="260" fill="url(#bg)"/>
-  <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#0d1f18" stroke="url(#frame)" stroke-width="7"/>
-  ${patternLines(r.stringPattern, cx, cy, rx, ry)}
-  <path d="M ${cx - 10} ${cy + ry - 4} L ${cx - 8} 198 L ${cx + 8} 198 L ${cx + 10} ${cy + ry - 4} Z" fill="${accent}" opacity="0.85"/>
-  <rect x="${cx - 7}" y="196" width="14" height="42" rx="3" fill="#1b4332" stroke="${accent}" stroke-width="1.5"/>
-  <rect x="${cx - 6}" y="232" width="12" height="8" rx="2" fill="#c5e85a" opacity="0.7"/>
-  <text x="100" y="252" text-anchor="middle" fill="rgba(232,239,233,0.55)" font-family="system-ui,sans-serif" font-size="8">${esc(year)} · ${r.headSizeSqIn ?? "—"}″</text>
+  <rect width="200" height="260" fill="url(#well)"/>
+  <ellipse cx="100" cy="248" rx="34" ry="4" fill="rgba(26,34,32,0.08)"/>
+  <ellipse cx="${cx}" cy="${cy}" rx="${rxS}" ry="${ryS}" fill="#f7faf8" stroke="url(#frame)" stroke-width="8"/>
+  <ellipse cx="${cx}" cy="${cy}" rx="${(rx - 4).toFixed(1)}" ry="${(ry - 4).toFixed(1)}" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+  <g clip-path="url(#bed)" opacity="0.9">
+    ${patternLines(r.stringPattern, cx, cy, rx - 6, ry - 6)}
+  </g>
+  <path d="M ${cx - 11} ${(cy + ry - 2).toFixed(1)}
+           L ${cx - 7} ${(cy + ry + 18).toFixed(1)}
+           L ${cx + 7} ${(cy + ry + 18).toFixed(1)}
+           L ${cx + 11} ${(cy + ry - 2).toFixed(1)}
+           L ${cx + 4} ${(cy + ry + 8).toFixed(1)}
+           L ${cx - 4} ${(cy + ry + 8).toFixed(1)} Z" fill="url(#frame)"/>
+  <path d="M ${cx - 5} ${(cy + ry + 16).toFixed(1)} L ${cx - 6} 188 L ${cx + 6} 188 L ${cx + 5} ${(cy + ry + 16).toFixed(1)} Z" fill="#2a3230"/>
+  <rect x="${cx - 7}" y="186" width="14" height="48" rx="3.5" fill="url(#grip)"/>
+  ${[0, 1, 2, 3, 4, 5, 6].map((i) => `<line x1="${cx - 6}" y1="${192 + i * 6}" x2="${cx + 6}" y2="${192 + i * 6}" stroke="rgba(255,255,255,0.12)" stroke-width="0.7"/>`).join("")}
+  <rect x="${cx - 8}" y="230" width="16" height="7" rx="2.5" fill="#1a1f1d"/>
+  <circle cx="${(cx - rx * 0.55).toFixed(1)}" cy="${cy - 4}" r="2.2" fill="${accent}" opacity="0.85"/>
+  <text x="100" y="252" text-anchor="middle" fill="#5a6a62" font-family="ui-sans-serif,system-ui,sans-serif" font-size="8" font-weight="600">${esc([year, head, pattern].filter(Boolean).join(" · "))}</text>
 </svg>`;
 }
 

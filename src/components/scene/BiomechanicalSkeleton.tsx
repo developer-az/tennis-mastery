@@ -46,8 +46,8 @@ const geo = {
 };
 
 /**
- * Place a capsule between two joints, inset so hemispheres tuck into the joint
- * spheres — this removes the jagged V where two full-span limbs meet at a point.
+ * Place a capsule between two joints. Small inset so limbs read as continuous
+ * through the bend — joint spheres cover the meeting point.
  */
 function placeCapsule(
   mesh: THREE.Mesh | null,
@@ -55,15 +55,15 @@ function placeCapsule(
   end: THREE.Vector3,
   radius: number,
   twistRad = 0,
-  inset = 0.028,
+  inset = 0.014,
 ) {
   if (!mesh) return;
   _dir.subVectors(end, start);
   const full = _dir.length();
   if (full < 1e-5) return;
   _dir.multiplyScalar(1 / full);
-  const pad = Math.min(inset, full * 0.28);
-  const length = Math.max(0.05, full - pad * 2);
+  const pad = Math.min(inset, full * 0.18);
+  const length = Math.max(0.04, full - pad * 2);
   _mid.copy(start).addScaledVector(_dir, pad + length * 0.5);
   mesh.position.copy(_mid);
   _quat.setFromUnitVectors(_yAxis, _dir);
@@ -238,8 +238,8 @@ export function BiomechanicalSkeleton({
     const m = meshes.current;
     const p = pose;
 
-    placeCapsule(m.torso, p.pelvis, p.chest, 0.068, 0, 0.04);
-    placeCapsule(m.neck, p.chest, p.head, 0.032, 0, 0.03);
+    placeCapsule(m.torso, p.pelvis, p.chest, 0.068, 0, 0.02);
+    placeCapsule(m.neck, p.chest, p.head, 0.032, 0, 0.018);
 
     placeAt(m.head, p.head);
     if (m.head) m.head.scale.setScalar(0.105);
@@ -248,64 +248,65 @@ export function BiomechanicalSkeleton({
     placeAt(m.chest, p.chest);
     if (m.chest) m.chest.scale.setScalar(0.06);
 
-    placeCapsule(m.leadThigh, p.leadHip, p.leadKnee, 0.05, 0, 0.032);
-    placeCapsule(m.leadShank, p.leadKnee, p.leadAnkle, 0.04, 0, 0.03);
-    placeCapsule(m.trailThigh, p.trailHip, p.trailKnee, 0.05, 0, 0.032);
-    placeCapsule(m.trailShank, p.trailKnee, p.trailAnkle, 0.04, 0, 0.03);
+    // Legs: thigh→knee→shank meet inside joint spheres (human plantigrade chain)
+    placeCapsule(m.leadThigh, p.leadHip, p.leadKnee, 0.05, 0, 0.012);
+    placeCapsule(m.leadShank, p.leadKnee, p.leadAnkle, 0.04, 0, 0.012);
+    placeCapsule(m.trailThigh, p.trailHip, p.trailKnee, 0.05, 0, 0.012);
+    placeCapsule(m.trailShank, p.trailKnee, p.trailAnkle, 0.04, 0, 0.012);
 
     placeAt(m.leadHip, p.leadHip);
-    if (m.leadHip) m.leadHip.scale.setScalar(0.048);
+    if (m.leadHip) m.leadHip.scale.setScalar(0.052);
     placeAt(m.trailHip, p.trailHip);
-    if (m.trailHip) m.trailHip.scale.setScalar(0.048);
+    if (m.trailHip) m.trailHip.scale.setScalar(0.052);
     placeAt(m.leadKnee, p.leadKnee);
-    if (m.leadKnee) m.leadKnee.scale.setScalar(0.05);
+    if (m.leadKnee) m.leadKnee.scale.setScalar(0.054);
     placeAt(m.trailKnee, p.trailKnee);
-    if (m.trailKnee) m.trailKnee.scale.setScalar(0.05);
+    if (m.trailKnee) m.trailKnee.scale.setScalar(0.054);
     placeAt(m.leadAnkle, p.leadAnkle);
-    if (m.leadAnkle) m.leadAnkle.scale.setScalar(0.038);
+    if (m.leadAnkle) m.leadAnkle.scale.setScalar(0.04);
     placeAt(m.trailAnkle, p.trailAnkle);
-    if (m.trailAnkle) m.trailAnkle.scale.setScalar(0.038);
+    if (m.trailAnkle) m.trailAnkle.scale.setScalar(0.04);
 
     if (m.leadFoot) {
-      // Toe along plant line from knee→ankle so foot stays hinged at the shank end
-      _dir.set(p.leadAnkle.x - p.leadKnee.x, 0, p.leadAnkle.z - p.leadKnee.z);
-      _dir.z -= 0.35;
+      // Toes along plant forward from ankle (plantigrade), hinged at ankle joint
+      _dir.set(p.leadAnkle.x - p.leadHip.x, 0, p.leadAnkle.z - p.leadHip.z);
+      _dir.z -= 0.55;
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.leadFoot.position.set(
-        p.leadAnkle.x + _dir.x * 0.055,
-        Math.max(0.02, p.leadAnkle.y * 0.35 + 0.018),
-        p.leadAnkle.z + _dir.z * 0.055,
+        p.leadAnkle.x + _dir.x * 0.06,
+        0.022,
+        p.leadAnkle.z + _dir.z * 0.06,
       );
       m.leadFoot.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
       m.leadFoot.scale.set(1.15, 0.55, 1.85);
     }
     if (m.trailFoot) {
-      _dir.set(p.trailAnkle.x - p.trailKnee.x, 0, p.trailAnkle.z - p.trailKnee.z);
-      _dir.z -= 0.25;
+      _dir.set(p.trailAnkle.x - p.trailHip.x, 0, p.trailAnkle.z - p.trailHip.z);
+      _dir.z -= 0.4;
       if (_dir.lengthSq() < 1e-5) _dir.set(0, 0, -1);
       else _dir.normalize();
       m.trailFoot.position.set(
-        p.trailAnkle.x + _dir.x * 0.05,
-        Math.max(0.02, p.trailAnkle.y * 0.35 + 0.018),
-        p.trailAnkle.z + _dir.z * 0.05,
+        p.trailAnkle.x + _dir.x * 0.055,
+        0.022,
+        p.trailAnkle.z + _dir.z * 0.055,
       );
       m.trailFoot.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
       m.trailFoot.scale.set(1.1, 0.55, 1.75);
     }
 
-    // Arms inset at elbows so the fold reads as a joint, not a sharp V
-    placeCapsule(m.hitUpper, p.hitShoulder, p.hitElbow, 0.038, p.hitUpperTwist, 0.03);
-    placeCapsule(m.hitFore, p.hitElbow, p.hitWrist, 0.032, p.hitUpperTwist * 0.55, 0.028);
-    placeCapsule(m.hitHand, p.hitWrist, p.hitHand, 0.028, p.hitUpperTwist * 0.4, 0.012);
-    placeCapsule(m.nonHitUpper, p.nonHitShoulder, p.nonHitElbow, 0.038, p.nonHitUpperTwist, 0.03);
-    placeCapsule(m.nonHitFore, p.nonHitElbow, p.nonHitWrist, 0.032, p.nonHitUpperTwist * 0.45, 0.028);
-    placeCapsule(m.nonHitHand, p.nonHitWrist, p.nonHitHand, 0.026, p.nonHitUpperTwist * 0.3, 0.012);
+    // Arms: continuous through elbow / wrist — joint spheres cover the fold
+    placeCapsule(m.hitUpper, p.hitShoulder, p.hitElbow, 0.038, p.hitUpperTwist, 0.012);
+    placeCapsule(m.hitFore, p.hitElbow, p.hitWrist, 0.032, p.hitUpperTwist * 0.55, 0.012);
+    placeCapsule(m.hitHand, p.hitWrist, p.hitHand, 0.028, p.hitUpperTwist * 0.4, 0.008);
+    placeCapsule(m.nonHitUpper, p.nonHitShoulder, p.nonHitElbow, 0.038, p.nonHitUpperTwist, 0.012);
+    placeCapsule(m.nonHitFore, p.nonHitElbow, p.nonHitWrist, 0.032, p.nonHitUpperTwist * 0.45, 0.012);
+    placeCapsule(m.nonHitHand, p.nonHitWrist, p.nonHitHand, 0.026, p.nonHitUpperTwist * 0.3, 0.008);
 
     placeAt(m.hitShoulder, p.hitShoulder);
-    if (m.hitShoulder) m.hitShoulder.scale.setScalar(0.05);
+    if (m.hitShoulder) m.hitShoulder.scale.setScalar(0.052);
     placeAt(m.hitElbow, p.hitElbow);
-    if (m.hitElbow) m.hitElbow.scale.setScalar(0.046);
+    if (m.hitElbow) m.hitElbow.scale.setScalar(0.048);
     placeAt(m.hitWrist, p.hitWrist);
     if (m.hitWrist) m.hitWrist.scale.setScalar(0.034);
     placeAt(m.nonHitShoulder, p.nonHitShoulder);
