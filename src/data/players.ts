@@ -4,6 +4,7 @@ import {
   alcarazVolley,
   cloneStroke,
   djokovicBackhand,
+  djokovicForehand,
   federerForehand,
   federerOneHandedBackhand,
   federerSlice,
@@ -171,36 +172,7 @@ const nadalDefaults: StrokeLibrary = fillStrokes(
 
 const djokovicDefaults: StrokeLibrary = fillStrokes(
   {
-    forehand: cloneStroke(federerForehand, {
-      label: "Forehand (Flexible)",
-      metrics: {
-        peakRacketSpeedMs: 27.5,
-        avgSpinRpm: 2900,
-        contactHeightM: 1.15,
-        consistency: {
-          contactHeightCv: 3.9,
-          timingSdMs: 11,
-          pathReproducibility: 95,
-          signatureQuirk: "Extreme flexibility allows late contact on defensive balls without breakdown",
-        },
-        researchNotes: [
-          "Semi-western grip; elite on-the-rise FH timing.",
-          "Balance and recovery speed amplify consistency of contact point.",
-        ],
-        sources: federerForehand.metrics.sources,
-        kineticChain: {
-          sequence: ["legs", "hips", "trunk", "shoulder", "elbow", "wrist", "racket"],
-          proximalDistalLagMs: 36,
-          xFactorDeg: 44,
-          peakGrfN: 1500,
-        },
-        contactDepthM: 0.4,
-        launchAngleDeg: 9.0,
-        swingPathDeg: 32,
-        impactDurationMs: 4.3,
-        grip: "semiWestern",
-      },
-    }),
+    forehand: djokovicForehand,
     backhand: djokovicBackhand,
     serve: cloneStroke(serenaServe, {
       label: "First Serve",

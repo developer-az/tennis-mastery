@@ -448,8 +448,10 @@ function groundPose(
  * Never moves the gripping hand — the racket is owned by hitHand.
  */
 function clearRacketFromBody(out: SkeletonPose, mirror: number, elevDeg = 0): void {
-  // High-loop prep (Nadal-style tip by the head) needs softer head clearance
+  // High-loop prep (Nadal-style tip by the head) needs softer head clearance.
+  // Prefer up/back resolution — lateral pushes fake a wing-flare takeback.
   const headClear = elevDeg > 58 ? 0.02 : elevDeg > 45 ? 0.05 : 0.08;
+  const compactHigh = smooth01((elevDeg - 55) / 30);
   const headR = 0.14;
   const torsoR = 0.11;
   const shaftLen = Math.max(0.4, out.hitHand.distanceTo(out.racketTip));
@@ -458,8 +460,15 @@ function clearRacketFromBody(out: SkeletonPose, mirror: number, elevDeg = 0): vo
     _tmp.subVectors(out.racketTip, out.head);
     const dHead = _tmp.length();
     if (dHead < headR + headClear) {
-      if (dHead < 1e-5) _tmp.set(mirror, 0, 0);
+      if (dHead < 1e-5) _tmp.set(mirror, 0, 0.4);
       else _tmp.normalize();
+      if (compactHigh > 0.15) {
+        _tmp.y = Math.max(_tmp.y, 0.45 + 0.35 * compactHigh);
+        _tmp.z = Math.min(_tmp.z, -0.2 * compactHigh);
+        _tmp.x *= 1 - 0.65 * compactHigh;
+        if (_tmp.lengthSq() < 1e-8) _tmp.set(0, 1, -0.2);
+        _tmp.normalize();
+      }
       out.racketTip.addScaledVector(_tmp, headR + headClear + 0.02 - dHead);
       moved = true;
     }
@@ -480,11 +489,16 @@ function clearRacketFromBody(out: SkeletonPose, mirror: number, elevDeg = 0): vo
       const d = _tmp2.length();
       if (d < torsoR + 0.06) {
         if (d < 1e-5) {
-          _tmp2.set(mirror, 0, 0.3).normalize();
+          _tmp2.set(mirror * (1 - 0.7 * compactHigh), 0.35 * compactHigh, 0.3).normalize();
         } else {
           _tmp2.normalize();
+          if (compactHigh > 0.2) {
+            _tmp2.y = Math.max(_tmp2.y, 0.25 * compactHigh);
+            _tmp2.x *= 1 - 0.55 * compactHigh;
+            _tmp2.normalize();
+          }
         }
-        const push = torsoR + 0.08 - d;
+        const push = (torsoR + 0.08 - d) * (1 - 0.35 * compactHigh);
         out.racketTip.addScaledVector(_tmp2, push * (0.55 + s * 0.45));
         moved = true;
       }
@@ -813,13 +827,20 @@ export function solveSkeletonFk(
       out.hitElbow.addScaledVector(_fwd, behind - maxBehind);
       restoreLen(out.hitShoulder, out.hitElbow, upperArm);
     }
+    // Compact high loops (western tip-by-head): elbow stays nearer the ribs —
+    // tour FH prep abd is ~55–75°, not a wing-spread min lateral.
+    const compactHighElbow =
+      smooth01((j.racketPathElevation - 55) / 35) *
+      smooth01((78 - abdMag) / 28) *
+      (1 - bhWingW) *
+      takebackW;
     wingElbow(
       out.hitShoulder,
       out.hitElbow,
       out.chest,
       _right,
       wingMirror,
-      0.14 + 0.06 * takebackW - 0.04 * wrapW,
+      0.14 + 0.06 * takebackW - 0.04 * wrapW - 0.1 * compactHighElbow,
       upperArm,
     );
     _tmp.subVectors(out.hitElbow, out.hitShoulder);
@@ -889,12 +910,17 @@ export function solveSkeletonFk(
   const loopAlign =
     elevAlign * (0.2 + 0.55 * steepAlign) * (0.3 + 0.7 * takebackW) *
     (1 - overheadW * 0.85) * (1 - wrapW * 0.7);
+  // High tip + moderate abd = compact loop: climb up/back, not out like wings
+  const compactLoopAlign =
+    elevAlign * smooth01((78 - abdMag) / 28) * (1 - bhWingW);
   if (loopAlign > 0.04) {
+    const latAmt =
+      (0.1 + 0.25 * elevAlign) * (1 - 0.75 * compactLoopAlign);
     _tmp
       .copy(_up)
-      .multiplyScalar(0.35 + 0.5 * elevAlign)
-      .addScaledVector(_back, 0.18 + 0.4 * elevAlign)
-      .addScaledVector(_right, wingMirror * (0.1 + 0.25 * elevAlign));
+      .multiplyScalar(0.35 + 0.5 * elevAlign + 0.2 * compactLoopAlign)
+      .addScaledVector(_back, 0.18 + 0.4 * elevAlign + 0.15 * compactLoopAlign)
+      .addScaledVector(_right, wingMirror * latAmt);
     _tmp.normalize();
     const align = Math.min(0.88, 0.18 + 0.65 * loopAlign);
     _fdir.multiplyScalar(1 - align).addScaledVector(_tmp, align);
