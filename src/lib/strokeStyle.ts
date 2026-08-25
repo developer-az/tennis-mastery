@@ -1,7 +1,7 @@
 /**
- * Map stroke metrics (path, spin, grip, lag, GRF, contact height) onto joint
- * offsets so Form Lab poses follow player/statistics data — not just keyframe
- * clones with different labels.
+ * Map stroke metrics onto the swing PATH (tip elevation, lag, path steepness,
+ * finish wipe) — not a generic “racket holding” pose. Elbow crook is reduced
+ * on high prep so the forearm can rise with the tip.
  */
 import type {
   JointAngles,
@@ -11,7 +11,6 @@ import type {
   GripType,
 } from "@/types/biomechanics";
 
-/** Neutral FH reference — deltas from these drive shaping. */
 const REF = {
   swingPathDeg: 30,
   avgSpinRpm: 2800,
@@ -26,18 +25,18 @@ function clamp(v: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, v));
 }
 
-function gripPrep(grip: GripType): number {
+function gripPath(grip: GripType): number {
   switch (grip) {
     case "western":
       return 1;
     case "semiWestern":
-      return 0.45;
+      return 0.5;
     case "eastern":
-      return -0.2;
+      return -0.25;
     case "continental":
-      return -0.1;
+      return -0.15;
     case "twoHanded":
-      return 0.15;
+      return 0.1;
   }
 }
 
@@ -51,9 +50,8 @@ function phaseBand(phase: StrokePhase): "prep" | "drive" | "finish" | "other" {
 }
 
 /**
- * Shape joints from authored metrics. Safe to call every sample — pure and
- * relative to REF so eastern/flat molds stay calm while western/steep molds
- * lift the tip toward the head and wipe harder.
+ * Tip-path shaping from research metrics. High path/western → tip climbs in
+ * prep; eastern finish stays closed; compact molds keep a shorter loop.
  */
 export function applyStrokeStyle(
   joints: JointAngles,
@@ -74,59 +72,67 @@ export function applyStrokeStyle(
   );
   const xD = clamp((m.kineticChain.xFactorDeg - REF.xFactorDeg) / 15, -0.9, 1.3);
   const grfD = clamp((m.kineticChain.peakGrfN - REF.peakGrfN) / 400, -0.9, 1.3);
-  const grip = gripPrep(m.grip);
+  const grip = gripPath(m.grip);
 
-  // Western + steep path → tip coils up beside/toward the head in prep
-  const headPrep = clamp(grip * 0.55 + pathD * 0.4 + spinD * 0.2, -0.35, 1.25);
-  // Compact/linear molds (Sinner): early contact, less wipe
-  const compact = clamp(-pathD * 0.35 - grip * 0.25 + (m.contactDepthM - 0.35) * 2, -0.2, 0.9);
+  // Steep path + western → tip path climbs beside/above the head
+  const highLoop = clamp(grip * 0.5 + pathD * 0.5 + spinD * 0.15, -0.35, 1.3);
+  // Compact first-strike molds: shorter tip path, earlier/flatter
+  const compact = clamp(-pathD * 0.4 - grip * 0.2 + (m.contactDepthM - 0.35) * 2.2, -0.2, 1);
 
   const band = phaseBand(phase);
   const out = { ...joints };
 
   if (band === "prep") {
-    out.racketPathElevation += headPrep * 24 + pathD * 6 - compact * 12;
-    out.shoulderFlexion += headPrep * 14 - compact * 8;
-    out.elbowFlexion += headPrep * 16 - compact * 10;
-    out.shoulderAbduction += pathD * 8 + grip * 5 - compact * 10;
-    out.wristExtension += lagD * 14 + spinD * 8 - compact * 10;
-    out.shoulderInternalRotation -= headPrep * 12 + lagD * 4;
-    out.spineTwist -= xD * 7;
-    out.hipYaw -= xD * 4 + pathD * 3;
-    out.hipPitch += grfD * 5 + headPrep * 2;
-    out.trailKneeFlexion += grfD * 10 + headPrep * 4;
-    out.leadKneeFlexion += grfD * 5;
-    out.pelvisSurge -= grfD * 4 + headPrep * 2;
+    // Tip path up — raise elev/flex; OPEN the elbow crook so forearm can rise with tip
+    out.racketPathElevation += highLoop * 28 + pathD * 8 - compact * 14;
+    out.shoulderFlexion += highLoop * 18 - compact * 6;
+    out.shoulderAbduction += pathD * 10 + grip * 6 - compact * 12;
+    out.elbowFlexion -= highLoop * 22 + compact * 4; // less hang under biceps
+    out.wristExtension += lagD * 12 + spinD * 6 - compact * 8;
+    out.shoulderInternalRotation -= highLoop * 10 + lagD * 4;
+    // Topspin prep face stays closed (never open)
+    out.racketFaceAngle -= 4 + highLoop * 4 + pathD * 2;
+    out.spineTwist -= xD * 6;
+    out.hipYaw -= xD * 3 + pathD * 2;
+    out.hipPitch += grfD * 4;
+    out.trailKneeFlexion += grfD * 8;
+    out.leadKneeFlexion += grfD * 4;
+    out.pelvisSurge -= grfD * 3 + highLoop * 2;
   }
 
   if (band === "drive") {
-    out.racketPathElevation += pathD * 14 + heightD * 10 + launchD * 4 - compact * 6;
-    out.shoulderInternalRotation += pathD * 14 + grip * 12 - compact * 6;
-    out.wristExtension += lagD * 12 + spinD * 6 - compact * 8;
-    out.wristUlnarDeviation += pathD * 7 + grip * 4;
-    out.pelvisSurge += grfD * 4 + compact * 3;
-    out.shoulderFlexion += heightD * 4;
-    // Early-contact molds pull contact slightly more in front (less lag carry)
-    if (compact > 0.2) {
-      out.elbowFlexion -= compact * 8;
+    // Steep ascending tip path through the ball
+    out.racketPathElevation += pathD * 16 + heightD * 12 + launchD * 4 - compact * 8;
+    out.shoulderInternalRotation += pathD * 12 + grip * 10;
+    out.wristExtension += lagD * 10 - compact * 6;
+    out.wristUlnarDeviation += pathD * 5;
+    out.racketFaceAngle -= 6 + pathD * 4 + grip * 4 + heightD * 2; // closed through contact
+    out.pelvisSurge += grfD * 3 + compact * 2;
+    if (compact > 0.25) {
+      out.elbowFlexion -= compact * 6;
       out.shoulderAbduction -= compact * 4;
     }
   }
 
   if (band === "finish") {
-    out.wristUlnarDeviation += pathD * 10 + grip * 8 + spinD * 5 - compact * 14;
-    out.shoulderInternalRotation += pathD * 10 + grip * 8 - compact * 8;
-    out.racketPathElevation += pathD * 5 + heightD * 3 - compact * 4;
-    out.elbowFlexion += pathD * 8 + grip * 5 - compact * 12;
-    out.shoulderAbduction -= pathD * 4;
+    // Finish follows the swing path: tip high across; face stays CLOSED for topspin
+    // (Federer never opens the face like a slice on the FH finish)
+    out.racketPathElevation += pathD * 6 + heightD * 4 - compact * 4;
+    out.wristUlnarDeviation += pathD * 10 + grip * 8 - compact * 12; // wipe amount
+    out.shoulderInternalRotation += pathD * 8 + grip * 6;
+    out.elbowFlexion += pathD * 6 - compact * 8;
+    out.racketFaceAngle -= 8 + pathD * 3 + grip * 3; // keep closed through finish
+    // Kill any authored open finish for FH topspin
+    if (out.racketFaceAngle > -2) out.racketFaceAngle = -2 - pathD * 2;
   }
 
   out.racketPathElevation = clamp(out.racketPathElevation, -95, 95);
-  out.elbowFlexion = clamp(out.elbowFlexion, 8, 145);
+  out.elbowFlexion = clamp(out.elbowFlexion, 8, 130);
   out.shoulderFlexion = clamp(out.shoulderFlexion, 0, 175);
   out.shoulderAbduction = clamp(out.shoulderAbduction, -95, 120);
   out.wristExtension = clamp(out.wristExtension, -30, 90);
-  out.wristUlnarDeviation = clamp(out.wristUlnarDeviation, -25, 45);
+  out.wristUlnarDeviation = clamp(out.wristUlnarDeviation, -25, 42);
+  out.racketFaceAngle = clamp(out.racketFaceAngle, -30, 8);
   out.trailKneeFlexion = clamp(out.trailKneeFlexion, 5, 95);
   out.leadKneeFlexion = clamp(out.leadKneeFlexion, 5, 90);
   out.hipPitch = clamp(out.hipPitch, 0, 55);

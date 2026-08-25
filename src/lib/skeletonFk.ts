@@ -511,23 +511,30 @@ function recomputeFace(
   _rdir.subVectors(out.racketTip, out.hitHand);
   if (_rdir.lengthSq() < 1e-8) return;
   _rdir.normalize();
-  // Soft roll — IR/ulnar should paint the face, not snap it
-  out.racketFaceRoll = deg(faceDeg * 0.85 + irDeg * 0.18 + ulnarDeg * 0.35);
-  // Prefer a wing-stable open/closed blend over fwd (fwd flips on unit turn)
-  _preferred.copy(right).multiplyScalar(mirror);
-  _preferred.addScaledVector(_rdir, -_rdir.dot(_preferred));
-  if (_preferred.lengthSq() < 1e-8) {
-    _preferred.copy(_up).addScaledVector(_rdir, -_rdir.dot(_up));
-  }
-  _preferred.normalize();
+  // Closed (−) / open (+) from path + grip; IR/ulnar paint through contact
+  // Topspin FH finishes stay closed — do not let IR flip the face open
+  const closed = faceDeg + irDeg * 0.12 + ulnarDeg * 0.2;
+  out.racketFaceRoll = deg(closed);
+
+  // Hitting face aims into the court (fwd), orthogonal to the shaft — swing-path face,
+  // not a wing-side “holding” normal that reads open on the finish
   _face.copy(fwd).addScaledVector(_rdir, -_rdir.dot(fwd));
-  const faceAimW = smooth01((0.22 - Math.sqrt(Math.max(0, _face.lengthSq()))) / 0.18);
-  if (_face.lengthSq() > 1e-8) _face.normalize();
-  else _face.copy(_preferred);
-  // Mostly wing-stable; only a little court-forward aim when the shaft is horizontal
-  _face.multiplyScalar(0.35 * (1 - faceAimW)).addScaledVector(_preferred, 0.65 + 0.35 * faceAimW);
+  if (_face.lengthSq() < 1e-8) {
+    _face.copy(right).multiplyScalar(mirror);
+    _face.addScaledVector(_rdir, -_rdir.dot(_face));
+  }
   _face.normalize();
-  rotateAround(_face, _rdir, out.racketFaceRoll);
+  // Closed face: top of hoop leans toward the opponent (tilt face down along shaft plane)
+  const closeRad = deg(Math.max(-28, Math.min(12, closed)));
+  _preferred.copy(_up).addScaledVector(_rdir, -_rdir.dot(_up));
+  if (_preferred.lengthSq() > 1e-8) {
+    _preferred.normalize();
+    // Negative closed → pitch face toward -up (closed topspin presentation)
+    _face.addScaledVector(_preferred, -Math.sin(closeRad) * 0.85);
+    _face.addScaledVector(_rdir, -_face.dot(_rdir));
+    if (_face.lengthSq() > 1e-8) _face.normalize();
+  }
+  rotateAround(_face, _rdir, out.racketFaceRoll * 0.35);
   out.racketFaceNormal.copy(_face).normalize();
 }
 
@@ -874,12 +881,45 @@ export function solveSkeletonFk(
     }
   }
 
-  // Mild loop lift on takeback — tip rises from elevation authoring, not an arm yank
-  if (takebackW > 0.05 && overheadW < 0.55 && wrapW < 0.25) {
-    _fdir.addScaledVector(_up, 0.55 * takebackW * (1 - overheadW));
-    _fdir.addScaledVector(_back, 0.1 * takebackW);
+  // High-loop takeback: forearm rises WITH the tip path (up + back on the wing).
+  // Mid elev (eastern loop) gets a mild lift so the forearm isn't under the biceps;
+  // steep elev (western/Nadal) lifts the tip beside the head.
+  const elevAlign = smooth01((j.racketPathElevation - 32) / 55);
+  const steepAlign = elevAlign * elevAlign;
+  const loopAlign =
+    elevAlign * (0.2 + 0.55 * steepAlign) * (0.3 + 0.7 * takebackW) *
+    (1 - overheadW * 0.85) * (1 - wrapW * 0.7);
+  if (loopAlign > 0.04) {
+    _tmp
+      .copy(_up)
+      .multiplyScalar(0.35 + 0.5 * elevAlign)
+      .addScaledVector(_back, 0.18 + 0.4 * elevAlign)
+      .addScaledVector(_right, wingMirror * (0.1 + 0.25 * elevAlign));
+    _tmp.normalize();
+    const align = Math.min(0.88, 0.18 + 0.65 * loopAlign);
+    _fdir.multiplyScalar(1 - align).addScaledVector(_tmp, align);
+    _fdir.normalize();
+    const minForeY = -0.4 + 0.75 * elevAlign;
+    if (_fdir.y < minForeY) {
+      _fdir.y = minForeY;
+      _fdir.normalize();
+    }
+  } else if (takebackW > 0.05 && overheadW < 0.55 && wrapW < 0.25) {
+    _fdir.addScaledVector(_up, 0.4 * takebackW * (1 - overheadW));
+    _fdir.addScaledVector(_back, 0.12 * takebackW);
     _fdir.addScaledVector(_right, wingMirror * 0.06 * takebackW);
     _fdir.normalize();
+  }
+  // Even on moderate eastern loops: don't leave the forearm hanging under the
+  // biceps while elevation asks the tip path to climb (low → high swing path)
+  {
+    const hangFix = smooth01((j.racketPathElevation - 22) / 40) * (0.45 + 0.55 * takebackW);
+    const minY = -0.5 + 0.45 * hangFix;
+    if (hangFix > 0.08 && overheadW < 0.5 && _fdir.y < minY) {
+      _fdir.y = minY;
+      _fdir.addScaledVector(_back, 0.06 * hangFix);
+      _fdir.normalize();
+    }
   }
   // Soft wrap finish — tip high across, no violent yank
   if (wrapW > 0.12 && overheadW < 0.5) {
@@ -892,6 +932,17 @@ export function solveSkeletonFk(
   out.hitWrist.copy(out.hitElbow).addScaledVector(_fdir, forearm);
   // Hand is a short palm along the forearm — grips the racket butt
   out.hitHand.copy(out.hitWrist).addScaledVector(_fdir, 0.05);
+
+  // Soft wrist height floor only on steep tip paths
+  if (elevAlign > 0.35 && takebackW > 0.15) {
+    const minWy = out.hitElbow.y - 0.06 + 0.14 * elevAlign;
+    if (out.hitWrist.y < minWy) {
+      out.hitWrist.y += (minWy - out.hitWrist.y) * Math.min(1, 0.45 + 0.45 * elevAlign);
+      restoreLen(out.hitElbow, out.hitWrist, forearm);
+      _fdir.subVectors(out.hitWrist, out.hitElbow).normalize();
+      out.hitHand.copy(out.hitWrist).addScaledVector(_fdir, 0.05);
+    }
+  }
 
   // BH: keep wrist on the backhand wing through takeback → contact
   if (bhWingW > 0.15 && takebackW > 0.1 && wrapW < 0.15 && overheadW < 0.4) {
@@ -918,12 +969,17 @@ export function solveSkeletonFk(
   _rdir.copy(_fdir);
   const forearmPitch = Math.asin(Math.max(-1, Math.min(1, _fdir.y)));
   let dPitch = elevRad - forearmPitch;
-  // Soft-compress large elevation deltas — but preserve high-loop prep (tip by head)
-  const elevPreserve = smooth01((j.racketPathElevation - 55) / 30);
-  dPitch = Math.max(-1.05, Math.min(1.2 + 0.25 * elevPreserve, dPitch));
-  if (Math.abs(dPitch) > 0.5 && elevPreserve < 0.7) {
-    const over = Math.abs(dPitch) - 0.5;
-    dPitch = Math.sign(dPitch) * (0.5 + over * 0.55);
+  // When forearm already rises with a high loop, keep tip nearly colinear — small refine only
+  const elevLoopTip = smooth01((j.racketPathElevation - 42) / 48) * (0.35 + 0.65 * takebackW);
+  if (elevLoopTip > 0.2) {
+    dPitch *= Math.max(0.3, 0.9 - 0.55 * elevLoopTip);
+  } else {
+    // Soft-compress large elevation deltas on drive phases
+    dPitch = Math.max(-1.0, Math.min(1.15, dPitch));
+    if (Math.abs(dPitch) > 0.45) {
+      const over = Math.abs(dPitch) - 0.45;
+      dPitch = Math.sign(dPitch) * (0.45 + over * 0.5);
+    }
   }
   // Pitch axis = forearm × wingOut (stable) — not forearm × world-up (flips when forearm is steep)
   _preferred.copy(_right).multiplyScalar(wingMirror);
@@ -993,6 +1049,21 @@ export function solveSkeletonFk(
 
   const RACKET_LEN = 0.58;
   out.racketTip.copy(out.hitHand).addScaledVector(_rdir, RACKET_LEN);
+
+  // FH tip-path height gate: eastern/compact loops stay below the skull;
+  // steep western prep (high elevAlign) may place tip beside/above the head
+  if (j.shoulderAbduction > -8 && takebackW > 0.1 && overheadW < 0.45) {
+    const elevH = smooth01((j.racketPathElevation - 28) / 55);
+    const maxTipY = out.head.y - 0.28 + 0.6 * elevH;
+    if (out.racketTip.y > maxTipY + 0.02) {
+      out.racketTip.y = maxTipY;
+      _rdir.subVectors(out.racketTip, out.hitHand);
+      if (_rdir.lengthSq() > 1e-8) {
+        _rdir.normalize();
+        out.racketTip.copy(out.hitHand).addScaledVector(_rdir, RACKET_LEN);
+      }
+    }
+  }
 
   // BH tip position lock — soft, continuous; never a hard abd cliff
   if (bhWingW > 0.02 && overheadW < 0.5) {
