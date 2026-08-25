@@ -11,7 +11,8 @@ import { deg } from "@/lib/kinematics";
  * Kinetic-chain aware:
  *   - Feet plant in court space (trail back, lead forward) so a unit turn
  *     rotates over a base instead of spinning a crouch
- *   - Pelvis height comes from two-bone reach — sit on the load, stand into contact
+ *   - Pelvis height from two-bone reach — athletic hinge on the load, stand into contact
+ *   - Trunk lags the hips (X-factor); shoulders/arms lag the trunk
  *   - Hitting elbow stays on the wing; lead arm points then tucks
  *   - Collision catcher keeps tip/shaft clear of torso and head
  */
@@ -107,6 +108,14 @@ function rotateAround(v: THREE.Vector3, axis: THREE.Vector3, angle: number) {
 function smooth01(t: number): number {
   const x = Math.max(0, Math.min(1, t));
   return x * x * (3 - 2 * x);
+}
+
+/** Authored serve-like overhead (high flex + high abd) — allows deeper trophy sit. */
+function overheadAuthGuess(j: JointAngles): number {
+  return (
+    smooth01((j.shoulderFlexion - 125) / 45) *
+    smooth01((Math.abs(j.shoulderAbduction) - 55) / 35)
+  );
 }
 
 /**
@@ -598,7 +607,9 @@ export function solveSkeletonFk(
     trailZ * 0.35 + out.pelvis.z * 0.65 - _fwd.z * (hipSit * 0.03 + Math.sin(trailHipFlex) * 0.025),
   );
 
-  // Height from the more bent (loaded) leg — sit on takeback, stand into contact.
+  // Height from the loaded leg — athletic hinge on takeback, stand into contact.
+  // Dual-support blend keeps the figure from collapsing into a chair squat when
+  // only the trail knee is deeply flexed.
   const leadH = hipHeightForPlant(
     out.leadHip.x,
     out.leadHip.z,
@@ -617,19 +628,29 @@ export function solveSkeletonFk(
     thigh,
     shank,
   );
-  const hingeDrop = Math.sin(hipPitch) * thigh * 0.18 + Math.sin(trailHipFlex) * thigh * 0.04;
-  // Dual-support height: favor the loaded leg's chord so authored flexion reads on that limb
+  const hingeDrop = Math.sin(hipPitch) * thigh * 0.08 + Math.sin(trailHipFlex) * thigh * 0.02;
   const supportH =
     loadW > 0.35 ? trailH : driveW > 0.35 ? leadH : Math.min(leadH, trailH);
-  const otherH = Math.min(leadH, trailH);
-  out.pelvis.y = Math.max(0.38, supportH * 0.78 + otherH * 0.22 - hingeDrop);
+  const otherH = loadW > 0.35 ? leadH : driveW > 0.35 ? trailH : Math.max(leadH, trailH);
+  // Favor the loaded limb so authored knee flex actually reads, but keep enough
+  // dual-support so the figure never collapses into a chair squat.
+  const supportW = 0.68 + loadW * 0.08;
+  const driveLift = driveW * 0.02;
+  out.pelvis.y = Math.max(
+    0.5,
+    supportH * supportW + otherH * (1 - supportW) - hingeDrop + driveLift,
+  );
+  // Soft floor: athletic hinge, not seated — serve trophy exempt via overheadAuth
+  if (overheadAuthGuess(j) < 0.35) {
+    out.pelvis.y = Math.max(out.pelvis.y, 0.78 - loadW * 0.05);
+  }
   // Pelvis tips slightly with hip pitch (athletic hinge) — sockets follow
-  out.leadHip.y = out.pelvis.y - hipSit * 0.02 - Math.sin(leadHipFlex) * 0.012;
-  out.trailHip.y = out.pelvis.y + hipSit * 0.012 - Math.sin(trailHipFlex) * 0.008;
+  out.leadHip.y = out.pelvis.y - hipSit * 0.015 - Math.sin(leadHipFlex) * 0.01;
+  out.trailHip.y = out.pelvis.y + hipSit * 0.01 - Math.sin(trailHipFlex) * 0.006;
 
-  // Torso: lean + slight gravity flexion (chest settles over the base of support)
-  const gravLean = deg(Math.min(12, 4 + avgKnee * 0.08 + Math.max(0, j.hipPitch) * 0.12));
-  const leanTotal = lean + gravLean * 0.35;
+  // Torso: lean + light gravity flexion (keep upright athletic posture, not a folded sit)
+  const gravLean = deg(Math.min(8, 2 + avgKnee * 0.04 + Math.max(0, j.hipPitch) * 0.06));
+  const leanTotal = lean + gravLean * 0.28;
   _dir
     .copy(_up)
     .multiplyScalar(Math.cos(leanTotal) * torsoLen)
@@ -673,9 +694,13 @@ export function solveSkeletonFk(
   out.trailFootFwd.copy(_trailFwd);
 
   // --- Shoulders / X-factor ---
-  const shYaw = yaw + twist * 0.32;
-  yawBasis(yaw, _fwd, _right);
-  const xFactorShift = Math.sin(twist) * 0.18;
+  // Kinetic chain: hips (yaw) → trunk (partial twist) → shoulders/arms (more twist).
+  // Cap arm-frame separation so BH wing tips don't cross the body from over-twist.
+  const twistArm = Math.max(-0.55, Math.min(0.55, twist)) * 0.85;
+  const trunkYaw = yaw + twist * 0.38;
+  const shYaw = yaw + twistArm * 0.55;
+  yawBasis(trunkYaw, _fwd, _right);
+  const xFactorShift = Math.sin(twist) * 0.24;
 
   out.hitShoulder
     .copy(out.chest)
@@ -706,17 +731,20 @@ export function solveSkeletonFk(
   // Authored overhead (serve trophy/accel) — high flex WITH high abduction
   const overheadAuth =
     smooth01((j.shoulderFlexion - 125) / 45) * smooth01((abdMag - 55) / 35);
-  // Wrap finish: high flex + low/neg abd (FH across-body) — do not treat as vertical upper arm
+  // Wrap finish: high flex + modest abd (FH across-body) — do not treat as vertical upper arm
   const wrapW =
     smooth01((j.shoulderFlexion - 95) / 45) *
-    smooth01((35 - j.shoulderAbduction) / 40) *
+    smooth01((50 - j.shoulderAbduction) / 55) *
     (1 - overheadAuth);
+
+  // Hitting-wing sign: FH stays on the dominant side; BH (neg abd) uses the opposite wing
+  const wingMirror = j.shoulderAbduction < -12 ? -mirror : mirror;
 
   // Authored abduction drives the wing; wrap finish keeps the elbow beside/across, not skyward
   const wing = 0.05 + 0.04 * contactW;
   _dir
     .set(0, 0, 0)
-    .addScaledVector(_right, mirror * (Math.sin(abd) * 0.92 + wing - 0.35 * wrapW))
+    .addScaledVector(_right, mirror * (Math.sin(abd) * 0.92 + wing * Math.sign(Math.sin(abd) || 1) - 0.35 * wrapW))
     .addScaledVector(
       _up,
       -Math.cos(abd) * Math.cos(flex) + 0.08 * takebackW - 0.55 * wrapW + 0.15 * overheadAuth,
@@ -739,7 +767,7 @@ export function solveSkeletonFk(
   _dir.normalize();
   out.hitElbow.copy(out.hitShoulder).addScaledVector(_dir, upperArm);
 
-  // Keep the elbow beside the shoulder: lateral yes, deep behind no (real unit turn)
+  // Keep the elbow on the hitting wing: lateral yes, deep behind no (real unit turn)
   {
     _tmp.subVectors(out.hitElbow, out.hitShoulder);
     const behind = -_tmp.dot(_fwd); // +behind = toward back fence
@@ -748,24 +776,21 @@ export function solveSkeletonFk(
       out.hitElbow.addScaledVector(_fwd, behind - maxBehind);
       restoreLen(out.hitShoulder, out.hitElbow, upperArm);
     }
-    // Also keep a minimum lateral clearance without shoving the elbow backward
     wingElbow(
       out.hitShoulder,
       out.hitElbow,
       out.chest,
       _right,
-      mirror,
+      wingMirror,
       0.14 + 0.06 * takebackW - 0.04 * wrapW,
       upperArm,
     );
-    // Re-enforce behind cap after wing push
     _tmp.subVectors(out.hitElbow, out.hitShoulder);
     const behind2 = -_tmp.dot(_fwd);
     if (behind2 > maxBehind) {
       out.hitElbow.addScaledVector(_fwd, behind2 - maxBehind);
       restoreLen(out.hitShoulder, out.hitElbow, upperArm);
     }
-    // Soft height clamp: groundstroke elbow stays at/below shoulder (+small takeback lift)
     const maxElbowY =
       out.hitShoulder.y + 0.04 + 0.1 * takebackW + 0.22 * overheadAuth - 0.02 * wrapW;
     if (out.hitElbow.y > maxElbowY) {
@@ -776,9 +801,14 @@ export function solveSkeletonFk(
   _dir.subVectors(out.hitElbow, out.hitShoulder).normalize();
 
   _fdir.copy(_dir);
-  // Cap elbow flexion on takeback — a 90°+ crook with the elbow jammed back is not a tennis load
+  // Cap extreme crook on 1H takeback; 2HBH keeps authored double-arm bend
   const elbowAuth = Math.max(12, Math.min(145, j.elbowFlexion));
-  const elbowCap = takebackW > 0.25 ? Math.min(elbowAuth, 72 + takebackW * 10) : elbowAuth;
+  const elbowCap =
+    takebackW > 0.25 && oneHanded
+      ? Math.min(elbowAuth, 78 + takebackW * 12)
+      : takebackW > 0.25
+        ? Math.min(elbowAuth, 98 + takebackW * 8)
+        : elbowAuth;
   const elbow = deg(elbowCap);
   const overheadW = Math.max(
     overheadAuth,
@@ -786,21 +816,36 @@ export function solveSkeletonFk(
   );
   const swingW = Math.max(contactW, wrapW) * (1 - takebackW * 0.85);
 
-  elbowHingeAxis(_dir, _right, _fwd, mirror, _axis, takebackW * (1 - overheadW), swingW);
+  elbowHingeAxis(_dir, _right, _fwd, wingMirror, _axis, takebackW * (1 - overheadW), swingW);
   _fdir.copy(_dir);
   rotateAround(_fdir, _axis, -elbow);
 
   // Soft carry only — do not IR-orbit the forearm across the body on takeback
-  const carry = deg(5) * mirror * (1 - overheadW * 0.65) * (0.25 + 0.1 * contactW);
+  const carry = deg(5) * wingMirror * (1 - overheadW * 0.65) * (0.25 + 0.1 * contactW);
   rotateAround(_fdir, _dir, carry);
   rotateAround(_fdir, _dir, ir * (0.1 + 0.06 * contactW) * (1 - takebackW * 0.7));
   _fdir.normalize();
+
+  // If the fold dumped the forearm across the torso, flip the hinge (BH wing especially)
+  if (overheadW < 0.5) {
+    _tmp.copy(out.hitElbow).addScaledVector(_fdir, forearm);
+    const eLat = _tmp2.subVectors(out.hitElbow, out.chest).dot(_right) * wingMirror;
+    const wLat = _tmp.subVectors(_tmp, out.chest).dot(_right) * wingMirror;
+    if (wLat < eLat - 0.06) {
+      _axis.multiplyScalar(-1);
+      _fdir.copy(_dir);
+      rotateAround(_fdir, _axis, -elbow);
+      rotateAround(_fdir, _dir, carry);
+      rotateAround(_fdir, _dir, ir * (0.1 + 0.06 * contactW) * (1 - takebackW * 0.7));
+      _fdir.normalize();
+    }
+  }
 
   // Mild loop lift on takeback — tip rises from elevation authoring, not an arm yank
   if (takebackW > 0.05 && overheadW < 0.55) {
     _fdir.addScaledVector(_up, 0.28 * takebackW * (1 - overheadW));
     _fdir.addScaledVector(_back, 0.12 * takebackW);
-    _fdir.addScaledVector(_right, mirror * 0.05 * takebackW);
+    _fdir.addScaledVector(_right, wingMirror * 0.08 * takebackW);
     _fdir.normalize();
   }
   // Wrap finish: forearm continues slightly up/across — tip high, elbow still beside torso
@@ -810,14 +855,14 @@ export function solveSkeletonFk(
     _fdir.addScaledVector(_fwd, 0.08 * wrapW);
     _fdir.normalize();
   }
-  // Hand stays on the hitting side of the elbow
+  // Hand stays on the hitting wing of the elbow
   if (overheadW < 0.45) {
     _tmp.copy(out.hitElbow).addScaledVector(_fdir, forearm);
-    const elbowLat = _tmp.subVectors(out.hitElbow, out.chest).dot(_right) * mirror;
+    const elbowLat = _tmp.subVectors(out.hitElbow, out.chest).dot(_right) * wingMirror;
     _tmp.copy(out.hitElbow).addScaledVector(_fdir, forearm);
-    const wristLat = _tmp.subVectors(_tmp, out.chest).dot(_right) * mirror;
+    const wristLat = _tmp.subVectors(_tmp, out.chest).dot(_right) * wingMirror;
     if (wristLat < elbowLat - 0.04) {
-      rotateAround(_fdir, _dir, deg(18) * mirror);
+      rotateAround(_fdir, _dir, deg(18) * wingMirror);
       _fdir.normalize();
     }
   }
@@ -831,7 +876,22 @@ export function solveSkeletonFk(
   out.hitHand
     .copy(out.hitWrist)
     .addScaledVector(_fdir, 0.055)
-    .addScaledVector(_right, mirror * 0.02);
+    .addScaledVector(_right, wingMirror * 0.02);
+
+  // BH wing lock: wrist/hand must stay on the backhand side of the elbow (not fold across)
+  if (j.shoulderAbduction < -20 && overheadW < 0.45) {
+    const wingX = -mirror; // left for righty, right for lefty
+    const cross = (out.hitWrist.x - out.hitElbow.x) * wingX;
+    if (cross < 0.02) {
+      out.hitWrist.x = out.hitElbow.x + wingX * Math.max(0.06, Math.abs(out.hitWrist.x - out.hitElbow.x));
+      restoreLen(out.hitElbow, out.hitWrist, forearm);
+      out.hitHand
+        .copy(out.hitWrist)
+        .addScaledVector(_fdir, 0.055)
+        .addScaledVector(_right, wingMirror * 0.02);
+      _fdir.subVectors(out.hitWrist, out.hitElbow).normalize();
+    }
+  }
 
   // --- Racket tip from HAND ---
   // Build tip continuously from the forearm (pitch by elevation delta) so a near-vertical
@@ -887,6 +947,16 @@ export function solveSkeletonFk(
   _rdir.normalize();
 
   out.racketTip.copy(out.hitHand).addScaledVector(_rdir, 0.58);
+
+  // Keep tip on the BH wing during takeback (elevation must not flip it across the body)
+  if (j.shoulderAbduction < -20 && takebackW > 0.12 && overheadW < 0.45) {
+    const wingX = -mirror;
+    if ((out.racketTip.x - out.hitElbow.x) * wingX < 0.04) {
+      out.racketTip.x = out.hitElbow.x + wingX * 0.22;
+      _rdir.subVectors(out.racketTip, out.hitHand).normalize();
+      out.racketTip.copy(out.hitHand).addScaledVector(_rdir, 0.58);
+    }
+  }
 
   const irDeg = j.shoulderInternalRotation * mirror;
   recomputeFace(out, _fwd, _right, mirror, faceDeg, irDeg, ulnarDeg);
