@@ -447,7 +447,9 @@ function groundPose(
  * Coaching-grade collision catcher: push tip clear of torso capsule + head sphere.
  * Never moves the gripping hand — the racket is owned by hitHand.
  */
-function clearRacketFromBody(out: SkeletonPose, mirror: number): void {
+function clearRacketFromBody(out: SkeletonPose, mirror: number, elevDeg = 0): void {
+  // High-loop prep (Nadal-style tip by the head) needs softer head clearance
+  const headClear = elevDeg > 58 ? 0.02 : elevDeg > 45 ? 0.05 : 0.08;
   const headR = 0.14;
   const torsoR = 0.11;
   const shaftLen = Math.max(0.4, out.hitHand.distanceTo(out.racketTip));
@@ -455,10 +457,10 @@ function clearRacketFromBody(out: SkeletonPose, mirror: number): void {
     let moved = false;
     _tmp.subVectors(out.racketTip, out.head);
     const dHead = _tmp.length();
-    if (dHead < headR + 0.08) {
+    if (dHead < headR + headClear) {
       if (dHead < 1e-5) _tmp.set(mirror, 0, 0);
       else _tmp.normalize();
-      out.racketTip.addScaledVector(_tmp, headR + 0.1 - dHead);
+      out.racketTip.addScaledVector(_tmp, headR + headClear + 0.02 - dHead);
       moved = true;
     }
     for (let s = 0.2; s <= 1; s += 0.2) {
@@ -819,8 +821,14 @@ export function solveSkeletonFk(
       out.hitElbow.addScaledVector(_fwd, behind2 - maxBehind);
       restoreLen(out.hitShoulder, out.hitElbow, upperArm);
     }
+    const elevBoost = smooth01((j.racketPathElevation - 45) / 40);
     const maxElbowY =
-      out.hitShoulder.y + 0.04 + 0.1 * takebackW + 0.22 * overheadAuth - 0.02 * wrapW;
+      out.hitShoulder.y +
+      0.04 +
+      0.1 * takebackW +
+      0.18 * elevBoost +
+      0.22 * overheadAuth -
+      0.02 * wrapW;
     if (out.hitElbow.y > maxElbowY) {
       out.hitElbow.y = maxElbowY;
       restoreLen(out.hitShoulder, out.hitElbow, upperArm);
@@ -829,13 +837,14 @@ export function solveSkeletonFk(
   _dir.subVectors(out.hitElbow, out.hitShoulder).normalize();
 
   _fdir.copy(_dir);
-  // Cap extreme crook on 1H takeback; 2HBH keeps authored double-arm bend
+  // Cap extreme crook on 1H takeback; allow higher crook when elev asks tip near head
+  const elevBoostElbow = smooth01((j.racketPathElevation - 50) / 35);
   const elbowAuth = Math.max(12, Math.min(145, j.elbowFlexion));
   const elbowCap =
     takebackW > 0.25 && oneHanded
-      ? Math.min(elbowAuth, 78 + takebackW * 12)
+      ? Math.min(elbowAuth, 78 + takebackW * 12 + elevBoostElbow * 32)
       : takebackW > 0.25
-        ? Math.min(elbowAuth, 98 + takebackW * 8)
+        ? Math.min(elbowAuth, 98 + takebackW * 8 + elevBoostElbow * 16)
         : elbowAuth;
   const elbow = deg(elbowCap);
   const overheadW = Math.max(
@@ -909,9 +918,10 @@ export function solveSkeletonFk(
   _rdir.copy(_fdir);
   const forearmPitch = Math.asin(Math.max(-1, Math.min(1, _fdir.y)));
   let dPitch = elevRad - forearmPitch;
-  // Soft-compress large elevation deltas so accel→contact doesn't teleport the tip
-  dPitch = Math.max(-1.05, Math.min(1.2, dPitch));
-  if (Math.abs(dPitch) > 0.5) {
+  // Soft-compress large elevation deltas — but preserve high-loop prep (tip by head)
+  const elevPreserve = smooth01((j.racketPathElevation - 55) / 30);
+  dPitch = Math.max(-1.05, Math.min(1.2 + 0.25 * elevPreserve, dPitch));
+  if (Math.abs(dPitch) > 0.5 && elevPreserve < 0.7) {
     const over = Math.abs(dPitch) - 0.5;
     dPitch = Math.sign(dPitch) * (0.5 + over * 0.55);
   }
@@ -1021,7 +1031,7 @@ export function solveSkeletonFk(
   const irDeg = j.shoulderInternalRotation * mirror;
   recomputeFace(out, _fwd, _right, mirror, faceDeg, irDeg, ulnarDeg);
 
-  clearRacketFromBody(out, mirror);
+  clearRacketFromBody(out, mirror, j.racketPathElevation);
   recomputeFace(out, _fwd, _right, mirror, faceDeg, irDeg, ulnarDeg);
 
   // --- Lead / non-hitting arm: point UP at the ball (FH) or share the BH wing (2HBH) ---

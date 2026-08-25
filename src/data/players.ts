@@ -1,5 +1,6 @@
 import type { PlayerProfile, StrokeType } from "@/types/biomechanics";
 import {
+  alcarazForehand,
   alcarazVolley,
   cloneStroke,
   djokovicBackhand,
@@ -8,6 +9,7 @@ import {
   federerSlice,
   nadalForehand,
   serenaServe,
+  sinnerForehand,
   type StrokeLibrary,
 } from "./strokes";
 
@@ -308,45 +310,7 @@ const serenaDefaults: StrokeLibrary = fillStrokes(
 
 const alcarazDefaults: StrokeLibrary = fillStrokes(
   {
-    forehand: cloneStroke(nadalForehand, {
-      handedness: "right",
-      label: "Forehand (Explosive)",
-      // Reuse Nadal FH geometry (RH-canonical FK) but rewrite lefty-specific cues.
-      keyframes: nadalForehand.keyframes.map((kf) => ({
-        ...kf,
-        coachingCue: kf.coachingCue
-          .replace(/\blefty\b/gi, "athletic")
-          .replace(/Wide base, coiled athletic stance/i, "Wide base, coiled righty stance — ready to explode"),
-      })),
-      metrics: {
-        peakRacketSpeedMs: 30.8,
-        avgSpinRpm: 3400,
-        contactHeightM: 1.22,
-        consistency: {
-          contactHeightCv: 5.2,
-          timingSdMs: 14,
-          pathReproducibility: 89,
-          signatureQuirk: "Drop-shot disguise from same unit turn as heavy FH — elite deception",
-        },
-        researchNotes: [
-          "Modern semi-western/western hybrid with extreme athleticism.",
-          "High RPM + net clearance creates clay/hard versatility.",
-          "Motion geometry adapted from published heavy-topspin patterns; cues rewritten for a right-handed athlete.",
-        ],
-        sources: nadalForehand.metrics.sources,
-        kineticChain: {
-          sequence: ["legs", "hips", "trunk", "shoulder", "forearm", "wrist", "racket"],
-          proximalDistalLagMs: 30,
-          xFactorDeg: 50,
-          peakGrfN: 1750,
-        },
-        contactDepthM: 0.38,
-        launchAngleDeg: 12.0,
-        swingPathDeg: 42,
-        impactDurationMs: 4.5,
-        grip: "semiWestern",
-      },
-    }),
+    forehand: alcarazForehand,
     backhand: cloneStroke(djokovicBackhand, {
       metrics: {
         ...djokovicBackhand.metrics,
@@ -405,44 +369,7 @@ const alcarazDefaults: StrokeLibrary = fillStrokes(
 /** Compact early-contact mold — flatter drive than Alcaraz, still modern RPM. */
 const sinnerDefaults: StrokeLibrary = fillStrokes(
   {
-    forehand: cloneStroke(nadalForehand, {
-      handedness: "right",
-      label: "Forehand (First-strike)",
-      keyframes: nadalForehand.keyframes.map((kf) => ({
-        ...kf,
-        coachingCue: kf.coachingCue
-          .replace(/\blefty\b/gi, "athletic")
-          .replace(/Wide base, coiled athletic stance/i, "Compact base — early unit turn, drive through"),
-      })),
-      metrics: {
-        peakRacketSpeedMs: 31.2,
-        avgSpinRpm: 3100,
-        contactHeightM: 1.18,
-        consistency: {
-          contactHeightCv: 4.6,
-          timingSdMs: 12,
-          pathReproducibility: 92,
-          signatureQuirk: "Early contact + linear drive — Speed Pro takeback, less extreme wiper",
-        },
-        researchNotes: [
-          "Semi-western with a compact loop; prioritizes timing and depth.",
-          "Flatter leave than clay-spin archetypes while still clearing the tape.",
-          "Motion geometry adapted from modern righty drive patterns.",
-        ],
-        sources: nadalForehand.metrics.sources,
-        kineticChain: {
-          sequence: ["legs", "hips", "trunk", "shoulder", "forearm", "wrist", "racket"],
-          proximalDistalLagMs: 28,
-          xFactorDeg: 48,
-          peakGrfN: 1680,
-        },
-        contactDepthM: 0.42,
-        launchAngleDeg: 10.5,
-        swingPathDeg: 34,
-        impactDurationMs: 4.3,
-        grip: "semiWestern",
-      },
-    }),
+    forehand: sinnerForehand,
     backhand: cloneStroke(djokovicBackhand, {
       metrics: {
         ...djokovicBackhand.metrics,
