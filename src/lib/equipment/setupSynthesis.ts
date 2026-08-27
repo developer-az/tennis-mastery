@@ -18,6 +18,12 @@ import {
 } from "@/lib/equipment/moldPhysics";
 import { buildInBandPlan, healthyBandsFor, type InBandPlan } from "@/lib/equipment/inBandImprove";
 import { equipmentLabel } from "@/lib/equipment/labels";
+import {
+  emptyPlayability,
+  evaluateSetupPlayability,
+  type PlayabilityPlayer,
+  type SetupPlayability,
+} from "@/lib/equipment/playability";
 
 export type { FlightMetrics, ScorePieceDeltas };
 export { computeFlightMetrics, scoreDeltasFromTape, stringLaunchOffsets };
@@ -95,6 +101,8 @@ export interface CombinedSetupInsight {
   };
   summary: string;
   completeness: number;
+  /** Spec-physics verdict: is this bag a good tennis setup for this player? */
+  playability: SetupPlayability;
 }
 
 function clamp(v: number, a: number, b: number): number {
@@ -140,6 +148,9 @@ export function synthesizeCombinedSetup(
   opts?: {
     playerGrip?: import("@/lib/equipment/forehandMold").ForehandGripKind | null;
     armFriendly?: boolean;
+    generatesOwnPower?: boolean;
+    valuesDurability?: boolean;
+    player?: PlayabilityPlayer | null;
   },
 ): CombinedSetupInsight {
   const pieces = setup.leadTape?.pieces ?? [];
@@ -670,6 +681,54 @@ export function synthesizeCombinedSetup(
   const completeness =
     (hasRacket ? 35 : 0) + (hasString ? 30 : 0) + (hasGrip ? 20 : 0) + (hasTape ? 15 : 0);
 
+  const player: PlayabilityPlayer = opts?.player ?? {
+    forehandGrip: opts?.playerGrip ?? null,
+    armFriendly: opts?.armFriendly,
+    generatesOwnPower: opts?.generatesOwnPower,
+    valuesDurability: opts?.valuesDurability,
+  };
+
+  const playability = hasAny
+    ? evaluateSetupPlayability({
+        racket: racket ?? null,
+        string: string ?? null,
+        tensionLbs: setup.tensionLbs,
+        gaugeMm: setup.gaugeMm,
+        hasGrip,
+        grip: hasGrip
+          ? {
+              thicknessMm: stack.thicknessMm,
+              effectiveSizeIndex: stack.effectiveSizeIndex,
+              overgripCount: stack.overgripCount,
+              buildNote: stack.buildNote,
+            }
+          : null,
+        tape: hasTape
+          ? {
+              totalG: pieces.reduce((n, p) => n + p.massG, 0),
+              tipG: tapeTipG,
+              handleG: tapeHandleG,
+              deltaSw: tapeSwDelta,
+              effectiveSw,
+            }
+          : effectiveSw != null
+            ? {
+                totalG: 0,
+                tipG: 0,
+                handleG: 0,
+                deltaSw: 0,
+                effectiveSw,
+              }
+            : null,
+        scores: { power, spin, control, comfort },
+        launchAngleDeg,
+        swingPathDeg,
+        flight,
+        completeness,
+        player,
+      })
+    : emptyPlayability();
+
   const summaryParts: string[] = [];
   if (setup.racketLabel) summaryParts.push(setup.racketLabel);
   if (setup.stringLabel) {
@@ -715,6 +774,7 @@ export function synthesizeCombinedSetup(
     scores: { power, spin, control, comfort },
     summary: summaryParts.join(" · ") || "No gear saved yet.",
     completeness,
+    playability,
   };
 }
 

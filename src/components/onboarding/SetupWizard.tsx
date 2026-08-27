@@ -68,6 +68,8 @@ export function SetupWizard({
       synthesizeCombinedSetup(setup, null, null, null, [], {
         playerGrip: profile.grips.forehand,
         armFriendly: prefersArmFriendlySetup(profile),
+        generatesOwnPower: profile.preferences.generatesOwnPower,
+        valuesDurability: profile.preferences.valuesDurability,
       }),
     [setup, profile],
   );

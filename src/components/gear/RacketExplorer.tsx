@@ -12,8 +12,10 @@ import { usePlayerStore } from "@/store/playerStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 import { deriveForehandMold } from "@/lib/equipment/forehandMold";
 import { computeFlightMetrics } from "@/lib/equipment/setupSynthesis";
+import { computeFrameSpecPhysics } from "@/lib/equipment/playability";
 import { PlayerFitBadges } from "./PlayerFitBadges";
 import { FrameIntelligencePanel } from "./FrameIntelligencePanel";
+import { HowItHitsPanel } from "./HowItHitsPanel";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
@@ -194,6 +196,10 @@ export function RacketExplorer({
         : null,
     [selected],
   );
+  const framePhysics = useMemo(
+    () => (selected ? computeFrameSpecPhysics(selected) : null),
+    [selected],
+  );
 
   const compareRackets = compareIds
     .map((id) => initialRackets.find((r) => r.slug === id))
@@ -329,18 +335,8 @@ export function RacketExplorer({
           label="Search rackets"
         />
         <p className="text-sm text-[var(--muted)]">
-          Not sure?{" "}
-          <button
-            type="button"
-            className="sf-text-link"
-            onClick={() => {
-              setShopType("beginner");
-              setBrand("all");
-              setFeel("all");
-            }}
-          >
-            Start with beginner-friendly
-          </button>
+          Not sure? Filter by how the hoop is built — light/forgiving, open-pattern spin, dense
+          control — then read the spec math on the right.
         </p>
         <ChipRow label="Brand">
           <AisleChip label="All" active={brand === "all"} onClick={() => setBrand("all")} />
@@ -523,7 +519,7 @@ export function RacketExplorer({
             />
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
-                {selected.style}
+                {framePhysics?.hitKicker ?? selected.style}
               </p>
               <h3 className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
                 {selected.brand} {selected.model}
@@ -534,6 +530,8 @@ export function RacketExplorer({
                 {selected.swingweight ? ` · SW ${selected.swingweight}` : ""}
                 {selected.stiffnessRa ? ` · RA ${selected.stiffnessRa}` : ""}
                 {selected.balanceMm ? ` · ${selected.balanceMm}mm balance` : ""}
+                {selected.headSizeSqIn ? ` · ${selected.headSizeSqIn}"` : ""}
+                {selected.stringPattern ? ` · ${selected.stringPattern.replace("x", "×")}` : ""}
               </p>
               {(selected.atpPlayers.length > 0 || selected.wtaPlayers.length > 0) && (
                 <p className="mt-2 text-xs text-[var(--foreground)]/70">
@@ -572,6 +570,8 @@ export function RacketExplorer({
               </button>
             </div>
           </header>
+
+          <HowItHitsPanel racket={selected} />
 
           <PlayerFitBadges racket={selected} liveCatalog={liveCatalog} />
 
@@ -630,6 +630,12 @@ export function RacketExplorer({
               { label: "Comfort", value: selected.comfort, accent: "var(--chart-comfort)" },
             ]}
           />
+          <p className="-mt-4 text-xs leading-relaxed text-[var(--muted)]">
+            Power / spin / control from mass, SW, RA, head, and pattern
+            {/\/100 for (power|spin|control)/i.test(selected.summary)
+              ? " — expert scores tint these by at most 20%."
+              : " — not from the model name."}
+          </p>
 
           <CompareToSetup
             title={setup.racketLabel ? `Vs ${setup.racketLabel}` : "Vs my setup"}
@@ -712,7 +718,9 @@ function RacketCard({
       brand={racket.brand}
       name={modelWithoutBrand(racket.brand, racket.model)}
       badge={racketShopBadge(racket)}
-      meta={`${racket.year}${racket.headSizeSqIn ? ` · ${racket.headSizeSqIn}"` : ""}`}
+      meta={`${racket.year}${racket.weightG ? ` · ${racket.weightG}g` : ""}${
+        racket.swingweight ? ` · SW ${racket.swingweight}` : ""
+      }${racket.headSizeSqIn ? ` · ${racket.headSizeSqIn}"` : ""}`}
       accent={brandAccent(racket.brand)}
       scores={[
         { label: "Spin", value: racket.spin, color: "var(--chart-spin)" },

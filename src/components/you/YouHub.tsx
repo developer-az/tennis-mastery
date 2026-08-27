@@ -11,6 +11,7 @@ import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { fhGripLabel, gripPreviewLine } from "@/lib/player/onboarding";
 import { PlayerCardSheet } from "@/components/you/PlayerCardSheet";
 import { InBandImproveSection } from "@/components/gear/InBandImproveSection";
+import { CourtReadyVerdict } from "@/components/gear/CourtReadyVerdict";
 import { SyncStatusPill } from "@/components/auth/SyncStatusPill";
 import { strikeZoneForFrame } from "@/components/gear/RacketVisuals";
 import { SetupVisualStory } from "./SetupVisualStory";
@@ -83,8 +84,20 @@ export function YouHub({
       synthesizeCombinedSetup(setup, racket, string, grip, grips, {
         playerGrip: profile.grips.forehand,
         armFriendly,
+        generatesOwnPower: profile.preferences.generatesOwnPower,
+        valuesDurability: profile.preferences.valuesDurability,
       }),
-    [setup, racket, string, grip, grips, profile.grips.forehand, armFriendly],
+    [
+      setup,
+      racket,
+      string,
+      grip,
+      grips,
+      profile.grips.forehand,
+      armFriendly,
+      profile.preferences.generatesOwnPower,
+      profile.preferences.valuesDurability,
+    ],
   );
 
   const displayInsight = useMemo(
@@ -93,6 +106,8 @@ export function YouHub({
         ? synthesizeCombinedSetup(activeSetup, racket, activeString, grip, grips, {
             playerGrip: profile.grips.forehand,
             armFriendly,
+            generatesOwnPower: profile.preferences.generatesOwnPower,
+            valuesDurability: profile.preferences.valuesDurability,
           })
         : insight,
     [
@@ -104,6 +119,8 @@ export function YouHub({
       grips,
       profile.grips.forehand,
       armFriendly,
+      profile.preferences.generatesOwnPower,
+      profile.preferences.valuesDurability,
       insight,
     ],
   );
@@ -206,7 +223,7 @@ export function YouHub({
             ) : null}
             {needsBag ? (
               <div className="sf-alert flex flex-wrap items-center justify-between gap-3">
-                <p>Pick a racket when you want — like walking a store aisle.</p>
+                <p>Add a frame when you want a court-ready calculation from specs.</p>
                 <Link href="/gear?tab=rackets" className="sf-text-link shrink-0">
                   Browse rackets
                 </Link>
@@ -239,6 +256,10 @@ export function YouHub({
               </p>
             </div>
             {gripPreview ? <p className="text-sm text-[var(--muted)]">{gripPreview}</p> : null}
+
+            {displayInsight.hasAny ? (
+              <CourtReadyVerdict playability={displayInsight.playability} compact />
+            ) : null}
 
             <div className="sf-panel px-4 py-3.5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -296,7 +317,7 @@ export function YouHub({
               <CourtEmpty
                 kicker="No mold yet"
                 title="Browse a racket when you’re ready"
-                body="Save a frame (and optionally a bed) so Strokeform can show leave angle and flight for your court. Setup is optional."
+                body="Save a frame (and optionally a bed) so Strokeform can calculate leave, flight, and whether the bag is court-ready from specs."
                 primary={{ href: "/gear?tab=rackets", label: "Browse rackets" }}
                 secondary={{ href: "/lab", label: "Open form lab" }}
               />

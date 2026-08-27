@@ -1,4 +1,5 @@
 import type { RacketProfile } from "@/types/equipment";
+import { parseStringPattern } from "@/lib/equipment/playability";
 
 export type SkillBand = "Beginner-friendly" | "Intermediate" | "Advanced" | "Tour / expert";
 export type CourtRole =
@@ -63,54 +64,56 @@ function feelAxisOf(r: RacketProfile): FeelAxis {
 function skillOf(r: RacketProfile): SkillBand {
   const w = r.weightG ?? 300;
   const hs = r.headSizeSqIn ?? 100;
-  const dense =
-    r.stringPattern != null &&
-    (/18x20|18×20|16x20|18x19/i.test(r.stringPattern) ||
-      (() => {
-        const parts = r.stringPattern!.toLowerCase().replace(/\s/g, "").split("x");
-        return (parseInt(parts[0], 10) || 16) >= 18;
-      })());
+  const sw = r.swingweight ?? 315;
+  const { dense, open } = parseStringPattern(r.stringPattern);
 
-  if ((w >= 315 || dense) && (hs <= 98 || r.control >= 78) && r.power <= 72) {
+  if ((w >= 315 || dense) && hs <= 98 && sw >= 318 && r.power <= 72) {
     return "Tour / expert";
   }
-  if (hs >= 102 && r.power >= 68 && (w < 300 || r.comfort >= 70)) {
+  if (hs >= 102 && w < 300 && sw < 312 && (open || r.comfort >= 68)) {
     return "Beginner-friendly";
   }
-  if (r.control >= 72 && hs <= 100 && w >= 300) {
+  if ((dense || hs <= 98) && w >= 300 && sw >= 315) {
     return "Advanced";
   }
   return "Intermediate";
 }
 
 /**
- * Court role from style tags first, then score dominance.
- * Avoid defaulting everything to a vague "All-court".
+ * Court role from specs + physics scores (pattern, SW, head, leave/path).
+ * Style tags are not consulted — those used to follow model-name cues.
  */
 function courtRoleOf(r: RacketProfile): CourtRole {
-  const style = (r.style ?? "").toLowerCase();
   const { power, spin, control } = r;
   const path = r.idealSwingPathDeg ?? 20;
   const launch = r.idealLaunchAngleDeg ?? 8;
+  const w = r.weightG ?? 300;
+  const sw = r.swingweight ?? 315;
+  const hs = r.headSizeSqIn ?? 100;
+  const bal = r.balanceMm ?? 320;
+  const { open, dense } = parseStringPattern(r.stringPattern);
+  const headLight = bal < 318 || (w >= 310 && bal < 322);
 
-  if (/serve|volley|net/.test(style)) return "Serve & volley";
-  if (/heavy-?spin/.test(style) || (spin >= 82 && path >= 26 && power >= 58)) {
+  if (headLight && sw <= 312 && hs <= 98 && control >= 66 && path <= 18 && spin <= 68) {
+    return "Serve & volley";
+  }
+  if (open && spin >= 78 && path >= 26 && power >= 56) {
     return "Heavy-spin baseliner";
   }
-  if (/\brpms\b|modern shape/.test(style) || (spin >= 72 && spin >= control + 4 && path >= 22)) {
-    return spin >= 80 && path >= 28 ? "Heavy-spin baseliner" : "Shape baseliner";
+  if (open && spin >= 70 && path >= 22 && spin >= control + 2) {
+    return spin >= 78 && path >= 26 ? "Heavy-spin baseliner" : "Shape baseliner";
   }
-  if (/\bbaseliner\b/.test(style) && spin >= 68) {
-    return spin >= 78 ? "Heavy-spin baseliner" : "Shape baseliner";
+  if (dense && hs <= 98 && control >= 72 && power <= 70) {
+    return path <= 18
+      ? "Precision baseliner"
+      : control >= 80 && spin <= 70
+        ? "Counterpuncher"
+        : "Precision baseliner";
   }
-  if (/precision|player.?s? frame|control-forward/.test(style) || (control >= 76 && power <= 66)) {
-    return path <= 18 ? "Precision baseliner" : control >= 80 && spin <= 70 ? "Counterpuncher" : "Precision baseliner";
-  }
-  if (/power|easy depth|forgiving/.test(style) || (power >= 74 && control <= 60)) {
+  if (hs >= 102 && power >= 72 && control <= 62) {
     return "First-strike power";
   }
 
-  // Score-led (need a clear winner — avoid vague all-court)
   if (spin >= 80 && spin >= control + 8 && path >= 24) {
     return "Heavy-spin baseliner";
   }
@@ -118,7 +121,7 @@ function courtRoleOf(r: RacketProfile): CourtRole {
     return "Shape baseliner";
   }
   if (control >= 74 && control >= power + 8) {
-    return spin <= 62 && power <= 64 ? "Serve & volley" : "Precision baseliner";
+    return spin <= 62 && power <= 66 && headLight ? "Serve & volley" : "Precision baseliner";
   }
   if (power >= 74 && power >= control + 8) {
     return "First-strike power";
@@ -216,7 +219,7 @@ export function playerFitBadges(r: RacketProfile): FitBadge[] {
       key: "role",
       label: fit.courtRole,
       color: ROLE_COLOR[fit.courtRole],
-      hint: "Court role from style tags, spin/power/control dominance, and launch/path teaching window.",
+      hint: "Court role from mass, SW, pattern, head size, and spec-derived spin/power/control — not the model name.",
     },
     {
       key: "feel",

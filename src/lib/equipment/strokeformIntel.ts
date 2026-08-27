@@ -9,6 +9,11 @@
 import type { RacketProfile, StringProfile } from "@/types/equipment";
 import { twImageMeta } from "@/lib/equipment/media/externalImages";
 import { derivePlayerFit, type CourtRole, type SkillBand } from "@/lib/equipment/playerFit";
+import {
+  balanceClassOf,
+  computeFrameSpecPhysics,
+  parseStringPattern,
+} from "@/lib/equipment/playability";
 
 export type DataSourceId =
   | "racqix-specs"
@@ -108,24 +113,11 @@ function clamp(n: number, a = 0, b = 100): number {
 }
 
 function patternParts(pattern: string | null): { mains: number; crosses: number; open: boolean; dense: boolean } {
-  let mains = 16;
-  let crosses = 19;
-  if (pattern) {
-    const parts = pattern.toLowerCase().replace(/\s/g, "").replace("×", "x").split("x");
-    mains = parseInt(parts[0], 10) || 16;
-    crosses = parseInt(parts[1], 10) || 19;
-  }
-  const open = mains <= 16 && crosses <= 19;
-  const dense = mains >= 18 || crosses >= 20;
-  return { mains, crosses, open, dense };
+  return parseStringPattern(pattern);
 }
 
 function balanceClass(bal: number | null, weight: number): "HL" | "EVEN" | "HH" {
-  // Approximate: HL < ~320 mm for midweight; HH tip-heavy
-  const b = bal ?? 320;
-  if (b < 318 || (weight >= 310 && b < 322)) return "HL";
-  if (b > 328) return "HH";
-  return "EVEN";
+  return balanceClassOf(bal, weight);
 }
 
 /** Aggregate provenance for a frame — every credit is auditable. */
@@ -140,7 +132,7 @@ export function frameSources(r: RacketProfile, liveCatalog: boolean): DataSource
     {
       id: "strokeform-physics",
       label: "Strokeform physics",
-      role: "Launch / path / comfort / plow–whip model",
+      role: "Launch, path, plow, whip, and play scores from specs — model name is not an input",
       confidence: 88,
     },
     {
@@ -155,7 +147,7 @@ export function frameSources(r: RacketProfile, liveCatalog: boolean): DataSource
     sources.push({
       id: "racqix-expert",
       label: "Racqix expert scores",
-      role: "Parsed power / spin / control from expert summary",
+      role: "Parsed expert scores tint catalog 0–100s by ≤20%; specs still own launch/path",
       confidence: 78,
     });
   }
@@ -465,21 +457,15 @@ function quirksOf(r: RacketProfile): FrameQuirk[] {
 }
 
 function ratingsOf(r: RacketProfile) {
-  const w = r.weightG ?? 300;
-  const sw = r.swingweight ?? 315;
-  const ra = r.stiffnessRa ?? 65;
-  const hs = r.headSizeSqIn ?? 100;
-  const { open, dense } = patternParts(r.stringPattern);
-  const bal = balanceClass(r.balanceMm, w);
-
-  const plow = clamp(40 + (sw - 305) * 0.9 + (w - 295) * 0.45 + (bal === "HH" ? 8 : bal === "HL" ? -6 : 0));
-  const whip = clamp(45 + (318 - (r.balanceMm ?? 320)) * 1.1 + (305 - w) * 0.4 + (open ? 5 : 0));
-  const forgiveness = clamp(50 + (hs - 98) * 3.2 - (dense ? 10 : 0) + (r.comfort - 55) * 0.35 - (ra - 64) * 0.8);
-  const spinCeiling = clamp(r.spin * 0.75 + (open ? 12 : dense ? -6 : 4) + (r.idealSwingPathDeg - 18) * 1.2);
-  const directionalHonesty = clamp(r.control * 0.7 + (dense ? 14 : 0) + (98 - hs) * 1.5);
-  const armLoad = clamp(35 + (ra - 58) * 2.2 + Math.max(0, sw - 318) * 0.4 - (r.comfort - 60) * 0.5);
-
-  return { plow, whip, forgiveness, spinCeiling, directionalHonesty, armLoad };
+  const p = computeFrameSpecPhysics(r);
+  return {
+    plow: p.plow,
+    whip: p.whip,
+    forgiveness: p.forgiveness,
+    spinCeiling: clamp(p.spin * 0.75 + (p.open ? 12 : p.dense ? -6 : 4) + (p.pathDeg - 18) * 1.2),
+    directionalHonesty: clamp(p.control * 0.7 + (p.dense ? 14 : 0) + (98 - p.headSizeSqIn) * 1.5),
+    armLoad: p.armLoad,
+  };
 }
 
 function specialCopy(

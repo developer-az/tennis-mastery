@@ -21,7 +21,7 @@ export function WorkOnThis({ insight }: { insight: CombinedSetupInsight }) {
           Nothing marked yet
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-          Play, then tap Play to recap what struggled — or browse rackets like a store aisle.
+          Play, then tap Play to recap what struggled — or open Gear to calculate the bag from specs.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/gear?tab=rackets" className="sf-text-link">
