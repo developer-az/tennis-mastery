@@ -80,6 +80,14 @@ if (openPhys.launchDeg <= densePhys.launchDeg) {
   fail(`open bed should launch higher (${openPhys.launchDeg} vs ${densePhys.launchDeg})`);
 } else ok(`open leave ${openPhys.launchDeg} > dense ${densePhys.launchDeg}`);
 
+if (openPhys.pathDeg <= densePhys.pathDeg) {
+  fail(`open bed should teach a steeper path (${openPhys.pathDeg} vs ${densePhys.pathDeg})`);
+} else ok(`open path ${openPhys.pathDeg} > dense ${densePhys.pathDeg}`);
+
+if (densePhys.pathDeg < 14) {
+  fail(`dense path too flat to play tennis (${densePhys.pathDeg}°)`);
+} else ok(`dense path ${densePhys.pathDeg}° still a tennis swing`);
+
 if (Math.abs(namedAero.spin - openPhys.spin) > 12) {
   fail(`expert tint pulled Aero spin too far from specs (${namedAero.spin} vs ${openPhys.spin})`);
 } else ok(`Aero spin ${namedAero.spin} stays near spec ${openPhys.spin}`);

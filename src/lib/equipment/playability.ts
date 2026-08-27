@@ -260,14 +260,13 @@ export function computeFrameSpecPhysics(
   );
   const pathDeg = round1(
     clampFloat(
-      16 +
+      18 +
         (open ? 5 : 0) -
-        (dense ? 3.2 : 0) +
-        (headSizeSqIn - 98) * 0.35 +
-        (64 - ra) * 0.1 +
-        (318 - balanceMm) * 0.04 +
-        (spin - 55) * 0.08,
-      8,
+        (dense ? 2.5 : 0) +
+        (headSizeSqIn - 98) * 0.25 +
+        (64 - ra) * 0.08 +
+        (318 - balanceMm) * 0.03,
+      10,
       38,
     ),
   );
