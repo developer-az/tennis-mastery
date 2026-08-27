@@ -20,6 +20,7 @@ import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { LaunchAngleVisual, strikeZoneForFrame } from "./RacketVisuals";
 import { MoldTowardPanel } from "./MoldTowardPanel";
 import { LeadTapeRacketDiagram } from "./LeadTapeRacketDiagram";
+import { CourtReadyVerdict } from "./CourtReadyVerdict";
 
 const ZONE_ORDER: LeadTapeZone[] = ["tip", "twelve", "three", "nine", "throat", "handle"];
 
@@ -110,6 +111,8 @@ export function LeadTapeLab({
     return synthesizeCombinedSetup(setup, baseRacket, bagString, bagGrip, grips, {
       playerGrip: profile.grips.forehand,
       armFriendly: prefersArmFriendlySetup(profile),
+      generatesOwnPower: profile.preferences.generatesOwnPower,
+      valuesDurability: profile.preferences.valuesDurability,
     });
   }, [setup, baseRacket, bagString, bagGrip, grips, profile]);
 
@@ -266,6 +269,8 @@ export function LeadTapeLab({
             </ul>
           </section>
         ) : null}
+
+        {bagInsight ? <CourtReadyVerdict playability={bagInsight.playability} compact /> : null}
 
         <details className="rounded-md border border-[var(--line)]">
           <summary className="cursor-pointer list-none px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--foreground)] [&::-webkit-details-marker]:hidden">

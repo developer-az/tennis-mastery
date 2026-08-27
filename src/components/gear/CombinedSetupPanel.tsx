@@ -13,6 +13,7 @@ import { usePlayerStore } from "@/store/playerStore";
 import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { InBandImproveSection } from "./InBandImproveSection";
+import { CourtReadyVerdict } from "./CourtReadyVerdict";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 import { LeadTapeRacketDiagram } from "./LeadTapeRacketDiagram";
 import { gripImageUrl, racketImageUrl, stringImageUrl } from "@/lib/equipment/media/urls";
@@ -32,6 +33,8 @@ export function CombinedSetupPanel({
   const setTab = useGearStore((s) => s.setTab);
   const playerGrip = usePlayerStore((s) => s.profile.grips.forehand);
   const armFriendly = usePlayerStore((s) => prefersArmFriendlySetup(s.profile));
+  const generatesOwnPower = usePlayerStore((s) => s.profile.preferences.generatesOwnPower);
+  const valuesDurability = usePlayerStore((s) => s.profile.preferences.valuesDurability);
 
   const racket = useMemo(
     () => rackets.find((r) => r.slug === setup.racketSlug) ?? null,
@@ -59,8 +62,10 @@ export function CombinedSetupPanel({
       synthesizeCombinedSetup(setup, racket, string, grip, grips, {
         playerGrip,
         armFriendly,
+        generatesOwnPower,
+        valuesDurability,
       }),
-    [setup, racket, string, grip, grips, playerGrip, armFriendly],
+    [setup, racket, string, grip, grips, playerGrip, armFriendly, generatesOwnPower, valuesDurability],
   );
 
   const stringAlts = useMemo(
@@ -91,14 +96,15 @@ export function CombinedSetupPanel({
           Combined setup
         </p>
         <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl tracking-tight">
-          Build a bag, then see how it plays
+          Calculate if this bag is court-ready
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
-          Fastest path is{" "}
+          Frame mass, SW, RA, and pattern plus string, tension, gauge, grip, tape, and your
+          arm/grip — not the model name. Fastest path is{" "}
           <Link href="/you" className="text-[var(--accent)] hover:underline">
-            You → setup
+            You → bag
           </Link>
-          . Or pick pieces here to research.
+          .
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           {(
@@ -138,7 +144,7 @@ export function CombinedSetupPanel({
               {insight.playstyleDetail || insight.summary}
             </p>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Completeness {insight.completeness}%
+              Completeness {insight.completeness}% · court-ready {insight.playability.score}/100
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
@@ -252,6 +258,8 @@ export function CombinedSetupPanel({
           />
         </div>
       </div>
+
+      <CourtReadyVerdict playability={insight.playability} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat

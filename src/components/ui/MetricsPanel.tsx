@@ -164,7 +164,12 @@ function SetupBridge({
       </p>
       {hasGear ? (
         <>
-          <p className="mt-1.5 text-sm font-medium text-[var(--foreground)]">{insight.playstyle}</p>
+          <p className="mt-1.5 text-sm font-medium text-[var(--foreground)]">
+            {insight.playability.headline}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+            Court-ready {insight.playability.score}/100 · {insight.playstyle}
+          </p>
           <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{setupSummary(setup)}</p>
           {launch != null && path != null ? (
             <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">

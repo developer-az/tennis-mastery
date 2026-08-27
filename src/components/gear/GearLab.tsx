@@ -65,12 +65,13 @@ export function GearLab({
     <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 md:px-10 md:py-8">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-5 md:mb-6">
         <div>
-          <p className="sf-kicker">Shop the bag</p>
+          <p className="sf-kicker">How the bag plays</p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight md:text-3xl">
             Gear
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)]">
-            Browse by brand, type, and feel — like walking a store aisle. Specs stay one tap away.
+            We calculate plow, leave, spin window, and whether the whole bag is court-ready —
+            from mass, SW, RA, pattern, string, tension, and you. Not from the model name.
           </p>
         </div>
         <MySetupBar onSelectTab={selectTab} />
