@@ -80,13 +80,13 @@ function FeelChip({
         boxShadow: "inset 0 0 0 1px var(--line)",
       }}
     >
-      <p className="text-[10px] uppercase tracking-[0.14em]" style={{ color }}>
+      <p className="sf-kicker" style={{ color }}>
         {label}
       </p>
       <p className="mt-1 font-[family-name:var(--font-display)] text-xl tabular-nums tracking-tight">
         {value}
       </p>
-      <div className="mt-1.5 h-1 overflow-hidden bg-[color-mix(in_srgb,var(--foreground)_12%,transparent)]">
+      <div className="sf-meter-track mt-1.5">
         <div
           className="h-full transition-[width] duration-500"
           style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: color }}

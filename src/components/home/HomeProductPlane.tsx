@@ -54,10 +54,8 @@ export function HomeProductPlane() {
             ["Honesty", 74],
           ].map(([label, v]) => (
             <div key={String(label)}>
-              <p className="text-[10px] font-semibold tracking-[0.12em] text-[var(--label)] uppercase">
-                {label}
-              </p>
-              <div className="mt-1.5 h-[3px] bg-[color-mix(in_srgb,var(--foreground)_10%,transparent)]">
+              <p className="sf-label">{label}</p>
+              <div className="sf-meter-track mt-1.5">
                 <div className="h-full bg-[var(--accent)]" style={{ width: `${v}%` }} />
               </div>
             </div>
@@ -65,9 +63,7 @@ export function HomeProductPlane() {
         </div>
 
         <div className="sf-intel-quirk mt-5" style={{ borderLeftColor: "var(--accent)" }}>
-          <p className="text-[10px] font-semibold tracking-[0.14em] text-[var(--accent)] uppercase">
-            Quirk
-          </p>
+          <p className="sf-kicker">Quirk</p>
           <p className="mt-1 text-sm font-semibold">16×19 honesty</p>
           <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
             Own your low-to-high path — denser beds don&apos;t gift free wipe.

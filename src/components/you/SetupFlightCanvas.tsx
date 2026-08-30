@@ -257,7 +257,7 @@ export function SetupFlightCanvas({
           background: `linear-gradient(to top, ${sceneColors.bgScene}, color-mix(in srgb, ${sceneColors.bgScene} 70%, transparent), transparent)`,
         }}
       >
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
+        <p className="sf-kicker">
           Court view — clean hit
         </p>
         <p className="mt-0.5 text-xs tabular-nums text-[var(--muted)]">

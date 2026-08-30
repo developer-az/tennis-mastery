@@ -601,7 +601,7 @@ export function RacketExplorer({
 
           {forehandAdvice ? (
             <section className="border-t border-[var(--line)] pt-6">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+              <p className="sf-kicker sf-kicker-amber">
                 Forehand grip & face at contact
               </p>
               <p className="mt-1 text-xs text-[var(--muted)]">

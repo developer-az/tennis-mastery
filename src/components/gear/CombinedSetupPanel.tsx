@@ -305,7 +305,7 @@ export function CombinedSetupPanel({
 
       {(insight.scores.power != null || insight.scores.comfort != null) && (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+          <p className="sf-kicker">
             Molded scores
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
@@ -408,7 +408,7 @@ export function CombinedSetupPanel({
             />
           ) : (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+              <p className="sf-kicker">
                 Molded strike launch vs net
               </p>
               <p className="mt-3 text-sm text-[var(--muted)]">Save a racket to unlock the strike-launch diagram.</p>
@@ -444,7 +444,7 @@ export function CombinedSetupPanel({
             />
           ) : (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
+              <p className="sf-kicker sf-kicker-amber">
                 Where to strike
               </p>
               <p className="mt-3 text-sm text-[var(--muted)]">Needs a frame base to draw strike heights.</p>
@@ -472,7 +472,7 @@ export function CombinedSetupPanel({
 
       {insight.forehand ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+          <p className="sf-kicker sf-kicker-amber">
             Forehand grip & face
           </p>
           <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
@@ -487,7 +487,7 @@ export function CombinedSetupPanel({
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
+              <p className="sf-kicker">
                 Practice this grip + face
               </p>
               <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -499,7 +499,7 @@ export function CombinedSetupPanel({
               </ul>
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--amber)]">
+              <p className="sf-kicker sf-kicker-amber">
                 Don’t do this
               </p>
               <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -519,7 +519,7 @@ export function CombinedSetupPanel({
 
       {insight.tuneTips.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+          <p className="sf-kicker">
             Perfect the mold
           </p>
           <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
@@ -565,7 +565,7 @@ export function CombinedSetupPanel({
                   </div>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
+                      <p className="sf-kicker">
                         String / grip — raise
                       </p>
                       <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -575,7 +575,7 @@ export function CombinedSetupPanel({
                       </ul>
                       {tip.tapeRaise?.length ? (
                         <>
-                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--sky)]">
+                          <p className="sf-kicker sf-kicker-sky mt-2.5">
                             Lead tape — raise
                           </p>
                           <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -587,7 +587,7 @@ export function CombinedSetupPanel({
                       ) : null}
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--amber)]">
+                      <p className="sf-kicker sf-kicker-amber">
                         String / grip — lower
                       </p>
                       <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -597,7 +597,7 @@ export function CombinedSetupPanel({
                       </ul>
                       {tip.tapeLower?.length ? (
                         <>
-                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--sky)]">
+                          <p className="sf-kicker sf-kicker-sky mt-2.5">
                             Lead tape — lower
                           </p>
                           <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -633,7 +633,7 @@ export function CombinedSetupPanel({
 
       {insight.weakPoints.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+          <p className="sf-kicker sf-kicker-amber">
             Frame weak points
           </p>
           <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
@@ -653,7 +653,7 @@ export function CombinedSetupPanel({
                   <span className="text-[var(--amber)]">Holding you back — </span>
                   {wp.holdingBack}
                 </p>
-                <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
+                <p className="sf-kicker mt-3">
                   Practice this
                 </p>
                 <ul className="mt-1.5 space-y-1.5 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -677,7 +677,7 @@ export function CombinedSetupPanel({
 
       {insight.scienceNotes.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
+          <p className="sf-kicker sf-kicker-sky">
             What your numbers mean
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
@@ -696,7 +696,7 @@ export function CombinedSetupPanel({
       {/* Tape zone diagram when present */}
       {insight.hasTape ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+          <p className="sf-kicker">
             Lead tape map
           </p>
           <div className="mt-4 grid items-start gap-6 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -717,7 +717,7 @@ export function CombinedSetupPanel({
 
       {stringAlts.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
+          <p className="sf-kicker sf-kicker-sky">
             Similar string feel — shop around
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
@@ -787,7 +787,7 @@ export function CombinedSetupPanel({
 
       <div className="grid gap-6 border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:grid-cols-2 md:p-6">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+          <p className="sf-kicker">
             Pros of this mold
           </p>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--foreground)]/90">
@@ -799,7 +799,7 @@ export function CombinedSetupPanel({
           </ul>
         </div>
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+          <p className="sf-kicker sf-kicker-amber">
             Tradeoffs / cons
           </p>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--foreground)]/85">
@@ -855,7 +855,7 @@ function Stat({
 }) {
   return (
     <div className="border border-[var(--line)] bg-black/10 px-4 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+      <p className="sf-kicker sf-kicker-muted">
         {label}
       </p>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight">{value}</p>

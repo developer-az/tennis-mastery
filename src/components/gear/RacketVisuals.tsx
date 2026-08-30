@@ -284,7 +284,7 @@ export function LaunchAngleVisual({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+      <p className="sf-kicker mb-2">
         {label}
       </p>
       <svg viewBox="0 0 300 210" className="h-auto w-full max-w-lg" aria-hidden>
@@ -525,7 +525,7 @@ export function SwingPathVisual({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
+      <p className="sf-kicker sf-kicker-amber mb-2">
         {label}
       </p>
       <svg viewBox="0 0 260 210" className="h-auto w-full max-w-sm" aria-hidden>
@@ -665,7 +665,7 @@ export function StrikeCoachingBullets({
 
   return (
     <div className="mt-4 border-t border-[var(--line)] pt-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+      <p className="sf-kicker">
         How to use this
       </p>
       <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--foreground)]/90">
@@ -711,7 +711,7 @@ export function ForehandGripBevelVisual({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
+      <p className="sf-kicker sf-kicker-amber mb-2">
         Optimal FH grip for this mold
       </p>
       <svg viewBox="0 0 220 150" className="h-auto w-full max-w-md" aria-hidden>
@@ -808,7 +808,7 @@ export function FaceAngleAtContactVisual({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+      <p className="sf-kicker mb-2">
         Racket face at contact
       </p>
       <svg viewBox="0 0 220 160" className="h-auto w-full max-w-md" aria-hidden>
@@ -934,7 +934,7 @@ export function ContactGeometryVisual({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--chart-spin)]">
+      <p className="sf-kicker sf-kicker-sky mb-2">
         Contact geometry
       </p>
       <svg viewBox="0 0 220 130" className="h-auto w-full max-w-md" aria-hidden>

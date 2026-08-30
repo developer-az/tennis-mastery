@@ -427,7 +427,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
               size="lg"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--sky)]">
+              <p className="sf-kicker sf-kicker-sky">
                 {materialLabel(selected.material)} · {shapeLabel(selected.shape)}
               </p>
               <h3 className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
@@ -438,38 +438,20 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                 Best for: {selected.bestFor}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                <span
-                  className="rounded-md px-2.5 py-1 font-medium tabular-nums"
-                  style={{
-                    color: "var(--chart-control)",
-                    background: "color-mix(in srgb, var(--accent) 12%, transparent)",
-                    boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent)",
-                  }}
-                >
+                <span className="sf-intel-chip sf-intel-chip-accent tabular-nums">
                   Rec. {selected.recommendedTensionLbs} lbs
                 </span>
-                <span
-                  className="rounded-md px-2.5 py-1 tabular-nums text-[var(--muted)]"
-                  style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
-                >
+                <span className="sf-intel-chip tabular-nums">
                   Range {lo}–{hi} lbs
                 </span>
-                <span
-                  className="rounded-md px-2.5 py-1 tabular-nums text-[var(--muted)]"
-                  style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
-                >
+                <span className="sf-intel-chip tabular-nums">
                   Gauges {selected.gaugesMm.map((g) => `${g} (${gaugeLabel(g)})`).join(" · ")}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => saveStringRow(selected)}
-                className="mt-4 min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
-                style={{
-                  background: inSetup ? "color-mix(in srgb, var(--chart-spin) 14%, transparent)" : "var(--accent)",
-                  color: inSetup ? "var(--chart-spin)" : "var(--accent-ink)",
-                  boxShadow: inSetup ? "0 0 0 1px var(--chart-spin)" : "none",
-                }}
+                className={`sf-btn mt-4 w-full sm:w-auto ${inSetup ? "sf-btn-secondary" : "sf-btn-primary"}`}
               >
                 {inSetup ? "In your bag" : "Add to bag"}
               </button>
@@ -501,9 +483,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
             if (alts.length === 0) return null;
             return (
               <section className="border-t border-[var(--line)] pt-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
-                  Similar feel — shop substitutes
-                </p>
+                <p className="sf-kicker sf-kicker-sky">Similar feel — shop substitutes</p>
                 <p className="mt-1 text-xs text-[var(--muted)]">
                   If this reel is hard to find or over budget, these play close. Copy the search
                   and check a local shop or marketplace.
@@ -532,8 +512,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                       <button
                         type="button"
                         onClick={() => void navigator.clipboard?.writeText(a.shopQuery)}
-                        className="shrink-0 rounded-md px-2 py-1.5 text-[11px] text-[var(--muted)]"
-                        style={{ boxShadow: "0 0 0 1px var(--line)" }}
+                        className="sf-btn sf-btn-ghost shrink-0"
                       >
                         Copy search
                       </button>
@@ -546,9 +525,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
 
           {selected.gaugesMm.length > 0 && (
             <div>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                Gauge — changes spin, power, durability
-              </p>
+              <p className="sf-label mb-2">Gauge — changes spin, power, durability</p>
               <div className="flex flex-wrap gap-2">
                 {selected.gaugesMm.map((g) => {
                   const active = g === gauge;
@@ -561,12 +538,8 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                         setGaugeById((prev) => ({ ...prev, [selected.id]: g }));
                         if (inSetup) setGaugeStore(g);
                       }}
-                      className="rounded-md px-3 py-1.5 text-sm tabular-nums transition"
-                      style={{
-                        background: active ? "var(--accent-dim)" : "transparent",
-                        color: active ? "var(--accent)" : "var(--foreground)",
-                        boxShadow: "0 0 0 1px var(--line)",
-                      }}
+                      className="sf-chip tabular-nums"
+                      data-active={active ? "true" : "false"}
                     >
                       {g} mm · {gaugeLabel(g)}
                     </button>
@@ -583,7 +556,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
           <div>
             <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
               <label className="min-w-0 flex-1">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                <span className="sf-label">
                   Tension ({lo}–{hi} lbs) · recommended {selected.recommendedTensionLbs} — lower is more power, higher is more control
                 </span>
                 <input
@@ -621,7 +594,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                     }));
                     if (inSetup) setTensionStore(clamped);
                   }}
-                  className="w-20 rounded-md border border-[var(--line)] bg-black/30 px-2 py-2 text-right font-[family-name:var(--font-display)] text-xl tabular-nums outline-none focus:border-[var(--accent)]"
+                  className="sf-num w-20 font-[family-name:var(--font-display)] text-xl"
                   aria-label="String tension in pounds"
                 />
                 <span className="text-sm text-[var(--muted)]">lbs</span>
@@ -651,7 +624,7 @@ export function StringExplorer({ strings, onSelectTab }: { strings: StringProfil
                 value={compareId}
                 onChange={(e) => setCompareId(e.target.value)}
                 aria-label="Compare string"
-                className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+                className="sf-select"
               >
                 {strings.map((s) => (
                   <option key={s.id} value={s.id}>

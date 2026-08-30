@@ -589,7 +589,7 @@ export function PlayerProfileLab() {
             />
           </div>
         </div>
-        {decError && <p className="text-sm text-red-300">{decError}</p>}
+        {decError && <p className="sf-field-error">{decError}</p>}
         <button
           type="button"
           className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)]"

@@ -28,10 +28,8 @@ export function PlayerStrokePicker() {
   return (
     <div className="space-y-5">
       <div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-          Athlete
-        </p>
-<div className="-mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0">
+        <p className="sf-label mb-2">Athlete</p>
+        <div className="sf-chip-row lg:flex-wrap lg:overflow-visible">
           {PLAYERS.map((p) => {
             const active = p.id === playerId;
             return (
@@ -40,7 +38,7 @@ export function PlayerStrokePicker() {
                 type="button"
                 onClick={() => setPlayer(p.id)}
                 aria-pressed={active}
-className="cursor-pointer shrink-0 rounded-[var(--radius)] px-3 py-2 text-left text-sm transition-all duration-200 hover:brightness-110"
+                className="sf-chip cursor-pointer text-left"
                 style={{
                   background: active ? p.color : "var(--overlay-hover)",
                   color: active ? "#f8f6f0" : "var(--foreground)",
@@ -57,10 +55,8 @@ className="cursor-pointer shrink-0 rounded-[var(--radius)] px-3 py-2 text-left t
       </div>
 
       <div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-          Stroke
-        </p>
-<div className="-mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0">
+        <p className="sf-label mb-2">Stroke</p>
+        <div className="sf-chip-row lg:flex-wrap lg:overflow-visible">
           {STROKES.map((s) => {
             const active = s === stroke;
             const label = player.strokes[s]?.label ?? STROKE_LABELS[s];
@@ -71,13 +67,8 @@ className="cursor-pointer shrink-0 rounded-[var(--radius)] px-3 py-2 text-left t
                 onClick={() => setStroke(s)}
                 aria-pressed={active}
                 title={label}
-className="shrink-0 cursor-pointer rounded-[var(--radius)] px-3 py-1.5 text-sm transition-colors duration-200 hover:brightness-110"
-                style={{
-                  background: active ? "var(--accent)" : "transparent",
-                  color: active ? "var(--accent-ink)" : "var(--foreground)",
-                  boxShadow: active ? "none" : "0 0 0 1px var(--line)",
-                  fontWeight: active ? 600 : 400,
-                }}
+                className="sf-chip"
+                data-active={active ? "true" : "false"}
               >
                 {STROKE_LABELS[s]}
               </button>
@@ -107,7 +98,7 @@ export function PlaybackDock() {
   const pose = sampleStroke(stroke, t);
 
   return (
-    <div className="pointer-events-auto border-t border-[var(--line)] bg-[color-mix(in_srgb,var(--background)_88%,transparent)] px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+    <div className="pointer-events-auto border-t border-[var(--line)] bg-[color-mix(in_srgb,var(--background)_88%,transparent)] px-3 py-2.5 backdrop-blur-md">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -172,7 +163,7 @@ export function PlaybackControls() {
         <button
           type="button"
           onClick={togglePlaying}
-          className="flex h-10 w-10 items-center justify-center rounded-md bg-[var(--accent)] text-[var(--accent-ink)] transition hover:brightness-110"
+          className="flex h-11 w-11 items-center justify-center rounded-[var(--radius)] bg-[var(--accent)] text-[var(--accent-ink)]"
           aria-label={playing ? "Pause" : "Play"}
         >
           {playing ? (
@@ -187,7 +178,7 @@ export function PlaybackControls() {
           )}
         </button>
         <div className="min-w-0 flex-1">
-          <div className="flex justify-between text-[11px] uppercase tracking-wider text-[var(--muted)]">
+          <div className="flex justify-between text-[11px] text-[var(--muted)]">
             <span>{PHASE_LABELS[pose.phase]}</span>
             <span>{Math.round(t * 100)}%</span>
           </div>
@@ -226,8 +217,7 @@ export function PlaybackControls() {
                 setPlaying(false);
                 setT(contactT);
               }}
-              className="rounded px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--muted)] transition hover:text-[var(--foreground)]"
-              style={{ boxShadow: "0 0 0 1px var(--line)" }}
+              className="sf-chip"
             >
               Jump to contact
             </button>
@@ -242,8 +232,7 @@ export function PlaybackControls() {
                     setPlaying(false);
                     setT(frame.t);
                   }}
-                  className="rounded px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--muted)] transition hover:text-[var(--foreground)]"
-                  style={{ boxShadow: "0 0 0 1px var(--line)" }}
+                  className="sf-chip"
                 >
                   {PHASE_LABELS[phase]}
                 </button>
@@ -260,11 +249,8 @@ export function PlaybackControls() {
             type="button"
             onClick={() => setSpeed(v)}
             aria-pressed={speed === v}
-            className="rounded px-2 py-0.5 text-xs transition"
-            style={{
-              background: speed === v ? "var(--line-strong)" : "transparent",
-              boxShadow: "0 0 0 1px var(--line)",
-            }}
+            className="sf-chip"
+            data-active={speed === v ? "true" : "false"}
           >
             {v === 1 ? "1×" : `${v}×`}
           </button>
@@ -294,12 +280,8 @@ export function ViewToggles() {
       type="button"
       onClick={() => set(!on)}
       aria-pressed={on}
-      className="rounded-md px-2.5 py-1.5 text-xs transition"
-      style={{
-        background: on ? "var(--accent-dim)" : "transparent",
-        boxShadow: "0 0 0 1px var(--line)",
-        color: on ? "var(--accent)" : "var(--muted)",
-      }}
+      className="sf-chip"
+      data-active={on ? "true" : "false"}
     >
       {label}
     </button>
@@ -307,21 +289,17 @@ export function ViewToggles() {
 
   return (
     <details className="space-y-3">
-      <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+      <summary className="sf-label cursor-pointer">
         View
       </summary>
       <div className="mt-3 space-y-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-        Visualization
-      </p>
+      <p className="sf-label">Visualization</p>
       <div className="flex flex-wrap gap-2">
         {toggle("Joint angles", showAngles, setShowAngles)}
         {toggle("Racket path", showRacketPath, setShowRacketPath)}
         {toggle("Ground force", showGroundForce, setShowGroundForce)}
       </div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-        Camera
-      </p>
+      <p className="sf-label">Camera</p>
       <div className="flex flex-wrap gap-2">
         {(["orbit", "side", "behind", "front", "firstPerson"] as const).map((m) => (
           <button
@@ -340,11 +318,8 @@ export function ViewToggles() {
                       ? "From the net looking back at the athlete"
                       : "Over the hitting shoulder — map hand and face angle"
             }
-            className="shrink-0 rounded-md px-2.5 py-1.5 text-xs transition"
-            style={{
-              background: cameraMode === m ? "var(--line-strong)" : "transparent",
-              boxShadow: "0 0 0 1px var(--line)",
-            }}
+            className="sf-chip"
+            data-active={cameraMode === m ? "true" : "false"}
           >
             {CAMERA_LABELS[m]}
           </button>

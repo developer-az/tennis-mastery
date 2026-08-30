@@ -42,9 +42,7 @@ export function CourtReadyVerdict({
           >
             {playability.score}
           </p>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
-            court-ready
-          </p>
+          <p className="sf-kicker sf-kicker-muted">court-ready</p>
         </div>
       </div>
 
@@ -93,7 +91,7 @@ export function CourtReadyVerdict({
                   boxShadow: `inset 2px 0 0 ${flagTone}, inset 0 0 0 1px var(--line)`,
                 }}
               >
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: flagTone }}>
+                <p className="sf-kicker" style={{ color: flagTone }}>
                   {f.severity === "ok" ? "in window" : f.severity}
                 </p>
                 <p className="mt-1 text-sm font-medium text-[var(--foreground)]">{f.title}</p>

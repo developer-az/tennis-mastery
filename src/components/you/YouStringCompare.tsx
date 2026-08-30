@@ -186,7 +186,7 @@ export function YouStringCompare({
           </p>
         </div>
         {isPreviewing ? (
-          <span className="border border-[var(--amber)]/40 bg-[color-mix(in_srgb,var(--amber)_12%,transparent)] px-2 py-1 text-[10px] font-semibold tracking-[0.1em] text-[var(--amber)] uppercase">
+          <span className="sf-kicker sf-kicker-amber">
             Preview
           </span>
         ) : null}

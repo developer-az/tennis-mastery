@@ -65,7 +65,7 @@ export function AfterPlayTab() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="font-[family-name:var(--font-display)] text-xl tracking-tight">How did it go?</h2>
+        <h2 className="sf-section-title text-xl">How did it go?</h2>
         <p className="mt-1 text-sm text-[var(--muted)]">
           Thirty seconds. Tap what broke down — we’ll mark drills on Today.
         </p>
@@ -203,7 +203,7 @@ export function AfterPlayTab() {
       {bed && (
         <button
           type="button"
-          className="text-xs text-[var(--muted)]"
+          className="sf-btn sf-btn-ghost"
           onClick={() => resetStringBed(bed.stringId, bed.stringLabel, bed.tensionLbs)}
         >
           Fresh restring on this bed

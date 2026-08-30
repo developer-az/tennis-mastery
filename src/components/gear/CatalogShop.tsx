@@ -260,11 +260,7 @@ export function ProductCard({
               e.stopPropagation();
               onSave();
             }}
-            className="w-full rounded-full py-2 text-xs font-semibold"
-            style={{
-              background: saved ? "var(--accent-dim)" : "var(--accent)",
-              color: saved ? "var(--accent)" : "var(--accent-ink)",
-            }}
+            className={`sf-btn w-full ${saved ? "sf-btn-secondary" : "sf-btn-primary"}`}
           >
             {saved ? savedLabel : saveLabel}
           </button>
@@ -318,7 +314,7 @@ export function ActiveFilterChips({
           key={c.id}
           type="button"
           onClick={c.onRemove}
-          className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-medium text-[var(--foreground)]"
+          className="sf-chip"
           aria-label={`Remove filter ${c.label}`}
         >
           {c.label}
@@ -330,7 +326,7 @@ export function ActiveFilterChips({
       <button
         type="button"
         onClick={onClear}
-        className="text-[11px] font-semibold text-[var(--muted)] hover:text-[var(--foreground)]"
+        className="sf-btn sf-btn-ghost"
       >
         Clear
       </button>
@@ -356,7 +352,7 @@ export function MoreFilters({ children }: { children: ReactNode }) {
       open={open}
       onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
     >
-      <summary className="cursor-pointer text-[var(--muted)]">More filters</summary>
+      <summary className="sf-label cursor-pointer min-h-11 py-2">More filters</summary>
       <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">{children}</div>
     </details>
   );

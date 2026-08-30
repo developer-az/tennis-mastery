@@ -67,28 +67,27 @@ export function PlayerCardSheet({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
+    <div className="sf-sheet-root z-[60]">
       <button
         type="button"
         aria-label="Close player card"
-        className="absolute inset-0 bg-black/50"
+        className="sf-sheet-scrim"
         onClick={done}
       />
       <div
         role="dialog"
         aria-modal
         aria-labelledby="player-card-title"
-        className="relative z-[61] flex max-h-[min(92vh,100dvh)] w-full max-w-lg flex-col overflow-hidden rounded-t-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] shadow-2xl sm:rounded-[var(--radius)]"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        className="sf-sheet"
       >
         <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-4">
           <div>
             <p className="sf-kicker">Optional</p>
-            <h2 id="player-card-title" className="font-[family-name:var(--font-display)] text-xl tracking-tight">
+            <h2 id="player-card-title" className="sf-section-title text-xl">
               Your game
             </h2>
           </div>
-          <button type="button" onClick={done} className="text-sm text-[var(--muted)]">
+          <button type="button" onClick={done} className="sf-btn sf-btn-ghost">
             Done
           </button>
         </div>

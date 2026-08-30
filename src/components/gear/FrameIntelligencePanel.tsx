@@ -22,14 +22,12 @@ function Meter({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[10px] font-semibold tracking-[0.14em] text-[var(--label)] uppercase">
-          {label}
-        </span>
+        <span className="sf-label">{label}</span>
         <span className="font-[family-name:var(--font-mono)] text-[11px] tabular-nums text-[var(--muted)]">
           {value}
         </span>
       </div>
-      <div className="mt-1.5 h-[3px] overflow-hidden bg-[color-mix(in_srgb,var(--foreground)_10%,transparent)]">
+      <div className="sf-meter-track mt-1.5">
         <div
           className="h-full transition-[width] duration-700 ease-out"
           style={{
@@ -53,7 +51,7 @@ function QuirkCard({ quirk }: { quirk: FrameQuirk }) {
     <article className="sf-intel-quirk" style={{ borderLeftColor: tone }}>
       <div className="flex items-center gap-2">
         <span
-          className="text-[10px] font-semibold tracking-[0.16em] uppercase"
+          className="sf-kicker"
           style={{ color: tone }}
         >
           {quirk.polarity}

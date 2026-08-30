@@ -36,7 +36,7 @@ export function AppHeader() {
         height: "var(--header-h)",
       }}
     >
-      <div className="mx-auto flex h-[var(--header-bar)] w-full max-w-[var(--page-max)] items-center justify-between gap-3 px-[max(1rem,env(safe-area-inset-left))] md:max-w-[1400px] md:px-8">
+      <div className="mx-auto flex h-[var(--header-bar)] w-full max-w-[var(--page-max)] items-center justify-between gap-3 px-[max(1rem,env(safe-area-inset-left))] md:max-w-[var(--page-max-wide)] md:px-8">
         <Link href="/" className="group flex min-w-0 items-center gap-3">
           <span
             className="hidden h-8 w-8 shrink-0 items-center justify-center border border-[var(--accent)]/50 text-[10px] font-semibold tracking-[0.12em] text-[var(--accent)] sm:inline-flex"

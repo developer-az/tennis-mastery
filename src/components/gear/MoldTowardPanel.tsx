@@ -119,7 +119,7 @@ export function MoldTowardPanel({
   return (
     <section className="space-y-3 rounded-md border border-[var(--line)] bg-[var(--panel)] p-4">
       <header>
-        <p className="text-[10px] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+        <p className="sf-kicker sf-kicker-muted">
           Match a frame
         </p>
         <h4 className="mt-1 font-[family-name:var(--font-display)] text-lg tracking-tight">
@@ -244,7 +244,7 @@ export function MoldTowardPanel({
 
       {budgetAlts.length > 0 && target ? (
         <div className="border-t border-[var(--line)] pt-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--amber)]">
+          <p className="sf-kicker sf-kicker-amber">
             Budget molds toward {target.brand} {target.model}
           </p>
           <p className="mt-1 text-[11px] text-[var(--muted)]">

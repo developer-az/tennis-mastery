@@ -222,20 +222,15 @@ export function YouHub({
 
             <div className="flex flex-wrap items-center gap-2">
               {profile.grips.forehand && (
-                <span className="border border-[var(--accent)]/35 bg-[var(--accent-dim)] px-2.5 py-1 text-xs text-[var(--accent)]">
+                <span className="sf-intel-chip sf-intel-chip-accent">
                   FH {fhGripLabel(profile.grips.forehand)}
                 </span>
               )}
               {profile.grips.backhand && (
-                <span className="border border-[var(--line)] px-2.5 py-1 text-xs text-[var(--muted)]">
-                  BH set
-                </span>
+                <span className="sf-intel-chip">BH set</span>
               )}
               {profile.constraints.filter((c) => c.active).map((c) => (
-                <span
-                  key={c.id}
-                  className="border border-[var(--amber)]/40 px-2.5 py-1 text-xs text-[var(--amber)]"
-                >
+                <span key={c.id} className="sf-intel-chip" style={{ color: "var(--amber)" }}>
                   {c.label}
                 </span>
               ))}

@@ -30,6 +30,7 @@
   --header-h: calc(var(--header-bar) + env(safe-area-inset-top, 0px));
   --app-nav-h: 0px;
   --page-max: 72rem;
+  --page-max-wide: 87.5rem;
   --gear-tab-h: 52px;
   --shadow-soft: 0 12px 40px rgba(26, 26, 24, 0.07);
   --chart-power: #c47a2c;
@@ -75,6 +76,7 @@
   --header-h: calc(var(--header-bar) + env(safe-area-inset-top, 0px));
   --app-nav-h: 0px;
   --page-max: 72rem;
+  --page-max-wide: 87.5rem;
   --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.4);
   --chart-power: #f4a261;
   --chart-spin: #7dd3fc;
@@ -322,6 +324,25 @@ h3,
   color: var(--accent);
 }
 
+.sf-kicker-muted {
+  color: var(--muted);
+}
+
+.sf-kicker-amber {
+  color: var(--amber);
+}
+
+.sf-kicker-sky {
+  color: var(--sky);
+}
+
+.sf-section-title {
+  font-family: var(--font-display), "Outfit", sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
 /* Card eyebrows — always ink-on-paper, never a dark-mode wash. */
 .sf-label {
   font-size: 0.75rem;
@@ -454,6 +475,12 @@ input[type="range"]::-webkit-slider-thumb {
   color: var(--accent-fg);
   background: var(--accent);
   border-color: var(--accent);
+}
+
+.sf-chip[data-tone="amber"][data-active="true"] {
+  color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 16%, transparent);
+  border-color: var(--amber);
 }
 
 .sf-aisle {
@@ -597,6 +624,79 @@ input[type="range"]::-webkit-slider-thumb {
 
 .sf-input-error {
   border-color: var(--danger);
+}
+
+.sf-num {
+  width: 4.5rem;
+  min-height: 44px;
+  padding: 0.4rem 0.55rem;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--accent);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.sf-num:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.sf-check {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.sf-sheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .sf-sheet-root {
+    align-items: center;
+  }
+}
+
+.sf-sheet-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.sf-sheet {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: min(92vh, 100dvh);
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--shadow-soft);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (min-width: 640px) {
+  .sf-sheet {
+    border-radius: var(--radius);
+    max-width: 32rem;
+  }
+
+  .sf-sheet-wide {
+    max-width: 48rem;
+  }
 }
 
 .sf-field-hint {

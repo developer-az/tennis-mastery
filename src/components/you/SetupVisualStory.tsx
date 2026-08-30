@@ -99,7 +99,7 @@ export function SetupVisualStory({
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <p className="sf-kicker">This mold at a glance</p>
           {previewing ? (
-            <span className="text-[10px] font-semibold tracking-[0.1em] text-[var(--amber)] uppercase">
+            <span className="sf-kicker sf-kicker-amber">
               Preview bed
             </span>
           ) : null}

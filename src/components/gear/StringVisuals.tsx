@@ -41,7 +41,7 @@ export function TensionCurve({
 
   return (
     <div>
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+      <p className="sf-kicker mb-2">
         Tension response
       </p>
       <svg viewBox="0 0 200 110" className="mb-4 h-auto w-full" aria-hidden>
@@ -120,7 +120,7 @@ export function SpinPotentialRing({ value }: { value: number }) {
         </text>
       </svg>
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--sky)]">
+        <p className="sf-kicker sf-kicker-sky">
           Spin potential
         </p>
         <p className="mt-1 max-w-[14rem] text-xs leading-relaxed text-[var(--muted)]">

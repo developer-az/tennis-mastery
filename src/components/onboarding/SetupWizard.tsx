@@ -332,7 +332,7 @@ export function SetupWizard({
                         className="sf-intel-quirk"
                         style={{ borderLeftColor: "var(--amber)" }}
                       >
-                        <span className="text-[10px] font-semibold tracking-[0.14em] text-[var(--amber)] uppercase">
+                        <span className="sf-kicker sf-kicker-amber">
                           Guardrail
                         </span>
                         <p className="mt-0.5 font-semibold">{c.label}</p>
