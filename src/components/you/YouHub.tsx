@@ -153,11 +153,11 @@ export function YouHub({
   const gripPreview = gripPreviewLine(profile.grips.forehand);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8 md:py-12">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-6">
+    <div className="sf-page">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-5">
         <div>
           <p className="sf-kicker">Your court</p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight md:text-4xl">
+          <h1 className="sf-page-title mt-2">
             {name}
           </h1>
         </div>
@@ -166,18 +166,15 @@ export function YouHub({
           <button
             type="button"
             onClick={() => setPlayerCardOpen(true)}
-            className="sf-btn-ghost text-xs tracking-[0.06em]"
+            className="sf-btn sf-btn-ghost text-xs tracking-[0.06em]"
           >
             {playerCardLabel}
           </button>
         </div>
       </div>
 
-      <div
-        className="mt-0 flex gap-0 overflow-x-auto border-b border-[var(--line)]"
-        role="tablist"
-        aria-label="You"
-      >
+      <div className="sf-sticky-tabs">
+      <div className="sf-tab-track" role="tablist" aria-label="You">
         {(
           [
             ["today", "Today"],
@@ -192,21 +189,12 @@ export function YouHub({
             role="tab"
             aria-selected={tab === id}
             onClick={() => setTab(id)}
-            className={`relative shrink-0 px-4 py-3.5 text-sm font-medium tracking-[0.03em] transition ${
-              tab === id
-                ? "text-[var(--foreground)]"
-                : "text-[var(--muted)] hover:text-[var(--foreground)]"
-            }`}
+            className="sf-tab"
           >
             {label}
-            <span
-              className={`absolute inset-x-3 bottom-0 h-px ${
-                tab === id ? "bg-[var(--accent)]" : "bg-transparent"
-              }`}
-              aria-hidden
-            />
           </button>
         ))}
+      </div>
       </div>
 
       <div className="mt-8">

@@ -90,11 +90,11 @@ export function GearLab({
   const activeBlurb = TABS.find((t) => t.id === tab)?.blurb;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 md:px-10 md:py-8">
+    <div className="sf-page">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-5 md:mb-6">
         <div>
           <p className="sf-kicker">How the bag plays</p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight md:text-3xl">
+          <h1 className="sf-page-title mt-1">
             Gear
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)]">
@@ -113,7 +113,7 @@ export function GearLab({
         </div>
       ) : null}
 
-      <div className="gear-sticky-tabs sticky top-0 z-30 -mx-4 border-b border-[var(--line)] bg-[var(--background)]/95 px-4 backdrop-blur md:static md:mx-0 md:bg-transparent md:px-0 md:backdrop-blur-none">
+      <div className="sf-sticky-tabs">
         <div className="sf-tab-track" role="tablist" aria-label="Equipment category">
           {TABS.map((t) => {
             const active = tab === t.id;

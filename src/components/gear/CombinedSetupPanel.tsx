@@ -95,10 +95,10 @@ export function CombinedSetupPanel({
   if (!insight.hasAny) {
     return (
       <div
-        className="mb-8 border border-[var(--line)] bg-[var(--panel)]/80 px-5 py-6"
+        className="sf-panel mb-8 px-5 py-6"
         style={{ animation: "rise 0.5s ease-out both" }}
       >
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+        <p className="sf-kicker">
           Combined setup
         </p>
         <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl tracking-tight">
@@ -124,8 +124,7 @@ export function CombinedSetupPanel({
               key={tab}
               type="button"
               onClick={() => go(tab)}
-              className="rounded-md px-3 py-1.5 text-xs text-[var(--foreground)] transition hover:bg-[var(--overlay-hover)]"
-              style={{ boxShadow: "0 0 0 1px var(--line)" }}
+              className="sf-btn sf-btn-secondary text-xs"
             >
               {label}
             </button>
@@ -137,10 +136,10 @@ export function CombinedSetupPanel({
 
   return (
     <div className="mb-8 space-y-6" style={{ animation: "rise 0.5s ease-out both" }}>
-      <div className="border border-[var(--line)] bg-[var(--panel)]/90 px-5 py-6 md:px-6">
+      <div className="sf-panel px-5 py-6 md:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+            <p className="sf-kicker">
               Combined setup
             </p>
             <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
@@ -156,21 +155,20 @@ export function CombinedSetupPanel({
           <div className="flex shrink-0 flex-wrap gap-2">
             <Link
               href="/lab"
-              className="rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-medium text-[var(--accent-ink)] transition hover:brightness-110"
+              className="sf-btn sf-btn-primary text-xs"
             >
               Lab
             </Link>
             <button
               type="button"
               onClick={() => go("lead-tape")}
-              className="rounded-md px-4 py-2 text-xs transition hover:bg-[var(--overlay-hover)]"
-              style={{ boxShadow: "0 0 0 1px var(--line)" }}
+              className="sf-btn sf-btn-secondary text-xs"
             >
               Tune
             </button>
             <Link
               href="/you"
-              className="rounded-md px-4 py-2 text-xs text-[var(--muted)]"
+              className="sf-btn sf-btn-ghost text-xs"
             >
               You
             </Link>

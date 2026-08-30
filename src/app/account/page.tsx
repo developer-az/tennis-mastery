@@ -36,7 +36,7 @@ export default function AccountDashboardPage() {
 
   if (!initialized) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-5 py-10">
+      <div className="sf-page">
         <CourtLoading label="Loading account…" detail="Checking sign-in and sync status." />
       </div>
     );
@@ -51,11 +51,11 @@ export default function AccountDashboardPage() {
   const bagLine = setupSummary(setup);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-10 md:px-8 md:py-14">
+    <div className="sf-page max-w-3xl">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--line)] pb-6">
         <div>
           <p className="sf-kicker">Your account</p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight">
+          <h1 className="sf-page-title mt-2">
             {user ? `Hi, ${label}` : "Local court"}
           </h1>
           {account?.email || user?.email ? (

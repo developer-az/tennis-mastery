@@ -4,7 +4,7 @@ export function SiteFooter({ note }: { note?: string }) {
   const year = new Date().getFullYear();
   return (
     <footer className="mt-auto border-t border-[var(--line)] bg-[var(--bg-sunken)]">
-      <div className="mx-auto grid w-full max-w-[1400px] gap-10 px-6 py-12 md:grid-cols-[1.4fr_1fr_1fr] md:px-10 md:py-14">
+      <div className="mx-auto grid w-full max-w-[1400px] gap-10 px-[max(1.5rem,env(safe-area-inset-left))] py-12 md:grid-cols-[1.4fr_1fr_1fr] md:px-10 md:py-14">
         <div>
           <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.12em]">
             STROKEFORM

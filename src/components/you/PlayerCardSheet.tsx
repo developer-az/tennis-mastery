@@ -78,7 +78,8 @@ export function PlayerCardSheet({
         role="dialog"
         aria-modal
         aria-labelledby="player-card-title"
-        className="relative z-[61] flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden border border-[var(--line)] bg-[var(--panel)] shadow-2xl sm:rounded-[var(--radius)]"
+        className="relative z-[61] flex max-h-[min(92vh,100dvh)] w-full max-w-lg flex-col overflow-hidden rounded-t-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] shadow-2xl sm:rounded-[var(--radius)]"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-4">
           <div>

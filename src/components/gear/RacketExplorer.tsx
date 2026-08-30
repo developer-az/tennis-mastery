@@ -80,6 +80,7 @@ export function RacketExplorer({
   const setup = useGearStore((s) => s.setup);
   const setupSlug = setup.racketSlug;
   const setRacket = useGearStore((s) => s.setRacket);
+  const setTab = useGearStore((s) => s.setTab);
   const playerGrip = usePlayerStore((s) => s.profile.grips.forehand);
   const [selectedSlug, setSelectedSlug] = useState(
     setupSlug && initialRackets.some((r) => r.slug === setupSlug)
@@ -541,30 +542,24 @@ export function RacketExplorer({
               <button
                 type="button"
                 onClick={() => saveRacket(selected)}
-                className="mt-4 min-h-11 w-full rounded-[var(--radius)] px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
-                style={{
-                  background: inSetup ? "var(--accent-dim)" : "var(--accent)",
-                  color: inSetup ? "var(--accent)" : "var(--accent-ink)",
-                  boxShadow: inSetup ? "0 0 0 1px var(--accent)" : "none",
-                }}
+                className={`sf-btn mt-4 w-full sm:w-auto ${inSetup ? "sf-btn-secondary" : "sf-btn-primary"}`}
               >
                 {inSetup ? "In your bag" : "Add to bag"}
               </button>
               <button
                 type="button"
                 onClick={() => toggleCompare(selected.slug)}
-                className="mt-2 w-full rounded-[var(--radius)] px-4 py-2 text-xs text-[var(--muted)] sm:w-auto"
-                style={{ boxShadow: "0 0 0 1px var(--line)" }}
+                className="sf-btn sf-btn-secondary mt-2 w-full text-xs sm:w-auto"
               >
                 {compareIds.includes(selected.slug) ? "In compare" : "Compare this frame"}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  onSelectTab?.("lead-tape", { mold: selected.slug });
+                  if (onSelectTab) onSelectTab("lead-tape", { mold: selected.slug });
+                  else setTab("lead-tape");
                 }}
-                className="mt-2 w-full rounded-md px-4 py-2 text-xs text-[var(--muted)] transition hover:bg-white/5 hover:text-[var(--foreground)] sm:w-auto"
-                style={{ boxShadow: "0 0 0 1px var(--line)" }}
+                className="sf-btn sf-btn-ghost mt-2 w-full text-xs sm:w-auto"
               >
                 Mold my frame toward this →
               </button>

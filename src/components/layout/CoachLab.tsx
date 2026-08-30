@@ -29,7 +29,7 @@ const FormCanvas = dynamic(
 
 export function CoachLab() {
   return (
-    <div className="flex min-h-full flex-1 flex-col lg:h-full lg:min-h-0 lg:overflow-hidden">
+    <div className="flex min-h-full flex-1 flex-col pb-[var(--app-nav-h)] lg:h-full lg:min-h-0 lg:overflow-hidden lg:pb-0">
       <div className="flex flex-col lg:min-h-0 lg:flex-1 lg:flex-row">
         <aside className="order-2 flex w-full shrink-0 flex-col gap-5 border-b border-[var(--line)] bg-[var(--panel)] p-4 lg:order-1 lg:w-[300px] lg:gap-6 lg:overflow-y-auto lg:border-b-0 lg:border-r lg:p-6">
           <div className="hidden lg:block">
@@ -46,7 +46,7 @@ export function CoachLab() {
           <PlayerGripCue />
         </aside>
 
-        <section className="relative order-1 z-10 h-[calc(100svh-var(--header-h)-12rem)] min-h-[280px] w-full shrink-0 overflow-hidden bg-[var(--bg-scene)] max-lg:sticky max-lg:top-0 lg:order-2 lg:z-auto lg:h-auto lg:min-h-0 lg:flex-1">
+        <section className="relative order-1 z-10 h-[calc(100svh-var(--header-h)-var(--app-nav-h)-10.5rem)] min-h-[280px] w-full shrink-0 overflow-hidden bg-[var(--bg-scene)] max-lg:sticky max-lg:top-0 lg:order-2 lg:z-auto lg:h-auto lg:min-h-0 lg:flex-1">
           <FormCanvas />
           <LabPhaseOverlay />
           <div className="absolute inset-x-0 bottom-0 z-20 lg:hidden">

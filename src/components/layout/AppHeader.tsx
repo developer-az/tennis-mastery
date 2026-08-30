@@ -18,6 +18,7 @@ export function AppHeader() {
   const pathname = usePathname() ?? "/";
   const isHome = pathname === "/";
   const isAccount = pathname.startsWith("/account");
+  const productPath = LINKS.some((l) => l.match(pathname));
 
   const initialized = useAuthStore((s) => s.initialized);
   const user = useAuthStore((s) => s.user);
@@ -28,8 +29,14 @@ export function AppHeader() {
   const accountLabel = user ? authDisplayLabel(account, user) : "Sign in";
 
   return (
-    <header className="sticky top-0 z-50 shrink-0 border-b border-[var(--line)] bg-[var(--body-top)]/92 backdrop-blur-md">
-      <div className="mx-auto flex h-[var(--header-h)] w-full max-w-[1400px] items-center justify-between gap-4 px-4 md:px-8">
+    <header
+      className="sticky top-0 z-50 shrink-0 border-b border-[var(--line)] bg-[var(--body-top)]/92 backdrop-blur-md"
+      style={{
+        paddingTop: "env(safe-area-inset-top, 0px)",
+        height: "var(--header-h)",
+      }}
+    >
+      <div className="mx-auto flex h-[var(--header-bar)] w-full max-w-[var(--page-max)] items-center justify-between gap-3 px-[max(1rem,env(safe-area-inset-left))] md:max-w-[1400px] md:px-8">
         <Link href="/" className="group flex min-w-0 items-center gap-3">
           <span
             className="hidden h-8 w-8 shrink-0 items-center justify-center border border-[var(--accent)]/50 text-[10px] font-semibold tracking-[0.12em] text-[var(--accent)] sm:inline-flex"
@@ -47,8 +54,11 @@ export function AppHeader() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-1 sm:gap-2">
-          <nav className="flex items-center gap-0.5 sm:gap-1" aria-label="Primary">
+        <div className="flex items-center gap-0.5 sm:gap-1">
+          <nav
+            className={`${productPath ? "hidden md:flex" : "flex"} items-center gap-0.5 sm:gap-1`}
+            aria-label="Primary"
+          >
             {LINKS.map((link) => {
               const active = link.match(pathname);
               return (
@@ -56,7 +66,7 @@ export function AppHeader() {
                   key={link.href}
                   href={link.href}
                   aria-current={active ? "page" : undefined}
-                  className={`relative px-3 py-2 text-[13px] font-medium tracking-[0.04em] transition md:px-4 ${
+                  className={`relative inline-flex min-h-11 items-center px-3 text-[13px] font-medium tracking-[0.04em] transition md:px-4 ${
                     active
                       ? "text-[var(--foreground)]"
                       : "text-[var(--muted)] hover:text-[var(--foreground)]"
@@ -64,7 +74,7 @@ export function AppHeader() {
                 >
                   {link.label}
                   <span
-                    className={`absolute inset-x-3 bottom-0 h-px md:inset-x-4 ${
+                    className={`absolute inset-x-3 bottom-1.5 h-px md:inset-x-4 ${
                       active ? "bg-[var(--accent)]" : "bg-transparent"
                     }`}
                     aria-hidden
@@ -73,7 +83,7 @@ export function AppHeader() {
               );
             })}
             {!isHome ? (
-              <Link href="/" className="sf-btn-ghost ml-1 hidden text-xs tracking-[0.06em] md:inline-flex">
+              <Link href="/" className="sf-btn-ghost ml-1 hidden min-h-11 text-xs tracking-[0.06em] md:inline-flex">
                 Home
               </Link>
             ) : null}
@@ -82,7 +92,7 @@ export function AppHeader() {
           {initialized && !isAccount ? (
             <Link
               href={accountHref}
-              className={`hidden max-w-[120px] truncate px-2 py-2 text-[12px] font-semibold tracking-[0.04em] sm:inline-block md:max-w-[140px] ${
+              className={`inline-flex min-h-11 max-w-[7.5rem] items-center truncate px-2 text-[12px] font-semibold tracking-[0.04em] md:max-w-[140px] ${
                 user
                   ? "text-[var(--foreground)] hover:text-[var(--accent)]"
                   : "text-[var(--muted)] hover:text-[var(--foreground)]"

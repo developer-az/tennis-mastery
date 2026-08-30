@@ -42,7 +42,7 @@ export function PlayerStrokePicker() {
                 aria-pressed={active}
 className="cursor-pointer shrink-0 rounded-[var(--radius)] px-3 py-2 text-left text-sm transition-all duration-200 hover:brightness-110"
                 style={{
-                  background: active ? p.color : "rgba(232,239,233,0.04)",
+                  background: active ? p.color : "var(--overlay-hover)",
                   color: active ? "#f8f6f0" : "var(--foreground)",
                   outline: active ? `2px solid ${p.accent}` : "1px solid var(--line)",
                   outlineOffset: 0,

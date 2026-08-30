@@ -20,7 +20,7 @@ export default async function GearPage() {
     <div className="flex flex-1 flex-col">
       <Suspense
         fallback={
-          <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10">
+          <div className="sf-page">
             <CourtLoading
               label="Loading gear lab…"
               detail="Frame specs, string physics, and whether your bag is court-ready."
