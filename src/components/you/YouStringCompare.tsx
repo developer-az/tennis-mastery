@@ -14,6 +14,7 @@ import {
   stringShapeShortLabel,
 } from "@/lib/equipment/shopAisles";
 import { EquipmentThumb } from "@/components/gear/EquipmentThumb";
+import { HScroll } from "@/components/gear/CatalogShop";
 import { numericDelta } from "@/components/gear/CompareToSetup";
 import { GearPickerSheet } from "@/components/onboarding/GearPickerSheet";
 
@@ -192,7 +193,7 @@ export function YouStringCompare({
         ) : null}
       </div>
 
-      <div className="sf-aisle mt-4 -mx-1 px-1">
+      <HScroll className="sf-aisle mt-4 -mx-1 px-1">
         {candidates.map((c) => {
           const on = c.id === active?.id;
           const accent = brandAccent(c.string.brand);
@@ -252,7 +253,7 @@ export function YouStringCompare({
         >
           Browse…
         </button>
-      </div>
+      </HScroll>
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <button

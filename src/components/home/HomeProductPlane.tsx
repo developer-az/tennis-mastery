@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Hero product plane — live-feeling Strokeform UI composition.
  * Shows mold dials + skill span + phase rail so the first viewport is the product, not a stock gradient.
@@ -11,7 +13,7 @@ export function HomeProductPlane() {
       <div className="sf-product-plane-glow" />
       <div className="sf-product-plane-card">
         <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] pb-4">
-          <div>
+          <div className="min-w-0">
             <p className="sf-kicker">Live mold</p>
             <p className="mt-1.5 font-[family-name:var(--font-display)] text-xl font-semibold tracking-tight">
               Semi-western · open pattern
@@ -20,28 +22,28 @@ export function HomeProductPlane() {
           </div>
           <div className="text-right">
             <p className="sf-label">Demand</p>
-            <p className="mt-0.5 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums">
+            <p className="mt-0.5 font-[family-name:var(--font-display)] text-3xl font-semibold tabular-nums tracking-tight text-[var(--accent)]">
               62
             </p>
           </div>
         </div>
 
         <div className="mt-4">
-          <div className="flex justify-between text-[10px] tracking-[0.1em] text-[var(--muted)] uppercase">
+          <div className="flex justify-between text-[11px] font-semibold tracking-[0.08em] text-[var(--muted)] uppercase">
             <span>Skill span</span>
             <span className="tabular-nums text-[var(--foreground)]">48 → 78</span>
           </div>
-          <div className="relative mt-2 h-1.5 bg-[color-mix(in_srgb,var(--foreground)_08%,transparent)]">
+          <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--foreground)_10%,transparent)]">
             <div
-              className="absolute inset-y-0 bg-[var(--accent)]/40"
+              className="absolute inset-y-0 rounded-full bg-[color-mix(in_srgb,var(--accent)_42%,transparent)]"
               style={{ left: "48%", width: "30%" }}
             />
             <div
-              className="absolute top-1/2 h-2.5 w-0.5 -translate-y-1/2 bg-[var(--accent)]"
+              className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-[var(--accent)]"
               style={{ left: "48%" }}
             />
             <div
-              className="absolute top-1/2 h-2.5 w-0.5 -translate-y-1/2 bg-[var(--foreground)]"
+              className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-[var(--foreground)]"
               style={{ left: "78%" }}
             />
           </div>
@@ -56,7 +58,14 @@ export function HomeProductPlane() {
             <div key={String(label)}>
               <p className="sf-label">{label}</p>
               <div className="sf-meter-track mt-1.5">
-                <div className="h-full bg-[var(--accent)]" style={{ width: `${v}%` }} />
+                <div
+                  className="sf-meter-fill"
+                  style={{
+                    width: `${v}%`,
+                    background: "var(--accent)",
+                    color: "var(--accent)",
+                  }}
+                />
               </div>
             </div>
           ))}
@@ -74,10 +83,11 @@ export function HomeProductPlane() {
           {["Ready", "Unit", "Accel", "Contact", "Finish"].map((p, i) => (
             <div
               key={p}
-              className="flex-1 py-1.5 text-center text-[9px] font-semibold tracking-[0.08em] uppercase"
+              className="flex-1 rounded-[var(--radius)] py-2 text-center text-[10px] font-semibold tracking-[0.08em] uppercase"
               style={{
                 background: i === 3 ? "var(--accent)" : "var(--overlay-hover)",
                 color: i === 3 ? "var(--accent-fg)" : "var(--muted)",
+                boxShadow: i === 3 ? "0 0 16px color-mix(in srgb, var(--accent) 40%, transparent)" : undefined,
               }}
             >
               {p}

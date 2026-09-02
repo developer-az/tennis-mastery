@@ -1,39 +1,81 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type HTMLAttributes,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { EquipmentThumb } from "./EquipmentThumb";
 
-/** Horizontal chip rail with touch + drag scroll. */
-export function ChipRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  const rowRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
+const AXIS_LOCK_PX = 10;
+
+type DragState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startLeft: number;
+  axis: "undecided" | "x" | "y";
+  moved: boolean;
+};
+
+/**
+ * Horizontal rails that still let the page scroll.
+ * Wait until the gesture is clearly sideways before capturing;
+ * a downward swipe on a card or chip row scrolls the page.
+ */
+export function useAxisLockedHScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  const drag = useRef<DragState | null>(null);
+  const suppressClick = useRef(false);
 
   const onPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
-    const el = rowRef.current;
+    const el = ref.current;
     if (!el) return;
-    drag.current = { x: e.clientX, left: el.scrollLeft, moved: false };
-    el.setPointerCapture(e.pointerId);
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    drag.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: el.scrollLeft,
+      axis: "undecided",
+      moved: false,
+    };
   }, []);
 
   const onPointerMove = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
-    const el = rowRef.current;
+    const el = ref.current;
     const d = drag.current;
-    if (!el || !d) return;
-    const dx = e.clientX - d.x;
-    if (Math.abs(dx) > 4) d.moved = true;
-    if (d.moved) {
-      el.scrollLeft = d.left - dx;
+    if (!el || !d || d.pointerId !== e.pointerId) return;
+
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+
+    if (d.axis === "undecided") {
+      if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
+      if (Math.abs(dy) >= Math.abs(dx)) {
+        drag.current = null;
+        return;
+      }
+      d.axis = "x";
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
     }
+
+    if (d.axis !== "x") return;
+    if (Math.abs(dx) > 4) d.moved = true;
+    el.scrollLeft = d.startLeft - dx;
   }, []);
 
-  const onPointerUp = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
-    const el = rowRef.current;
+  const endDrag = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = ref.current;
     const d = drag.current;
     drag.current = null;
     if (el) {
@@ -43,25 +85,47 @@ export function ChipRow({
         /* ignore */
       }
     }
-    // Suppress click on chips after a drag
-    if (d?.moved) {
-      e.preventDefault();
-    }
+    if (d?.moved && d.axis === "x") suppressClick.current = true;
   }, []);
 
+  const onClickCapture = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
+    if (!suppressClick.current) return;
+    suppressClick.current = false;
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  return {
+    ref,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp: endDrag,
+    onPointerCancel: endDrag,
+    onClickCapture,
+  };
+}
+
+/** Shared horizontal scroller for chip rows and product aisles. */
+export function HScroll({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
+  const h = useAxisLockedHScroll();
+  return (
+    <div className={className} {...rest} {...h}>
+      {children}
+    </div>
+  );
+}
+
+export function ChipRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <div className="min-w-0">
       <p className="sf-label mb-2">{label}</p>
-      <div
-        ref={rowRef}
-        className="sf-chip-row"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      >
-        {children}
-      </div>
+      <HScroll className="sf-chip-row">{children}</HScroll>
     </div>
   );
 }
@@ -117,7 +181,7 @@ export function CatalogAisle({
           </button>
         ) : null}
       </div>
-      <div className="sf-aisle">{children}</div>
+      <HScroll className="sf-aisle">{children}</HScroll>
     </section>
   );
 }
@@ -138,7 +202,11 @@ export function FeelBars({
           <div className="sf-feel-track mt-1">
             <div
               className="h-full rounded-full"
-              style={{ width: `${Math.max(4, Math.min(100, s.value))}%`, background: s.color }}
+              style={{
+                width: `${Math.max(4, Math.min(100, s.value))}%`,
+                background: s.color,
+                boxShadow: `0 0 8px color-mix(in srgb, ${s.color} 45%, transparent)`,
+              }}
             />
           </div>
         </div>

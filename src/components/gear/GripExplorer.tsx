@@ -19,7 +19,7 @@ import { GripFeelVisual } from "./GripVisuals";
 import { ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
-import { AisleChip, ActiveFilterChips, ChipRow, ProductCard, SearchField } from "./CatalogShop";
+import { AisleChip, ActiveFilterChips, ChipRow, HScroll, ProductCard, SearchField } from "./CatalogShop";
 import { GRIP_BRAND_PIN, uniqueSortedBrands } from "@/lib/equipment/shopAisles";
 
 const MAX_COMPARE = 3;
@@ -545,7 +545,7 @@ function GripCompareTable({ grips }: { grips: GripProfile[] }) {
   ];
 
   return (
-    <div className="mt-6 overflow-x-auto border-t border-[var(--line)] pt-4">
+    <HScroll className="sf-h-scroll mt-6 border-t border-[var(--line)] pt-4">
       <table className="w-full min-w-[28rem] text-left text-xs">
         <thead>
           <tr className="text-[var(--muted)]">
@@ -584,6 +584,6 @@ function GripCompareTable({ grips }: { grips: GripProfile[] }) {
           })}
         </tbody>
       </table>
-    </div>
+    </HScroll>
   );
 }

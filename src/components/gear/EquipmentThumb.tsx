@@ -18,9 +18,9 @@ export function EquipmentThumb({
         : "h-[4.5rem] w-14";
 
   return (
-    <span className={`sf-thumb-well relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md ${dim}`}>
+    <span className={`sf-thumb-well relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius)] ${dim}`}>
       <span
-        className="absolute inset-0 animate-pulse bg-[color-mix(in_srgb,var(--foreground)_6%,transparent)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,color-mix(in_srgb,var(--foreground)_8%,transparent),transparent_58%)]"
         aria-hidden
       />
       {/* eslint-disable-next-line @next/next/no-img-element -- mixed TW JPEG redirects + SVG */}
@@ -32,10 +32,6 @@ export function EquipmentThumb({
         loading="lazy"
         decoding="async"
         className={`relative z-[1] ${dim} object-contain object-center`}
-        onLoad={(e) => {
-          const sk = e.currentTarget.previousElementSibling;
-          if (sk instanceof HTMLElement) sk.style.display = "none";
-        }}
         onError={(e) => {
           const img = e.currentTarget;
           if (img.dataset.fallback === "1") return;

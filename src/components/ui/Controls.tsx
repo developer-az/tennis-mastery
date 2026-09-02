@@ -1,6 +1,7 @@
 "use client";
 
 import { PLAYERS, STROKE_LABELS } from "@/data/players";
+import { HScroll } from "@/components/gear/CatalogShop";
 import { useCoachStore } from "@/store/coachStore";
 import type { StrokeType } from "@/types/biomechanics";
 import { PHASE_LABELS, sampleStroke } from "@/lib/kinematics";
@@ -29,7 +30,7 @@ export function PlayerStrokePicker() {
     <div className="space-y-5">
       <div>
         <p className="sf-label mb-2">Athlete</p>
-        <div className="sf-chip-row lg:flex-wrap lg:overflow-visible">
+        <HScroll className="sf-chip-row lg:flex-wrap lg:overflow-visible">
           {PLAYERS.map((p) => {
             const active = p.id === playerId;
             return (
@@ -51,12 +52,12 @@ export function PlayerStrokePicker() {
               </button>
             );
           })}
-        </div>
+        </HScroll>
       </div>
 
       <div>
         <p className="sf-label mb-2">Stroke</p>
-        <div className="sf-chip-row lg:flex-wrap lg:overflow-visible">
+        <HScroll className="sf-chip-row lg:flex-wrap lg:overflow-visible">
           {STROKES.map((s) => {
             const active = s === stroke;
             const label = player.strokes[s]?.label ?? STROKE_LABELS[s];
@@ -74,7 +75,7 @@ export function PlayerStrokePicker() {
               </button>
             );
           })}
-        </div>
+        </HScroll>
         <p className="mt-2 text-xs text-[var(--accent)]">
           {player.strokes[stroke]?.label ?? STROKE_LABELS[stroke]}
         </p>
