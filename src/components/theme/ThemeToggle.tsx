@@ -44,7 +44,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="inline-flex h-9 w-9 items-center justify-center text-[var(--muted)] transition hover:bg-[var(--overlay-hover)] hover:text-[var(--foreground)]"
+      className="sf-icon-btn"
       style={{ borderRadius: "var(--radius)" }}
       aria-label={mounted ? `Switch to ${next} mode` : "Toggle color theme"}
       title={mounted ? `Switch to ${next} mode` : "Toggle color theme"}

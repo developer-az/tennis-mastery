@@ -179,7 +179,7 @@ export function PlayerProfileLab() {
 
   if (!hydrated) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-16 text-sm text-[var(--muted)] md:px-10">
+      <div className="sf-page text-sm text-[var(--muted)]">
         Loading player memory…
       </div>
     );
@@ -190,13 +190,13 @@ export function PlayerProfileLab() {
   const canClearPendingWorkflow = Boolean(profile.pendingLever && !hasPendingDecision);
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl gap-6 px-6 py-10 md:px-10">
+    <div className="sf-page grid gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+          <p className="sf-kicker">
             Memory & accountability
           </p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
+          <h1 className="sf-page-title mt-1">
             Player profile
           </h1>
           <p className="mt-2 max-w-xl text-sm text-[var(--muted)] leading-relaxed">
@@ -208,15 +208,14 @@ export function PlayerProfileLab() {
           <button
             type="button"
             onClick={() => adoptExampleProfile()}
-            className="rounded-md px-3 py-2 text-xs transition hover:bg-white/5"
-            style={{ boxShadow: "0 0 0 1px var(--line)" }}
+            className="sf-btn sf-btn-secondary text-xs"
           >
             Load coaching starter
           </button>
           <button
             type="button"
             onClick={() => resetProfile()}
-            className="rounded-md px-3 py-2 text-xs text-[var(--muted)] transition hover:bg-white/5"
+            className="sf-btn sf-btn-ghost text-xs"
           >
             Clear profile
           </button>
@@ -515,7 +514,7 @@ export function PlayerProfileLab() {
                 className={`block w-full rounded-md border px-3 py-2 text-left text-sm transition ${
                   profile.pendingLever?.chosenLever === r.lever
                     ? "border-[var(--accent)] bg-[var(--accent)]/15"
-                    : "border-[var(--line)] hover:bg-white/5"
+                    : "border-[var(--line)] hover:bg-[var(--overlay-hover)]"
                 }`}
               >
                 <span className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
@@ -590,7 +589,7 @@ export function PlayerProfileLab() {
             />
           </div>
         </div>
-        {decError && <p className="text-sm text-red-300">{decError}</p>}
+        {decError && <p className="sf-field-error">{decError}</p>}
         <button
           type="button"
           className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-ink)]"

@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import type { GripProfile } from "@/types/equipment";
 import { ScoreMeter } from "./ScoreMeter";
 
@@ -7,64 +8,85 @@ function isTourna(grip: GripProfile) {
   return /tourna/i.test(grip.brand) || /tourna|mega\s*tac/i.test(grip.name);
 }
 
-/** Brand-aware handle cross-section — Tourna dry blue wrap vs generic layers. */
+/** Brand-aware handle cross-section — Tourna dry wrap vs leather / overgrip stack. */
 export function GripFeelVisual({ grip }: { grip: GripProfile }) {
-  const layers = Math.max(1, Math.round(grip.thicknessMm * 4));
+  const uid = useId().replace(/:/g, "");
+  const layers = Math.max(1, Math.min(5, Math.round(grip.thicknessMm * 4)));
   const tourna = isTourna(grip);
-  const wrap = tourna ? "#2f6fed" : grip.kind === "overgrip" ? "var(--chart-control)" : "var(--chart-power)";
-  const core = tourna ? "#1a2744" : "#1b4332";
+  const wrap = tourna ? "#2f6fed" : grip.kind === "overgrip" ? "var(--chart-control)" : "#6b4a32";
+  const wrapHi = tourna ? "#7aa6ff" : grip.kind === "overgrip" ? "var(--accent)" : "#c4a07a";
 
   return (
     <div>
-      <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
-        {tourna ? "Tourna dry wrap" : "Handle cross-section"}
-      </p>
-      <div className="flex items-end gap-6">
-        <svg viewBox="0 0 120 140" className="h-36 w-28" aria-hidden>
-          <polygon
-            points="40,20 80,20 95,50 95,110 60,130 25,110 25,50"
-            fill={core}
-            stroke="rgba(232,239,233,0.25)"
-          />
-          {Array.from({ length: layers }).map((_, i) => {
-            const inset = 4 + i * 3;
-            return (
-              <polygon
-                key={i}
-                points={`${40 - inset * 0.15},${20 - i} ${80 + inset * 0.15},${20 - i} ${95 + inset * 0.2},${50 - i * 0.3} ${95 + inset * 0.2},${110 + i * 0.2} 60,${130 + i * 0.4} ${25 - inset * 0.2},${110 + i * 0.2} ${25 - inset * 0.2},${50 - i * 0.3}`}
-                fill="none"
-                stroke={wrap}
-                strokeOpacity={0.4 + i * 0.14}
-                strokeWidth={tourna ? 2.4 : 2}
-                strokeDasharray={tourna && i === layers - 1 ? "3 2" : undefined}
-              />
-            );
-          })}
-          {tourna ? (
-            <>
-              {/* Perforation / dry-feel texture dots */}
-              {[0, 1, 2, 3, 4].map((row) =>
-                [0, 1, 2].map((col) => (
-                  <circle
-                    key={`${row}-${col}`}
-                    cx={48 + col * 12}
-                    cy={48 + row * 12}
-                    r="1.4"
-                    fill="#9ec0ff"
-                    opacity="0.55"
-                  />
-                )),
-              )}
-              <text x="60" y="118" textAnchor="middle" fill="#9ec0ff" fontSize="7" fontWeight="600">
-                DRY
-              </text>
-            </>
-          ) : null}
-          <text x="60" y="78" textAnchor="middle" fill="var(--foreground)" fontSize="11">
-            {grip.thicknessMm.toFixed(2)} mm
-          </text>
-        </svg>
-        <div className="flex-1 space-y-3">
+      <p className="sf-kicker mb-3">{tourna ? "Tourna dry wrap" : "Handle cross-section"}</p>
+      <div className="flex flex-wrap items-end gap-6">
+        <div className="sf-viz-stage w-[9.5rem] shrink-0">
+          <svg viewBox="0 0 120 148" className="h-40 w-full" aria-hidden>
+            <defs>
+              <linearGradient id={`core-${uid}`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#3d2a1c" />
+                <stop offset="50%" stopColor="#1c120c" />
+                <stop offset="100%" stopColor="#2a1a12" />
+              </linearGradient>
+              <linearGradient id={`wrap-${uid}`} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor={wrap} stopOpacity="0.35" />
+                <stop offset="40%" stopColor={wrapHi} stopOpacity="0.95" />
+                <stop offset="100%" stopColor={wrap} stopOpacity="0.55" />
+              </linearGradient>
+              <radialGradient id={`spec-${uid}`} cx="35%" cy="30%" r="55%">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
+                <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+            {Array.from({ length: layers }).map((_, i) => {
+              const inset = 2 + i * 2.6;
+              return (
+                <ellipse
+                  key={i}
+                  cx="60"
+                  cy="72"
+                  rx={36 + inset}
+                  ry={52 + inset * 0.55}
+                  fill="none"
+                  stroke={`url(#wrap-${uid})`}
+                  strokeWidth={tourna ? 3.2 : 2.6}
+                  opacity={0.45 + i * 0.12}
+                />
+              );
+            })}
+            <ellipse cx="60" cy="72" rx="34" ry="50" fill={`url(#core-${uid})`} />
+            <ellipse cx="60" cy="72" rx="34" ry="50" fill={`url(#spec-${uid})`} />
+            {tourna
+              ? [0, 1, 2, 3, 4].flatMap((row) =>
+                  [0, 1, 2].map((col) => (
+                    <circle
+                      key={`${row}-${col}`}
+                      cx={48 + col * 12}
+                      cy={48 + row * 13}
+                      r="1.6"
+                      fill="#c5dcff"
+                      opacity="0.7"
+                    />
+                  )),
+                )
+              : null}
+            <text
+              x="60"
+              y="78"
+              textAnchor="middle"
+              fill="#f4eee6"
+              fontSize="12"
+              fontFamily="var(--font-display)"
+              fontWeight="600"
+            >
+              {grip.thicknessMm.toFixed(2)}
+            </text>
+            <text x="60" y="92" textAnchor="middle" fill="#c8b8a4" fontSize="8.5" fontWeight="600">
+              mm
+            </text>
+          </svg>
+        </div>
+        <div className="min-w-[12rem] flex-1 space-y-3">
           <ScoreMeter label="Tackiness" value={grip.tackiness} />
           <ScoreMeter label="Cushion" value={grip.cushion} accent="var(--chart-power)" />
           <ScoreMeter label="Absorbency" value={grip.absorbency} accent="var(--chart-spin)" />

@@ -11,6 +11,7 @@ import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { fhGripLabel, gripPreviewLine } from "@/lib/player/onboarding";
 import { PlayerCardSheet } from "@/components/you/PlayerCardSheet";
 import { InBandImproveSection } from "@/components/gear/InBandImproveSection";
+import { CourtReadyVerdict } from "@/components/gear/CourtReadyVerdict";
 import { SyncStatusPill } from "@/components/auth/SyncStatusPill";
 import { strikeZoneForFrame } from "@/components/gear/RacketVisuals";
 import { SetupVisualStory } from "./SetupVisualStory";
@@ -83,8 +84,20 @@ export function YouHub({
       synthesizeCombinedSetup(setup, racket, string, grip, grips, {
         playerGrip: profile.grips.forehand,
         armFriendly,
+        generatesOwnPower: profile.preferences.generatesOwnPower,
+        valuesDurability: profile.preferences.valuesDurability,
       }),
-    [setup, racket, string, grip, grips, profile.grips.forehand, armFriendly],
+    [
+      setup,
+      racket,
+      string,
+      grip,
+      grips,
+      profile.grips.forehand,
+      armFriendly,
+      profile.preferences.generatesOwnPower,
+      profile.preferences.valuesDurability,
+    ],
   );
 
   const displayInsight = useMemo(
@@ -93,6 +106,8 @@ export function YouHub({
         ? synthesizeCombinedSetup(activeSetup, racket, activeString, grip, grips, {
             playerGrip: profile.grips.forehand,
             armFriendly,
+            generatesOwnPower: profile.preferences.generatesOwnPower,
+            valuesDurability: profile.preferences.valuesDurability,
           })
         : insight,
     [
@@ -104,6 +119,8 @@ export function YouHub({
       grips,
       profile.grips.forehand,
       armFriendly,
+      profile.preferences.generatesOwnPower,
+      profile.preferences.valuesDurability,
       insight,
     ],
   );
@@ -136,11 +153,11 @@ export function YouHub({
   const gripPreview = gripPreviewLine(profile.grips.forehand);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8 md:py-12">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-6">
+    <div className="sf-page">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-5">
         <div>
           <p className="sf-kicker">Your court</p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight md:text-4xl">
+          <h1 className="sf-page-title mt-2">
             {name}
           </h1>
         </div>
@@ -149,18 +166,15 @@ export function YouHub({
           <button
             type="button"
             onClick={() => setPlayerCardOpen(true)}
-            className="sf-btn-ghost text-xs tracking-[0.06em]"
+            className="sf-btn sf-btn-ghost text-xs tracking-[0.06em]"
           >
             {playerCardLabel}
           </button>
         </div>
       </div>
 
-      <div
-        className="mt-0 flex gap-0 overflow-x-auto border-b border-[var(--line)]"
-        role="tablist"
-        aria-label="You"
-      >
+      <div className="sf-sticky-tabs">
+      <div className="sf-tab-track" role="tablist" aria-label="You">
         {(
           [
             ["today", "Today"],
@@ -175,21 +189,12 @@ export function YouHub({
             role="tab"
             aria-selected={tab === id}
             onClick={() => setTab(id)}
-            className={`relative shrink-0 px-4 py-3.5 text-sm font-medium tracking-[0.03em] transition ${
-              tab === id
-                ? "text-[var(--foreground)]"
-                : "text-[var(--muted)] hover:text-[var(--foreground)]"
-            }`}
+            className="sf-tab"
           >
             {label}
-            <span
-              className={`absolute inset-x-3 bottom-0 h-px ${
-                tab === id ? "bg-[var(--accent)]" : "bg-transparent"
-              }`}
-              aria-hidden
-            />
           </button>
         ))}
+      </div>
       </div>
 
       <div className="mt-8">
@@ -206,7 +211,7 @@ export function YouHub({
             ) : null}
             {needsBag ? (
               <div className="sf-alert flex flex-wrap items-center justify-between gap-3">
-                <p>Pick a racket when you want — like walking a store aisle.</p>
+                <p>Add a frame when you want a court-ready calculation from specs.</p>
                 <Link href="/gear?tab=rackets" className="sf-text-link shrink-0">
                   Browse rackets
                 </Link>
@@ -217,20 +222,15 @@ export function YouHub({
 
             <div className="flex flex-wrap items-center gap-2">
               {profile.grips.forehand && (
-                <span className="border border-[var(--accent)]/35 bg-[var(--accent-dim)] px-2.5 py-1 text-xs text-[var(--accent)]">
+                <span className="sf-intel-chip sf-intel-chip-accent">
                   FH {fhGripLabel(profile.grips.forehand)}
                 </span>
               )}
               {profile.grips.backhand && (
-                <span className="border border-[var(--line)] px-2.5 py-1 text-xs text-[var(--muted)]">
-                  BH set
-                </span>
+                <span className="sf-intel-chip">BH set</span>
               )}
               {profile.constraints.filter((c) => c.active).map((c) => (
-                <span
-                  key={c.id}
-                  className="border border-[var(--amber)]/40 px-2.5 py-1 text-xs text-[var(--amber)]"
-                >
+                <span key={c.id} className="sf-intel-chip" style={{ color: "var(--amber)" }}>
                   {c.label}
                 </span>
               ))}
@@ -239,6 +239,10 @@ export function YouHub({
               </p>
             </div>
             {gripPreview ? <p className="text-sm text-[var(--muted)]">{gripPreview}</p> : null}
+
+            {displayInsight.hasAny ? (
+              <CourtReadyVerdict playability={displayInsight.playability} compact />
+            ) : null}
 
             <div className="sf-panel px-4 py-3.5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -296,7 +300,7 @@ export function YouHub({
               <CourtEmpty
                 kicker="No mold yet"
                 title="Browse a racket when you’re ready"
-                body="Save a frame (and optionally a bed) so Strokeform can show leave angle and flight for your court. Setup is optional."
+                body="Save a frame (and optionally a bed) so Strokeform can calculate leave, flight, and whether the bag is court-ready from specs."
                 primary={{ href: "/gear?tab=rackets", label: "Browse rackets" }}
                 secondary={{ href: "/lab", label: "Open form lab" }}
               />

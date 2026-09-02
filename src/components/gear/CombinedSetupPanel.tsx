@@ -19,6 +19,7 @@ import { usePlayerStore } from "@/store/playerStore";
 import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { InBandImproveSection } from "./InBandImproveSection";
+import { CourtReadyVerdict } from "./CourtReadyVerdict";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 import { LeadTapeRacketDiagram } from "./LeadTapeRacketDiagram";
 import { gripImageUrl, racketImageUrl, stringImageUrl } from "@/lib/equipment/media/urls";
@@ -38,6 +39,8 @@ export function CombinedSetupPanel({
   const setTab = useGearStore((s) => s.setTab);
   const playerGrip = usePlayerStore((s) => s.profile.grips.forehand);
   const armFriendly = usePlayerStore((s) => prefersArmFriendlySetup(s.profile));
+  const generatesOwnPower = usePlayerStore((s) => s.profile.preferences.generatesOwnPower);
+  const valuesDurability = usePlayerStore((s) => s.profile.preferences.valuesDurability);
 
   const racket = useMemo(
     () => rackets.find((r) => r.slug === setup.racketSlug) ?? null,
@@ -65,8 +68,10 @@ export function CombinedSetupPanel({
       synthesizeCombinedSetup(setup, racket, string, grip, grips, {
         playerGrip,
         armFriendly,
+        generatesOwnPower,
+        valuesDurability,
       }),
-    [setup, racket, string, grip, grips, playerGrip, armFriendly],
+    [setup, racket, string, grip, grips, playerGrip, armFriendly, generatesOwnPower, valuesDurability],
   );
 
   const stringAlts = useMemo(
@@ -90,21 +95,22 @@ export function CombinedSetupPanel({
   if (!insight.hasAny) {
     return (
       <div
-        className="mb-8 border border-[var(--line)] bg-[var(--panel)]/80 px-5 py-6"
+        className="sf-panel mb-8 px-5 py-6"
         style={{ animation: "rise 0.5s ease-out both" }}
       >
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+        <p className="sf-kicker">
           Combined setup
         </p>
         <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl tracking-tight">
-          Build a bag, then see how it plays
+          Calculate if this bag is court-ready
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
-          Fastest path is{" "}
+          Frame mass, SW, RA, and pattern plus string, tension, gauge, grip, tape, and your
+          arm/grip — not the model name. Fastest path is{" "}
           <Link href="/you" className="text-[var(--accent)] hover:underline">
-            You → setup
+            You → bag
           </Link>
-          . Or pick pieces here to research.
+          .
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           {(
@@ -118,8 +124,7 @@ export function CombinedSetupPanel({
               key={tab}
               type="button"
               onClick={() => go(tab)}
-              className="rounded-md px-3 py-1.5 text-xs text-[var(--foreground)] transition hover:bg-[var(--overlay-hover)]"
-              style={{ boxShadow: "0 0 0 1px var(--line)" }}
+              className="sf-btn sf-btn-secondary text-xs"
             >
               {label}
             </button>
@@ -131,10 +136,10 @@ export function CombinedSetupPanel({
 
   return (
     <div className="mb-8 space-y-6" style={{ animation: "rise 0.5s ease-out both" }}>
-      <div className="border border-[var(--line)] bg-[var(--panel)]/90 px-5 py-6 md:px-6">
+      <div className="sf-panel px-5 py-6 md:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+            <p className="sf-kicker">
               Combined setup
             </p>
             <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
@@ -144,27 +149,26 @@ export function CombinedSetupPanel({
               {insight.playstyleDetail || insight.summary}
             </p>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Completeness {insight.completeness}%
+              Completeness {insight.completeness}% · court-ready {insight.playability.score}/100
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
             <Link
               href="/lab"
-              className="rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-medium text-[var(--accent-ink)] transition hover:brightness-110"
+              className="sf-btn sf-btn-primary text-xs"
             >
               Lab
             </Link>
             <button
               type="button"
               onClick={() => go("lead-tape")}
-              className="rounded-md px-4 py-2 text-xs transition hover:bg-[var(--overlay-hover)]"
-              style={{ boxShadow: "0 0 0 1px var(--line)" }}
+              className="sf-btn sf-btn-secondary text-xs"
             >
               Tune
             </button>
             <Link
               href="/you"
-              className="rounded-md px-4 py-2 text-xs text-[var(--muted)]"
+              className="sf-btn sf-btn-ghost text-xs"
             >
               You
             </Link>
@@ -259,6 +263,8 @@ export function CombinedSetupPanel({
         </div>
       </div>
 
+      <CourtReadyVerdict playability={insight.playability} />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           label="Launch"
@@ -299,7 +305,7 @@ export function CombinedSetupPanel({
 
       {(insight.scores.power != null || insight.scores.comfort != null) && (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+          <p className="sf-kicker">
             Molded scores
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
@@ -402,7 +408,7 @@ export function CombinedSetupPanel({
             />
           ) : (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+              <p className="sf-kicker">
                 Molded strike launch vs net
               </p>
               <p className="mt-3 text-sm text-[var(--muted)]">Save a racket to unlock the strike-launch diagram.</p>
@@ -438,7 +444,7 @@ export function CombinedSetupPanel({
             />
           ) : (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
+              <p className="sf-kicker sf-kicker-amber">
                 Where to strike
               </p>
               <p className="mt-3 text-sm text-[var(--muted)]">Needs a frame base to draw strike heights.</p>
@@ -466,7 +472,7 @@ export function CombinedSetupPanel({
 
       {insight.forehand ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+          <p className="sf-kicker sf-kicker-amber">
             Forehand grip & face
           </p>
           <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
@@ -481,7 +487,7 @@ export function CombinedSetupPanel({
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
+              <p className="sf-kicker">
                 Practice this grip + face
               </p>
               <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -493,7 +499,7 @@ export function CombinedSetupPanel({
               </ul>
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--amber)]">
+              <p className="sf-kicker sf-kicker-amber">
                 Don’t do this
               </p>
               <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -513,7 +519,7 @@ export function CombinedSetupPanel({
 
       {insight.tuneTips.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+          <p className="sf-kicker">
             Perfect the mold
           </p>
           <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
@@ -559,7 +565,7 @@ export function CombinedSetupPanel({
                   </div>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
+                      <p className="sf-kicker">
                         String / grip — raise
                       </p>
                       <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -569,7 +575,7 @@ export function CombinedSetupPanel({
                       </ul>
                       {tip.tapeRaise?.length ? (
                         <>
-                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--sky)]">
+                          <p className="sf-kicker sf-kicker-sky mt-2.5">
                             Lead tape — raise
                           </p>
                           <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -581,7 +587,7 @@ export function CombinedSetupPanel({
                       ) : null}
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--amber)]">
+                      <p className="sf-kicker sf-kicker-amber">
                         String / grip — lower
                       </p>
                       <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -591,7 +597,7 @@ export function CombinedSetupPanel({
                       </ul>
                       {tip.tapeLower?.length ? (
                         <>
-                          <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--sky)]">
+                          <p className="sf-kicker sf-kicker-sky mt-2.5">
                             Lead tape — lower
                           </p>
                           <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -627,7 +633,7 @@ export function CombinedSetupPanel({
 
       {insight.weakPoints.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+          <p className="sf-kicker sf-kicker-amber">
             Frame weak points
           </p>
           <p className="mt-1 max-w-2xl text-xs text-[var(--muted)]">
@@ -647,7 +653,7 @@ export function CombinedSetupPanel({
                   <span className="text-[var(--amber)]">Holding you back — </span>
                   {wp.holdingBack}
                 </p>
-                <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
+                <p className="sf-kicker mt-3">
                   Practice this
                 </p>
                 <ul className="mt-1.5 space-y-1.5 text-xs leading-relaxed text-[var(--foreground)]/85">
@@ -671,7 +677,7 @@ export function CombinedSetupPanel({
 
       {insight.scienceNotes.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
+          <p className="sf-kicker sf-kicker-sky">
             What your numbers mean
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
@@ -690,7 +696,7 @@ export function CombinedSetupPanel({
       {/* Tape zone diagram when present */}
       {insight.hasTape ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+          <p className="sf-kicker">
             Lead tape map
           </p>
           <div className="mt-4 grid items-start gap-6 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -711,7 +717,7 @@ export function CombinedSetupPanel({
 
       {stringAlts.length > 0 ? (
         <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--sky)]">
+          <p className="sf-kicker sf-kicker-sky">
             Similar string feel — shop around
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
@@ -781,7 +787,7 @@ export function CombinedSetupPanel({
 
       <div className="grid gap-6 border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:grid-cols-2 md:p-6">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+          <p className="sf-kicker">
             Pros of this mold
           </p>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--foreground)]/90">
@@ -793,7 +799,7 @@ export function CombinedSetupPanel({
           </ul>
         </div>
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+          <p className="sf-kicker sf-kicker-amber">
             Tradeoffs / cons
           </p>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--foreground)]/85">
@@ -849,7 +855,7 @@ function Stat({
 }) {
   return (
     <div className="border border-[var(--line)] bg-black/10 px-4 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+      <p className="sf-kicker sf-kicker-muted">
         {label}
       </p>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight">{value}</p>

@@ -126,25 +126,25 @@ export function GearPickerSheet({
     kind === "racket" ? "Browse rackets" : kind === "string" ? "Browse strings" : "Browse grips";
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center">
+    <div className="sf-sheet-root z-[70]">
       <button
         type="button"
         aria-label="Close picker"
-        className="absolute inset-0 bg-black/60"
+        className="sf-sheet-scrim"
         onClick={onClose}
       />
       <div
         role="dialog"
         aria-modal
         aria-labelledby="picker-title"
-        className="relative z-[71] flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden border border-[var(--line)] bg-[var(--panel)] shadow-2xl sm:rounded-[var(--radius)]"
+        className="sf-sheet sf-sheet-wide"
       >
         <div className="shrink-0 space-y-3 border-b border-[var(--line)] p-4 pb-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 id="picker-title" className="font-[family-name:var(--font-display)] text-xl">
+            <h2 id="picker-title" className="sf-section-title text-xl">
               {title}
             </h2>
-            <button type="button" onClick={onClose} className="text-sm text-[var(--muted)]">
+            <button type="button" onClick={onClose} className="sf-btn sf-btn-ghost">
               Close
             </button>
           </div>

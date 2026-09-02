@@ -25,7 +25,7 @@ export function PlayerGripCue() {
     return (
       <p className="text-xs text-[var(--muted)]">
         Face angle follows your grip.{" "}
-        <Link href="/you" className="text-[var(--accent)] hover:underline">
+        <Link href="/you" className="sf-text-link">
           Finish setup
         </Link>
       </p>
@@ -36,9 +36,7 @@ export function PlayerGripCue() {
 
   return (
     <div className="space-y-1 text-xs">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
-        Your grip → face
-      </p>
+      <p className="sf-kicker">Your grip → face</p>
       <p className="text-sm text-[var(--foreground)]">{mold?.summary ?? grips.forehand}</p>
       {mold && (
         <p className="leading-relaxed text-[var(--muted)]">

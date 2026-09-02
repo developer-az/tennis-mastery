@@ -149,13 +149,13 @@ function FootRuler({
         return (
           <g key={ft}>
             <line x1={x} y1={y} x2={x + 7} y2={y} stroke="color-mix(in srgb, var(--foreground) 50%, transparent)" strokeWidth="1" />
-            <text x={x - 3} y={y + 3} textAnchor="end" fill="var(--muted)" fontSize="6.5">
+            <text x={x - 3} y={y + 3.5} textAnchor="end" fill="var(--muted)" fontSize="8">
               {ft} ft
             </text>
           </g>
         );
       })}
-      <text x={x + 10} y={(sy(loM) + sy(hiM)) / 2 + 3} fill="var(--chart-control)" fontSize="6.5">
+      <text x={x + 10} y={(sy(loM) + sy(hiM)) / 2 + 3} fill="var(--chart-control)" fontSize="8">
         sweet
       </text>
     </g>
@@ -284,10 +284,11 @@ export function LaunchAngleVisual({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+      <p className="sf-kicker mb-2">
         {label}
       </p>
-      <svg viewBox="0 0 300 210" className="h-auto w-full max-w-lg" aria-hidden>
+      <div className="sf-viz-stage max-w-lg">
+      <svg viewBox="0 0 300 210" className="h-auto w-full" aria-hidden>
         <defs>
           <linearGradient id={`ballArc-${uid}`} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="var(--chart-control)" stopOpacity="0.4" />
@@ -317,7 +318,7 @@ export function LaunchAngleVisual({
           stroke="var(--foreground)"
           strokeWidth="2"
         />
-        <text x={baseX} y={plot.ground + 12} textAnchor="middle" fill="var(--foreground)" fontSize="6.5">
+        <text x={baseX} y={plot.ground + 12} textAnchor="middle" fill="var(--foreground)" fontSize="8">
           baseline
         </text>
 
@@ -330,21 +331,29 @@ export function LaunchAngleVisual({
           closedDeg={closed}
         />
 
-        <rect x={netPx - 3} y={tapeY} width="6" height={plot.ground - tapeY} fill="rgba(232,239,233,0.08)" />
-        {Array.from({ length: 7 }).map((_, i) => (
+        <rect
+          x={netPx - 4}
+          y={tapeY}
+          width="8"
+          height={plot.ground - tapeY}
+          fill="color-mix(in srgb, var(--foreground) 8%, transparent)"
+        />
+        {Array.from({ length: 8 }).map((_, i) => (
           <line
             key={i}
-            x1={netPx - 5 + i * 1.6}
+            x1={netPx - 6 + i * 1.7}
             y1={tapeY}
-            x2={netPx - 5 + i * 1.6}
+            x2={netPx - 6 + i * 1.7}
             y2={plot.ground - 2}
-            stroke="color-mix(in srgb, var(--foreground) 28%, transparent)"
-            strokeWidth="0.45"
+            stroke="color-mix(in srgb, var(--foreground) 32%, transparent)"
+            strokeWidth="0.55"
           />
         ))}
-        <line x1={netPx} y1={tapeY} x2={netPx} y2={plot.ground} stroke="#d8d6cf" strokeWidth="1.5" />
-        <line x1={netPx - 10} y1={tapeY} x2={netPx + 10} y2={tapeY} stroke="#f3f1ea" strokeWidth="2" />
-        <text x={netPx} y={tapeY - 5} textAnchor="middle" fill="var(--muted)" fontSize="6.5">
+        <line x1={netPx} y1={tapeY} x2={netPx} y2={plot.ground} stroke="var(--label)" strokeWidth="1.7" />
+        <line x1={netPx - 12} y1={tapeY} x2={netPx + 12} y2={tapeY} stroke="var(--foreground)" strokeWidth="2.2" />
+        <circle cx={netPx - 12} cy={tapeY + 3} r="1.6" fill="var(--foreground)" />
+        <circle cx={netPx + 12} cy={tapeY + 3} r="1.6" fill="var(--foreground)" />
+        <text x={netPx} y={tapeY - 6} textAnchor="middle" fill="var(--muted)" fontSize="8">
           net 3.0 ft
         </text>
 
@@ -352,7 +361,16 @@ export function LaunchAngleVisual({
           points={poly}
           fill="none"
           stroke={`url(#ballArc-${uid})`}
-          strokeWidth="2.2"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.22"
+        />
+        <polyline
+          points={poly}
+          fill="none"
+          stroke={`url(#ballArc-${uid})`}
+          strokeWidth="2.4"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -384,18 +402,26 @@ export function LaunchAngleVisual({
           x={faceCx + 20}
           y={faceCy - Math.sin(leaveRad) * 10 - 4}
           fill="var(--chart-control)"
-          fontSize="7"
+          fontSize="8.5"
         >
           {launch.toFixed(1)}° leave
         </text>
-        <text x={faceCx + 10} y={faceCy + 22} fill="var(--chart-power)" fontSize="6.5">
+        <text x={faceCx + 10} y={faceCy + 22} fill="var(--chart-power)" fontSize="8">
           {closed.toFixed(1)}° closed
         </text>
         <circle
           cx={faceCx + Math.cos(leaveRad) * 9}
           cy={faceCy - Math.sin(leaveRad) * 9}
-          r="3.1"
+          r="4"
           fill="#d4e054"
+          stroke="color-mix(in srgb, var(--foreground) 35%, transparent)"
+          strokeWidth="0.6"
+        />
+        <circle
+          cx={faceCx + Math.cos(leaveRad) * 9 - 1.1}
+          cy={faceCy - Math.sin(leaveRad) * 9 - 1.1}
+          r="1.15"
+          fill="#f7fbe8"
         />
 
         <line
@@ -406,16 +432,17 @@ export function LaunchAngleVisual({
           stroke="var(--chart-spin)"
           strokeWidth="1.4"
         />
-        <text x={netPx + 12} y={(ballAtNetY + tapeY) / 2 + 3} fill="var(--chart-spin)" fontSize="7">
+        <text x={netPx + 12} y={(ballAtNetY + tapeY) / 2 + 3} fill="var(--chart-spin)" fontSize="8.5">
           +{traj.netClearIn.toFixed(1)}″
         </text>
         {traj.landX <= xMax ? (
-          <circle cx={sx(traj.landX)} cy={sy(BALL_RADIUS_M)} r="3.2" fill="none" stroke="var(--chart-power)" strokeWidth="0.8" />
+          <circle cx={sx(traj.landX)} cy={sy(BALL_RADIUS_M)} r="3.4" fill="none" stroke="var(--chart-power)" strokeWidth="1.1" />
         ) : null}
-        <text x={netPx} y={plot.ground + 12} textAnchor="middle" fill="var(--muted)" fontSize="6.5">
+        <text x={netPx} y={plot.ground + 12} textAnchor="middle" fill="var(--muted)" fontSize="8">
           {formatFt(BASELINE_TO_NET_M, 0)} from baseline
         </text>
       </svg>
+      </div>
 
       {!compact ? (
         <>
@@ -471,14 +498,14 @@ function FlightGauge({
   hint: string;
 }) {
   return (
-    <div className="rounded-md px-2 py-2" style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}>
-      <p className="text-[9px] uppercase tracking-[0.12em]" style={{ color }}>
+    <div className="sf-panel px-2.5 py-2">
+      <p className="sf-kicker" style={{ color }}>
         {label}
       </p>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--foreground)_12%,transparent)]">
+      <div className="sf-meter-track mt-1.5">
         <div
-          className="h-full rounded-full transition-[width] duration-500"
-          style={{ width: `${value}%`, background: color }}
+          className="sf-meter-fill transition-[width] duration-500"
+          style={{ width: `${value}%`, background: color, color }}
         />
       </div>
       <p className="mt-1 text-[11px] tabular-nums text-[var(--foreground)]/85">
@@ -525,10 +552,11 @@ export function SwingPathVisual({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
+      <p className="sf-kicker sf-kicker-amber mb-2">
         {label}
       </p>
-      <svg viewBox="0 0 260 210" className="h-auto w-full max-w-sm" aria-hidden>
+      <div className="sf-viz-stage max-w-sm">
+      <svg viewBox="0 0 260 210" className="h-auto w-full" aria-hidden>
         <defs>
           <linearGradient id={`pathStroke-${uid}`} x1="0" y1="1" x2="1" y2="0">
             <stop offset="0%" stopColor="var(--chart-power)" stopOpacity="0.25" />
@@ -541,7 +569,7 @@ export function SwingPathVisual({
           </linearGradient>
         </defs>
         <line x1="18" y1={ground} x2="246" y2={ground} stroke="color-mix(in srgb, var(--foreground) 35%, transparent)" strokeWidth="1.4" />
-        <text x="72" y={ground + 12} fill="var(--muted)" fontSize="6.5">
+        <text x="72" y={ground + 12} fill="var(--muted)" fontSize="8">
           0 ft
         </text>
 
@@ -563,7 +591,7 @@ export function SwingPathVisual({
           strokeWidth="1.4"
         />
         <line x1={torsoX + 8} y1={ground + 6} x2={cx} y2={ground + 6} stroke="var(--chart-spin)" strokeWidth="1" />
-        <text x={(torsoX + cx) / 2} y={ground + 16} textAnchor="middle" fill="var(--chart-spin)" fontSize="7">
+        <text x={(torsoX + cx) / 2} y={ground + 16} textAnchor="middle" fill="var(--chart-spin)" fontSize="8.5">
           {formatFt(z.outFrontM)} in front
         </text>
 
@@ -572,11 +600,11 @@ export function SwingPathVisual({
           cy={cy}
           rx={rx}
           ry={ry}
-          fill="rgba(197,232,90,0.14)"
+          fill="color-mix(in srgb, var(--chart-control) 16%, transparent)"
           stroke="var(--chart-control)"
           strokeWidth="1.8"
         />
-        <text x={cx} y={cy - ry - 8} textAnchor="middle" fill="var(--chart-control)" fontSize="7.5" fontWeight="600">
+        <text x={cx} y={cy - ry - 8} textAnchor="middle" fill="var(--chart-control)" fontSize="8.5" fontWeight="600">
           {z.primary} · {formatFt(z.heightM)}
         </text>
 
@@ -589,8 +617,9 @@ export function SwingPathVisual({
           strokeWidth="2.4"
           strokeLinecap="round"
         />
-        <circle cx={cx + 5} cy={cy} r="2.6" fill="#d4e054" />
+        <circle cx={cx + 5} cy={cy} r="3.4" fill="#d4e054" stroke="color-mix(in srgb, var(--foreground) 30%, transparent)" strokeWidth="0.5" />
       </svg>
+      </div>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
         {formatFt(z.heightM)} · {formatFt(z.outFrontM)} out
       </p>
@@ -665,7 +694,7 @@ export function StrikeCoachingBullets({
 
   return (
     <div className="mt-4 border-t border-[var(--line)] pt-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+      <p className="sf-kicker">
         How to use this
       </p>
       <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--foreground)]/90">
@@ -711,11 +740,12 @@ export function ForehandGripBevelVisual({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--amber)]">
+      <p className="sf-kicker sf-kicker-amber mb-2">
         Optimal FH grip for this mold
       </p>
-      <svg viewBox="0 0 220 150" className="h-auto w-full max-w-md" aria-hidden>
-        <text x="18" y="18" fill="var(--muted)" fontSize="8">
+      <div className="sf-viz-stage max-w-md">
+      <svg viewBox="0 0 220 150" className="h-auto w-full" aria-hidden>
+        <text x="18" y="18" fill="var(--muted)" fontSize="8.5">
           Butt-cap bevels (unrolled) · index knuckle on highlighted face
         </text>
         {faces.map((f, i) => {
@@ -762,7 +792,7 @@ export function ForehandGripBevelVisual({
                   y={y0 + h + 14}
                   textAnchor="middle"
                   fill={active ? "var(--chart-control)" : "var(--muted)"}
-                  fontSize="6.5"
+                  fontSize="8"
                 >
                   {active ? f.name.slice(0, 4) : f.n}
                 </text>
@@ -773,7 +803,7 @@ export function ForehandGripBevelVisual({
                     d={`M ${x + w / 2} ${y0 - 4} L ${x + w / 2 - 5} ${y0 - 12} L ${x + w / 2 + 5} ${y0 - 12} Z`}
                     fill="var(--chart-power)"
                   />
-                  <text x={x + w / 2} y={y0 - 16} textAnchor="middle" fill="var(--chart-power)" fontSize="7">
+                  <text x={x + w / 2} y={y0 - 16} textAnchor="middle" fill="var(--chart-power)" fontSize="8">
                     knuckle
                   </text>
                 </g>
@@ -781,10 +811,11 @@ export function ForehandGripBevelVisual({
             </g>
           );
         })}
-        <text x="18" y="128" fill="var(--muted)" fontSize="7.5">
+        <text x="18" y="128" fill="var(--muted)" fontSize="8.5">
           1 Cont. → 2 East. → 3 Semi → 4 West. → 5 Extreme
         </text>
       </svg>
+      </div>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
         {advice.gripLabel}
       </p>
@@ -808,10 +839,11 @@ export function FaceAngleAtContactVisual({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+      <p className="sf-kicker mb-2">
         Racket face at contact
       </p>
-      <svg viewBox="0 0 220 160" className="h-auto w-full max-w-md" aria-hidden>
+      <div className="sf-viz-stage max-w-md">
+      <svg viewBox="0 0 220 160" className="h-auto w-full" aria-hidden>
         <defs>
           <linearGradient id={`macroFrame-${uid}`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#d8ddd9" />
@@ -900,14 +932,16 @@ export function FaceAngleAtContactVisual({
         <circle
           cx={cx + Math.sin((closed * Math.PI) / 180) * 42 + 8}
           cy={cy - Math.cos((closed * Math.PI) / 180) * 42}
-          r="5"
-          fill="var(--chart-power)"
-          opacity="0.85"
+          r="5.4"
+          fill="#d4e054"
+          stroke="color-mix(in srgb, var(--foreground) 25%, transparent)"
+          strokeWidth="0.6"
         />
-        <text x="24" y={compact ? 138 : 132} fill="var(--muted)" fontSize="7.5">
+        <text x="24" y={compact ? 138 : 132} fill="var(--muted)" fontSize="8.5">
           Face closed past vertical — top of hoop tips toward the net
         </text>
       </svg>
+      </div>
       {!compact ? (
         <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
           {advice.face.label}: ~{closed.toFixed(1)}° closed. Prefer {advice.prefersHeight}-high contact.
@@ -934,7 +968,7 @@ export function ContactGeometryVisual({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--chart-spin)]">
+      <p className="sf-kicker sf-kicker-sky mb-2">
         Contact geometry
       </p>
       <svg viewBox="0 0 220 130" className="h-auto w-full max-w-md" aria-hidden>

@@ -115,9 +115,7 @@ export function InBandImproveSection({
 
   return (
     <div className="border border-[var(--line)] bg-[var(--panel)]/90 p-5 md:p-6">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
-        In-band improvement
-      </p>
+      <p className="sf-kicker">In-band improvement</p>
       <h2 className="mt-1.5 font-[family-name:var(--font-display)] text-xl tracking-tight md:text-2xl">
         One lever, full scoreboard
       </h2>

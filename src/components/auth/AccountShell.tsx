@@ -27,7 +27,7 @@ export function AccountShell({
   alternate?: { prompt: string; href: string; label: string };
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-10 px-5 py-10 md:flex-row md:items-start md:gap-14 md:px-8 md:py-16">
+    <div className="sf-page flex max-w-[1040px] flex-col gap-10 md:flex-row md:items-start md:gap-14">
       <aside className="md:w-[42%] md:pt-2">
         <p className="sf-kicker">Strokeform account</p>
         <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)] md:text-[2rem]">

@@ -68,7 +68,7 @@ export function BagTab({
               const n = Number(e.target.value);
               if (Number.isFinite(n)) setTension(n);
             }}
-            className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+            className="sf-input"
           />
         </label>
       )}
@@ -84,21 +84,12 @@ export function BagTab({
                 setGripSize(g.code);
                 setGrips({ targetSize: g.code });
               }}
-              className="rounded-md px-2.5 py-1.5 text-xs"
-              style={{
-                background:
-                  setup.gripSize === g.code || profile.grips.targetSize === g.code
-                    ? "var(--accent)"
-                    : "transparent",
-                color:
-                  setup.gripSize === g.code || profile.grips.targetSize === g.code
-                    ? "var(--accent-ink)"
-                    : "var(--foreground)",
-                boxShadow:
-                  setup.gripSize === g.code || profile.grips.targetSize === g.code
-                    ? "none"
-                    : "0 0 0 1px var(--line)",
-              }}
+              className="sf-chip"
+              data-active={
+                setup.gripSize === g.code || profile.grips.targetSize === g.code
+                  ? "true"
+                  : "false"
+              }
             >
               {g.label}
             </button>
@@ -114,13 +105,14 @@ export function BagTab({
           value={buildNote}
           onChange={(e) => setBuildNote(e.target.value)}
           onBlur={() => setGrips({ targetBuildNote: buildNote })}
-          className="w-full rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+          className="sf-input"
         />
       </label>
 
-      <label className="flex items-center gap-2 text-sm">
+      <label className="flex min-h-11 items-center gap-3 text-sm">
         <input
           type="checkbox"
+          className="sf-check"
           checked={pairOn}
           onChange={(e) => {
             const on = e.target.checked;
@@ -153,7 +145,7 @@ export function BagTab({
       )}
 
       {hasAnyGear(setup) && (
-        <button type="button" onClick={() => clearSetup()} className="text-xs text-[var(--muted)]">
+        <button type="button" onClick={() => clearSetup()} className="sf-btn sf-btn-ghost">
           Clear bag
         </button>
       )}
@@ -184,7 +176,7 @@ function Row({
     <button
       type="button"
       onClick={onEdit}
-      className="flex w-full items-center justify-between gap-3 rounded-md border border-[var(--line)] px-4 py-3 text-left"
+      className="sf-choice flex w-full items-center justify-between gap-3"
     >
       <span>
         <span className="sf-label block">{label}</span>

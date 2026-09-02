@@ -20,6 +20,7 @@ import { prefersArmFriendlySetup } from "@/lib/player/constraints";
 import { LaunchAngleVisual, strikeZoneForFrame } from "./RacketVisuals";
 import { MoldTowardPanel } from "./MoldTowardPanel";
 import { LeadTapeRacketDiagram } from "./LeadTapeRacketDiagram";
+import { CourtReadyVerdict } from "./CourtReadyVerdict";
 
 const ZONE_ORDER: LeadTapeZone[] = ["tip", "twelve", "three", "nine", "throat", "handle"];
 
@@ -110,6 +111,8 @@ export function LeadTapeLab({
     return synthesizeCombinedSetup(setup, baseRacket, bagString, bagGrip, grips, {
       playerGrip: profile.grips.forehand,
       armFriendly: prefersArmFriendlySetup(profile),
+      generatesOwnPower: profile.preferences.generatesOwnPower,
+      valuesDurability: profile.preferences.valuesDurability,
     });
   }, [setup, baseRacket, bagString, bagGrip, grips, profile]);
 
@@ -247,7 +250,7 @@ export function LeadTapeLab({
       </div>
 
       <div className="space-y-4">
-        <details open className="rounded-md border border-[var(--line)]">
+        <details open className="sf-panel">
           <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-[var(--foreground)] hover:text-[var(--accent)] [&::-webkit-details-marker]:hidden">
             Mold toward a target frame
             <span className="ml-2 text-[11px] font-normal text-[var(--muted)]">
@@ -266,10 +269,8 @@ export function LeadTapeLab({
         </details>
 
         {effect.hints.length > 0 ? (
-          <section className="rounded-md border border-[var(--line)] px-4 py-3">
-            <p className="text-[10px] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-              What changed
-            </p>
+          <section className="sf-panel px-4 py-3">
+            <p className="sf-kicker sf-kicker-muted">What changed</p>
             <ul className="mt-2 space-y-1.5 text-sm text-[var(--foreground)]/85">
               {effect.hints.slice(0, 3).map((h) => (
                 <li key={h}>{h}</li>
@@ -278,7 +279,9 @@ export function LeadTapeLab({
           </section>
         ) : null}
 
-        <details className="rounded-md border border-[var(--line)]">
+        {bagInsight ? <CourtReadyVerdict playability={bagInsight.playability} compact /> : null}
+
+        <details className="sf-panel">
           <summary className="cursor-pointer list-none px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--foreground)] [&::-webkit-details-marker]:hidden">
             Ball flight with this tape
             <span className="ml-2 tabular-nums text-[11px]">
@@ -295,9 +298,7 @@ export function LeadTapeLab({
           <div className="border-t border-[var(--line)] px-3 py-3 space-y-3">
             {bagInsight?.launchAngleDeg != null && bagInsight.flight ? (
               <>
-                <p className="text-[10px] font-semibold tracking-[0.12em] text-[var(--accent)] uppercase">
-                  Full bag mold (string · grip · tape)
-                </p>
+                <p className="sf-kicker">Full bag mold (string · grip · tape)</p>
                 <LaunchAngleVisual
                   degrees={bagInsight.launchAngleDeg}
                   pathDeg={bagInsight.swingPathDeg ?? undefined}
@@ -367,7 +368,7 @@ export function LeadTapeLab({
 function Stat({ label, value, delta }: { label: string; value: string; delta: string | null }) {
   return (
     <div className="rounded-md border border-[var(--line)] px-2.5 py-2">
-      <p className="text-[10px] tracking-[0.12em] text-[var(--muted)] uppercase">{label}</p>
+      <p className="sf-kicker sf-kicker-muted">{label}</p>
       <p className="mt-0.5 font-[family-name:var(--font-display)] text-lg tabular-nums">{value}</p>
       <p className="text-[11px] tabular-nums text-[var(--accent)]">{delta ?? "stock"}</p>
     </div>

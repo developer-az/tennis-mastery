@@ -21,9 +21,7 @@ function Metric({
 }) {
   return (
     <div className="border-t border-[var(--line)] pt-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--label)]">
-        {label}
-      </p>
+      <p className="sf-label">{label}</p>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight text-[var(--foreground)]">
         {value}
         {unit ? <span className="ml-1 text-sm font-sans text-[var(--muted)]">{unit}</span> : null}
@@ -52,9 +50,7 @@ export function MetricsPanel() {
       />
 
       <div className="mb-4 mt-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-          Live biomechanics
-        </p>
+        <p className="sf-kicker sf-kicker-muted">Live biomechanics</p>
         <h2 className="mt-1 font-[family-name:var(--font-display)] text-xl tracking-tight">
           {player.shortName} · {stroke.label}
         </h2>
@@ -155,16 +151,16 @@ function SetupBridge({
   const path = insight.swingPathDeg ?? setup.racketSwingPathDeg;
 
   return (
-    <div
-      className="rounded-md border border-[var(--line)] bg-[var(--bg-sunken)] p-3"
-      style={{ boxShadow: "inset 0 0 0 1px rgba(200,245,96,0.06)" }}
-    >
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
-        Your combined setup
-      </p>
+    <div className="sf-panel p-3">
+      <p className="sf-kicker">Your combined setup</p>
       {hasGear ? (
         <>
-          <p className="mt-1.5 text-sm font-medium text-[var(--foreground)]">{insight.playstyle}</p>
+          <p className="mt-1.5 text-sm font-medium text-[var(--foreground)]">
+            {insight.playability.headline}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+            Court-ready {insight.playability.score}/100 · {insight.playstyle}
+          </p>
           <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{setupSummary(setup)}</p>
           {launch != null && path != null ? (
             <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">

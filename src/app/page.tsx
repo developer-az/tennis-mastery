@@ -12,7 +12,7 @@ export default function Home() {
           <div className="sf-hero-wash pointer-events-none absolute inset-0" aria-hidden />
           <div className="sf-hero-grid pointer-events-none absolute inset-0" aria-hidden />
 
-          <div className="relative z-10 mx-auto grid w-full max-w-[1400px] items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+          <div className="relative z-10 mx-auto grid w-full max-w-[var(--page-max-wide)] items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
             <div className="max-w-2xl">
               <p className="sf-kicker sf-rise">Your court · your mold · your accountability</p>
               <p
@@ -45,7 +45,7 @@ export default function Home() {
         </section>
 
         <section className="border-y border-[var(--line)] bg-[var(--bg-sunken)]/80">
-          <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-px bg-[var(--line)] md:grid-cols-4">
+          <div className="mx-auto grid max-w-[var(--page-max-wide)] grid-cols-2 gap-px bg-[var(--line)] md:grid-cols-4">
             {[
               ["Form lab", "Phase cues · signature quirks"],
               ["Gear intelligence", "Skill span · verified sources"],
@@ -60,7 +60,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="method" className="mx-auto w-full max-w-[1400px] px-6 py-20 md:px-10 md:py-24 lg:px-14">
+        <section id="method" className="mx-auto w-full max-w-[var(--page-max-wide)] px-6 py-20 md:px-10 md:py-24 lg:px-14">
           <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <div>
               <p className="sf-kicker">Method</p>
@@ -106,7 +106,7 @@ export default function Home() {
         </section>
 
         <section id="athletes" className="border-t border-[var(--line)] bg-[var(--bg-sunken)]/50">
-          <div className="mx-auto w-full max-w-[1400px] px-6 py-20 md:px-10 md:py-24 lg:px-14">
+          <div className="mx-auto w-full max-w-[var(--page-max-wide)] px-6 py-20 md:px-10 md:py-24 lg:px-14">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="sf-kicker">Athletes</p>
@@ -146,7 +146,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="gear" className="mx-auto w-full max-w-[1400px] px-6 py-20 md:px-10 md:py-24 lg:px-14">
+        <section id="gear" className="mx-auto w-full max-w-[var(--page-max-wide)] px-6 py-20 md:px-10 md:py-24 lg:px-14">
           <p className="sf-kicker">Gear lab</p>
           <h2 className="mt-4 max-w-2xl font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight md:text-4xl">
             Multi-source intelligence on the same mold as your court.

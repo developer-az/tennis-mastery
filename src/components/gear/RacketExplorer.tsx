@@ -12,8 +12,10 @@ import { usePlayerStore } from "@/store/playerStore";
 import { LaunchAngleVisual, SwingPathVisual, StrikeCoachingBullets, strikeZoneForFrame, ForehandGripBevelVisual, FaceAngleAtContactVisual, ContactGeometryVisual } from "./RacketVisuals";
 import { deriveForehandMold } from "@/lib/equipment/forehandMold";
 import { computeFlightMetrics } from "@/lib/equipment/setupSynthesis";
+import { computeFrameSpecPhysics } from "@/lib/equipment/playability";
 import { PlayerFitBadges } from "./PlayerFitBadges";
 import { FrameIntelligencePanel } from "./FrameIntelligencePanel";
+import { HowItHitsPanel } from "./HowItHitsPanel";
 import { ScoreGrid, ScoreMeter } from "./ScoreMeter";
 import { EquipmentThumb } from "./EquipmentThumb";
 import { CompareToSetup, numericDelta, type CompareDeltaRow } from "./CompareToSetup";
@@ -78,6 +80,7 @@ export function RacketExplorer({
   const setup = useGearStore((s) => s.setup);
   const setupSlug = setup.racketSlug;
   const setRacket = useGearStore((s) => s.setRacket);
+  const setTab = useGearStore((s) => s.setTab);
   const playerGrip = usePlayerStore((s) => s.profile.grips.forehand);
   const [selectedSlug, setSelectedSlug] = useState(
     setupSlug && initialRackets.some((r) => r.slug === setupSlug)
@@ -192,6 +195,10 @@ export function RacketExplorer({
             swingweight: selected.swingweight,
           })
         : null,
+    [selected],
+  );
+  const framePhysics = useMemo(
+    () => (selected ? computeFrameSpecPhysics(selected) : null),
     [selected],
   );
 
@@ -329,18 +336,8 @@ export function RacketExplorer({
           label="Search rackets"
         />
         <p className="text-sm text-[var(--muted)]">
-          Not sure?{" "}
-          <button
-            type="button"
-            className="sf-text-link"
-            onClick={() => {
-              setShopType("beginner");
-              setBrand("all");
-              setFeel("all");
-            }}
-          >
-            Start with beginner-friendly
-          </button>
+          Not sure? Filter by how the hoop is built — light/forgiving, open-pattern spin, dense
+          control — then read the spec math on the right.
         </p>
         <ChipRow label="Brand">
           <AisleChip label="All" active={brand === "all"} onClick={() => setBrand("all")} />
@@ -523,7 +520,7 @@ export function RacketExplorer({
             />
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
-                {selected.style}
+                {framePhysics?.hitKicker ?? selected.style}
               </p>
               <h3 className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-tight md:text-4xl">
                 {selected.brand} {selected.model}
@@ -534,6 +531,8 @@ export function RacketExplorer({
                 {selected.swingweight ? ` · SW ${selected.swingweight}` : ""}
                 {selected.stiffnessRa ? ` · RA ${selected.stiffnessRa}` : ""}
                 {selected.balanceMm ? ` · ${selected.balanceMm}mm balance` : ""}
+                {selected.headSizeSqIn ? ` · ${selected.headSizeSqIn}"` : ""}
+                {selected.stringPattern ? ` · ${selected.stringPattern.replace("x", "×")}` : ""}
               </p>
               {(selected.atpPlayers.length > 0 || selected.wtaPlayers.length > 0) && (
                 <p className="mt-2 text-xs text-[var(--foreground)]/70">
@@ -543,35 +542,31 @@ export function RacketExplorer({
               <button
                 type="button"
                 onClick={() => saveRacket(selected)}
-                className="mt-4 min-h-11 w-full rounded-[var(--radius)] px-4 py-2.5 text-sm font-medium transition hover:brightness-110 sm:w-auto"
-                style={{
-                  background: inSetup ? "var(--accent-dim)" : "var(--accent)",
-                  color: inSetup ? "var(--accent)" : "var(--accent-ink)",
-                  boxShadow: inSetup ? "0 0 0 1px var(--accent)" : "none",
-                }}
+                className={`sf-btn mt-4 w-full sm:w-auto ${inSetup ? "sf-btn-secondary" : "sf-btn-primary"}`}
               >
                 {inSetup ? "In your bag" : "Add to bag"}
               </button>
               <button
                 type="button"
                 onClick={() => toggleCompare(selected.slug)}
-                className="mt-2 w-full rounded-[var(--radius)] px-4 py-2 text-xs text-[var(--muted)] sm:w-auto"
-                style={{ boxShadow: "0 0 0 1px var(--line)" }}
+                className="sf-btn sf-btn-secondary mt-2 w-full text-xs sm:w-auto"
               >
                 {compareIds.includes(selected.slug) ? "In compare" : "Compare this frame"}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  onSelectTab?.("lead-tape", { mold: selected.slug });
+                  if (onSelectTab) onSelectTab("lead-tape", { mold: selected.slug });
+                  else setTab("lead-tape");
                 }}
-                className="mt-2 w-full rounded-md px-4 py-2 text-xs text-[var(--muted)] transition hover:bg-white/5 hover:text-[var(--foreground)] sm:w-auto"
-                style={{ boxShadow: "0 0 0 1px var(--line)" }}
+                className="sf-btn sf-btn-ghost mt-2 w-full text-xs sm:w-auto"
               >
                 Mold my frame toward this →
               </button>
             </div>
           </header>
+
+          <HowItHitsPanel racket={selected} />
 
           <PlayerFitBadges racket={selected} liveCatalog={liveCatalog} />
 
@@ -606,7 +601,7 @@ export function RacketExplorer({
 
           {forehandAdvice ? (
             <section className="border-t border-[var(--line)] pt-6">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--amber)]">
+              <p className="sf-kicker sf-kicker-amber">
                 Forehand grip & face at contact
               </p>
               <p className="mt-1 text-xs text-[var(--muted)]">
@@ -630,6 +625,12 @@ export function RacketExplorer({
               { label: "Comfort", value: selected.comfort, accent: "var(--chart-comfort)" },
             ]}
           />
+          <p className="-mt-4 text-xs leading-relaxed text-[var(--muted)]">
+            Power / spin / control from mass, SW, RA, head, and pattern
+            {/\/100 for (power|spin|control)/i.test(selected.summary)
+              ? " — expert scores tint these by at most 20%."
+              : " — not from the model name."}
+          </p>
 
           <CompareToSetup
             title={setup.racketLabel ? `Vs ${setup.racketLabel}` : "Vs my setup"}
@@ -712,7 +713,9 @@ function RacketCard({
       brand={racket.brand}
       name={modelWithoutBrand(racket.brand, racket.model)}
       badge={racketShopBadge(racket)}
-      meta={`${racket.year}${racket.headSizeSqIn ? ` · ${racket.headSizeSqIn}"` : ""}`}
+      meta={`${racket.year}${racket.weightG ? ` · ${racket.weightG}g` : ""}${
+        racket.swingweight ? ` · SW ${racket.swingweight}` : ""
+      }${racket.headSizeSqIn ? ` · ${racket.headSizeSqIn}"` : ""}`}
       accent={brandAccent(racket.brand)}
       scores={[
         { label: "Spin", value: racket.spin, color: "var(--chart-spin)" },

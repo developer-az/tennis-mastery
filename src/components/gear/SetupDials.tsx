@@ -58,9 +58,7 @@ export function SetupDials({
     >
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
-            Dial your setup
-          </p>
+          <p className="sf-kicker">Dial your setup</p>
           {!compact ? (
             <p className="mt-1 text-xs text-[var(--muted)]">
               Tension, gauge, and grip size — change here without re-picking products.
@@ -92,8 +90,8 @@ export function SetupDials({
         {hasString ? (
           <>
             <label className="block min-w-0">
-              <span className="mb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
-                Tension
+              <span className="mb-1.5 flex items-center justify-between gap-2">
+                <span className="sf-label">Tension</span>
                 <span className="flex items-center gap-1.5">
                   <input
                     type="number"
@@ -105,7 +103,7 @@ export function SetupDials({
                       const v = parseFloat(e.target.value);
                       if (Number.isFinite(v)) setTension(v);
                     }}
-                    className="w-16 rounded border border-[var(--line)] bg-black/30 px-1.5 py-0.5 text-right text-xs tabular-nums text-[var(--accent)] outline-none focus:border-[var(--accent)]"
+                    className="sf-num w-16"
                     aria-label="String tension in pounds (number)"
                   />
                   <span className="text-[var(--muted)]">lbs</span>
@@ -129,9 +127,7 @@ export function SetupDials({
             </label>
 
             <div className="min-w-0">
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
-                Gauge
-              </p>
+              <p className="sf-label mb-1.5">Gauge</p>
               <div className="flex flex-wrap gap-1.5">
                 {gauges.map((g) => {
                   const active = Math.abs(g - gauge) < 0.001;
@@ -141,12 +137,8 @@ export function SetupDials({
                       type="button"
                       aria-pressed={active}
                       onClick={() => setGauge(g)}
-                      className="min-h-10 rounded-md px-2.5 py-1.5 text-sm tabular-nums transition"
-                      style={{
-                        background: active ? "var(--accent-dim)" : "transparent",
-                        color: active ? "var(--accent)" : "var(--foreground)",
-                        boxShadow: "0 0 0 1px var(--line)",
-                      }}
+                      className="sf-chip tabular-nums"
+                      data-active={active ? "true" : "false"}
                     >
                       {g.toFixed(2)}
                       <span className="ml-1 text-[10px] text-[var(--muted)]">
@@ -162,9 +154,7 @@ export function SetupDials({
 
         {hasGrip ? (
           <div className="min-w-0 sm:col-span-1">
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
-              Grip size
-            </p>
+            <p className="sf-label mb-1.5">Grip size</p>
             <div className="flex flex-wrap gap-1.5">
               {GRIP_SIZES.map((g) => {
                 const active = setup.gripSize === g.code;
@@ -177,14 +167,9 @@ export function SetupDials({
                     onClick={() =>
                       setGripSize(active ? null : (g.code as GripSizeCode))
                     }
-                    className="min-h-10 rounded-md px-2 py-1.5 text-xs font-medium transition sm:text-sm"
-                    style={{
-                      background: active ? "rgba(244,162,97,0.18)" : "transparent",
-                      color: active ? "var(--amber)" : "var(--foreground)",
-                      boxShadow: active
-                        ? "0 0 0 1px var(--amber)"
-                        : "0 0 0 1px var(--line)",
-                    }}
+                    className="sf-chip"
+                    data-tone="amber"
+                    data-active={active ? "true" : "false"}
                   >
                     {g.code}
                   </button>
