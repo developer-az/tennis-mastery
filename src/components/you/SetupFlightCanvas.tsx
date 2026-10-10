@@ -147,10 +147,10 @@ function BallFlight({ points, accent }: { points: THREE.Vector3[]; accent: strin
       <mesh ref={ball} position={points[0]}>
         <sphereGeometry args={[BALL_RADIUS_M, 16, 16]} />
         <meshStandardMaterial
-          color="#d4e054"
+          color="#c4843a"
           roughness={0.45}
           metalness={0.05}
-          emissive="#5a6a10"
+          emissive="#c4843a"
           emissiveIntensity={0.15}
         />
       </mesh>
@@ -230,7 +230,7 @@ export function SetupFlightCanvas({
         <Suspense fallback={null}>
           <ThemeClear colors={sceneColors} />
           <ambientLight intensity={0.55} />
-          <hemisphereLight args={["#d5ead8", "#1a3328", 0.5]} />
+          <hemisphereLight args={["#e8e6e1", "#2a2c2b", 0.45]} />
           <directionalLight position={[4, 8, 3]} intensity={1.15} />
           <CourtDiorama colors={sceneColors} />
           <StanceBillboard colors={sceneColors} />

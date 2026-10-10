@@ -1,4 +1,4 @@
-import type { PlayerProfile, StrokeType } from "@/types/biomechanics";
+import type { PlayerProfile, StrokeProfile, StrokeType } from "@/types/biomechanics";
 import {
   alcarazForehand,
   alcarazVolley,
@@ -397,6 +397,20 @@ const sinnerDefaults: StrokeLibrary = fillStrokes(
   federerDefaults,
 );
 
+function withClipIds(playerId: string, strokes: StrokeLibrary): StrokeLibrary {
+  const attach = (stroke: StrokeProfile, type: StrokeType): StrokeProfile => ({
+    ...stroke,
+    clipId: `${playerId}/${type}`,
+  });
+  return {
+    forehand: attach(strokes.forehand, "forehand"),
+    backhand: attach(strokes.backhand, "backhand"),
+    serve: attach(strokes.serve, "serve"),
+    slice: attach(strokes.slice, "slice"),
+    volley: attach(strokes.volley, "volley"),
+  };
+}
+
 export const PLAYERS: PlayerProfile[] = [
   {
     id: "federer",
@@ -407,8 +421,8 @@ export const PLAYERS: PlayerProfile[] = [
     playingStyle: "All-court classic — efficiency, timing, disguise",
     dominantHand: "right",
     backhandStyle: "oneHanded",
-    color: "#1B4F72",
-    accent: "#F4D03F",
+    color: "#3a3d40",
+    accent: "#c4843a",
     anthropometrics: {
       heightM: 1.85,
       wingspanM: 1.88,
@@ -419,7 +433,7 @@ export const PLAYERS: PlayerProfile[] = [
       thighRatio: 0.245,
       shankRatio: 0.246,
     },
-    strokes: federerDefaults,
+    strokes: withClipIds("federer", federerDefaults),
     biography:
       "Model of kinetic-chain efficiency. Lab and match analyses show high racket-path reproducibility with moderate spin and elite timing windows — form that looks effortless because proximal segments do the work.",
   },
@@ -432,8 +446,8 @@ export const PLAYERS: PlayerProfile[] = [
     playingStyle: "Lefty baseliner — extreme topspin, grit, geometry",
     dominantHand: "left",
     backhandStyle: "twoHanded",
-    color: "#1D8348",
-    accent: "#E74C3C",
+    color: "#4a4038",
+    accent: "#c44a3a",
     anthropometrics: {
       heightM: 1.85,
       wingspanM: 1.9,
@@ -444,7 +458,7 @@ export const PLAYERS: PlayerProfile[] = [
       thighRatio: 0.245,
       shankRatio: 0.246,
     },
-    strokes: nadalDefaults,
+    strokes: withClipIds("nadal", nadalDefaults),
     biography:
       "Defines the modern heavy-topspin forehand. Western grip, steep swing plane, and windshield-wiper follow-through produce unmatched RPM and net clearance — quirks that are biomechanically intentional.",
   },
@@ -457,8 +471,8 @@ export const PLAYERS: PlayerProfile[] = [
     playingStyle: "Defensive-aggressive — flexibility, balance, BH wall",
     dominantHand: "right",
     backhandStyle: "twoHanded",
-    color: "#5D6D7E",
-    accent: "#5DADE2",
+    color: "#4a5054",
+    accent: "#0b8fa8",
     anthropometrics: {
       heightM: 1.88,
       wingspanM: 1.95,
@@ -469,7 +483,7 @@ export const PLAYERS: PlayerProfile[] = [
       thighRatio: 0.245,
       shankRatio: 0.246,
     },
-    strokes: djokovicDefaults,
+    strokes: withClipIds("djokovic", djokovicDefaults),
     biography:
       "Exceptional hip and thoracic ROM expand the viable contact zone. Two-handed backhand kinematics prioritize early preparation and head stability — consistency encoded in joint timing, not just talent.",
   },
@@ -482,8 +496,8 @@ export const PLAYERS: PlayerProfile[] = [
     playingStyle: "First-strike power — serve + FH dominance",
     dominantHand: "right",
     backhandStyle: "twoHanded",
-    color: "#6C3483",
-    accent: "#F5B041",
+    color: "#3d3840",
+    accent: "#d4954a",
     anthropometrics: {
       heightM: 1.75,
       wingspanM: 1.8,
@@ -494,7 +508,7 @@ export const PLAYERS: PlayerProfile[] = [
       thighRatio: 0.245,
       shankRatio: 0.246,
     },
-    strokes: serenaDefaults,
+    strokes: withClipIds("serena", serenaDefaults),
     biography:
       "Serve kinetic chain is a textbook of proximal-to-distal sequencing: leg drive, trunk rotation, shoulder internal rotation, and wrist. Power with repeatable contact height under championship pressure.",
   },
@@ -507,8 +521,8 @@ export const PLAYERS: PlayerProfile[] = [
     playingStyle: "Modern explosive all-courter — RPM, drop shot, athleticism",
     dominantHand: "right",
     backhandStyle: "twoHanded",
-    color: "#0E6655",
-    accent: "#F39C12",
+    color: "#3a4240",
+    accent: "#c4843a",
     anthropometrics: {
       heightM: 1.83,
       wingspanM: 1.88,
@@ -519,7 +533,7 @@ export const PLAYERS: PlayerProfile[] = [
       thighRatio: 0.245,
       shankRatio: 0.246,
     },
-    strokes: alcarazDefaults,
+    strokes: withClipIds("alcaraz", alcarazDefaults),
     biography:
       "Combines Nadal-like spin geometry with Federer-like all-court creativity. Biomechanically: high peak GRF, short proximal-distal lag, and disguise — same unit turn for FH drive or drop shot.",
   },
@@ -532,8 +546,8 @@ export const PLAYERS: PlayerProfile[] = [
     playingStyle: "Flat-to-heavy first strike — clean takeback, early contact, Speed Pro mold",
     dominantHand: "right",
     backhandStyle: "twoHanded",
-    color: "#1A5276",
-    accent: "#E74C3C",
+    color: "#323840",
+    accent: "#c44a3a",
     anthropometrics: {
       heightM: 1.88,
       wingspanM: 1.93,
@@ -544,7 +558,7 @@ export const PLAYERS: PlayerProfile[] = [
       thighRatio: 0.245,
       shankRatio: 0.246,
     },
-    strokes: sinnerDefaults,
+    strokes: withClipIds("sinner", sinnerDefaults),
     biography:
       "Compact unit turn, early contact, and a linear drive through the ball. Less windshield-wiper than clay archetypes — more of a Speed-frame mold with height and clean timing.",
   },

@@ -6,7 +6,8 @@ import { PLAYERS } from "@/data/players";
 import { useCoachStore } from "@/store/coachStore";
 import { setupSummary, useGearStore } from "@/store/gearStore";
 import { synthesizeCombinedSetup } from "@/lib/equipment/setupSynthesis";
-import { sampleStroke } from "@/lib/kinematics";
+import { sampleMotion } from "@/lib/motion/sample";
+import { getMotionClip } from "@/data/motion";
 
 function Metric({
   label,
@@ -39,7 +40,16 @@ export function MetricsPanel() {
   const player = PLAYERS.find((p) => p.id === playerId)!;
   const stroke = player.strokes[strokeType];
   const m = stroke.metrics;
-  const pose = sampleStroke(stroke, t);
+  const clip = getMotionClip(stroke.clipId ?? `${playerId}/${strokeType}`);
+  const pose = clip
+    ? sampleMotion(clip, stroke, player.anthropometrics, t)
+    : null;
+  const elbow = pose?.angles.elbowFlexion ?? 0;
+  const knee = pose?.angles.leadKneeFlexion ?? 0;
+  const trunk = pose ? Math.abs(pose.angles.spineTwist) : 0;
+  const ir = pose?.angles.shoulderInternalRotation ?? 0;
+  const speed = pose?.racketSpeedMs ?? 0;
+  const spin = pose?.spinRpm ?? 0;
 
   return (
     <div className="space-y-1">
@@ -58,34 +68,34 @@ export function MetricsPanel() {
 
       <Metric
         label="Racket head speed"
-        value={pose.racketSpeedMs.toFixed(1)}
+        value={speed.toFixed(1)}
         unit="m/s"
         hint={`Peak ${m.peakRacketSpeedMs.toFixed(1)} m/s`}
       />
       <Metric
         label="Spin at / after contact"
-        value={Math.abs(pose.spinRpm).toLocaleString()}
+        value={Math.abs(spin).toLocaleString()}
         unit="rpm"
         hint={m.avgSpinRpm < 0 ? "Backspin (slice)" : "Topspin"}
       />
       <Metric
         label="Elbow flexion"
-        value={String(Math.round(pose.joints.elbowFlexion))}
+        value={String(Math.round(elbow))}
         unit="°"
       />
       <Metric
         label="Lead knee flexion"
-        value={String(Math.round(pose.joints.leadKneeFlexion))}
+        value={String(Math.round(knee))}
         unit="°"
       />
       <Metric
         label="Trunk rotation"
-        value={String(Math.round(Math.abs(pose.joints.spineTwist)))}
+        value={String(Math.round(trunk))}
         unit="°"
       />
       <Metric
         label="Shoulder internal rotation"
-        value={String(Math.round(pose.joints.shoulderInternalRotation))}
+        value={String(Math.round(ir))}
         unit="°"
       />
 

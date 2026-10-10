@@ -22,12 +22,12 @@ export default async function Home() {
         <section className="border-t border-[var(--line)] bg-[var(--bg-sunken)]/70">
           <div className="mx-auto flex w-full max-w-[var(--page-max-wide)] flex-col gap-8 px-6 py-16 md:flex-row md:items-end md:justify-between md:px-10 md:py-20 lg:px-14">
             <div className="max-w-xl">
-              <p className="sf-kicker">Your court</p>
+              <p className="sf-kicker">Bench note</p>
               <h2 className="mt-4 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight md:text-4xl">
-                Mold the bag. Keep every change honest.
+                Bag changes stay on the same instrument.
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-[var(--muted)]">
-                Skill spans, quirks, and one-lever decisions — specs advise; logged feel decides.
+                Specs advise. Logged feel decides. One-lever changes, same tokens as the lab.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">

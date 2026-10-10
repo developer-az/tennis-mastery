@@ -128,6 +128,8 @@ export interface StrokeProfile {
   label: string;
   handedness: "right" | "left";
   oneHanded: boolean;
+  /** Motion clip id (`player/stroke`). Playback uses the clip, not Euler keyframes. */
+  clipId?: string;
   metrics: StrokeMetrics;
   keyframes: PhaseKeyframe[];
 }

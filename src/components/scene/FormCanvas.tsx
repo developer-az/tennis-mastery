@@ -6,12 +6,14 @@ import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 import { useCoachStore } from "@/store/coachStore";
 import { getPlayer } from "@/data/players";
-import { sampleStroke } from "@/lib/kinematics";
+import { sampleMotion } from "@/lib/motion/sample";
+import { createMotionContinuity } from "@/lib/motion/types";
+import { createSkeletonPose } from "@/lib/motion/pose";
+import { getMotionClip } from "@/data/motion";
 import { BiomechanicalSkeleton, type SkeletonDriver } from "./BiomechanicalSkeleton";
 import { AngleOverlays } from "./AngleOverlays";
 import { RacketPathTrail } from "./RacketPathTrail";
 import { TennisCourt } from "./TennisCourt";
-import type { JointAngles } from "@/types/biomechanics";
 import { getThemeColors } from "@/lib/theme/colors";
 import { useTheme } from "@/components/theme/ThemeProvider";
 
@@ -134,7 +136,7 @@ function GroundForce({
   return (
     <mesh ref={mesh} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0.15]} visible={false}>
       <ringGeometry args={[0.4, 1, 24]} />
-      <meshBasicMaterial ref={mat} color="#f4a261" transparent opacity={0.3} side={THREE.DoubleSide} depthWrite={false} />
+      <meshBasicMaterial ref={mat} color="#c4843a" transparent opacity={0.3} side={THREE.DoubleSide} depthWrite={false} />
     </mesh>
   );
 }
@@ -149,52 +151,54 @@ function AnimatedAthlete() {
   const player = getPlayer(playerId)!;
   const stroke = player.strokes[strokeType];
 
+  const clip =
+    getMotionClip(stroke.clipId ?? `${playerId}/${strokeType}`) ??
+    getMotionClip("federer/forehand")!;
+  const [solvedPose] = useState(() => createSkeletonPose());
+  const continuity = useRef(createMotionContinuity());
   const driverRef = useRef<SkeletonDriver>({
-    joints: sampleStroke(stroke, 0).joints,
+    pose: solvedPose,
     racketSpeedMs: 0,
     handedness: stroke.handedness,
     oneHanded: stroke.oneHanded,
   });
-  const jointsRef = useRef<JointAngles>(driverRef.current.joints);
+  const poseRef = useRef(solvedPose);
   const kneeRef = useRef(25);
   const tRef = useRef(0);
   const gfVisible = useRef(showGroundForce);
-  gfVisible.current = showGroundForce;
 
-  // Keep stroke identity on the driver without re-rendering the mesh tree
-  driverRef.current.handedness = stroke.handedness;
-  driverRef.current.oneHanded = stroke.oneHanded;
+  useEffect(() => {
+    continuity.current = createMotionContinuity();
+  }, [clip.id]);
 
   useFrame(() => {
     if (typeof document !== "undefined" && document.hidden) return;
-    const pose = sampleStroke(stroke, playbackT);
-    driverRef.current.joints = pose.joints;
-    driverRef.current.racketSpeedMs = pose.racketSpeedMs;
-    jointsRef.current = pose.joints;
-    kneeRef.current = pose.joints.leadKneeFlexion;
+    gfVisible.current = showGroundForce;
+    driverRef.current.handedness = stroke.handedness;
+    driverRef.current.oneHanded = stroke.oneHanded;
+    const play = sampleMotion(clip, stroke, player.anthropometrics, playbackT, continuity.current, solvedPose);
+    driverRef.current.pose = play.pose;
+    driverRef.current.racketSpeedMs = play.racketSpeedMs;
+    poseRef.current = play.pose;
+    kneeRef.current = play.angles.leadKneeFlexion;
     tRef.current = playbackT;
   });
 
   return (
     <group position={[0, 0, PLAYER_Z]}>
       <BiomechanicalSkeleton
-        key={playerId}
+        key={`${playerId}-${strokeType}`}
         driverRef={driverRef}
         anthropometrics={player.anthropometrics}
         color={player.color}
         accent={player.accent}
       />
-      <AngleOverlays
-        jointsRef={jointsRef}
-        visible={showAngles}
-        accent={player.accent}
-        handedness={stroke.handedness}
-      />
+      <AngleOverlays poseRef={poseRef} visible={showAngles} />
       <RacketPathTrail
+        clip={clip}
         stroke={stroke}
         anthropometrics={player.anthropometrics}
         visible={showRacketPath}
-        accent={player.accent}
         tRef={tRef}
       />
       <GroundForce
@@ -256,7 +260,7 @@ function SceneContent({
       {/* Lean lighting: no shadow maps */}
       <ambientLight intensity={0.55} />
       <directionalLight position={[6, 10, 4]} intensity={1.15} />
-      <hemisphereLight args={["#c8e6d0", "#1a3328", 0.45]} />
+      <hemisphereLight args={["#e8e6e1", "#2a2c2b", 0.4]} />
 
       <TennisCourt />
       <AnimatedAthlete />

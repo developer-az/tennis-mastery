@@ -1,98 +1,94 @@
 @import "tailwindcss";
 
 /*
-  Hard-court daylight — chalk-bright canvas, electric court green, cyan energy.
-  Avoids purple/indigo washes, cream+terracotta broadsheet, and muddy reserved greens.
+  Cleanroom — warm paper / graphite field. Color only on traces:
+  process cyan (measure), copper amber (energy). Court green stays on the court.
 */
 :root,
 [data-theme="light"] {
-  --background: #eef6f1;
-  --foreground: #04150e;
-  --panel: #ffffff;
+  --background: #f3f1ec;
+  --foreground: #1a1c1b;
+  --panel: #faf9f6;
   --panel-raised: #ffffff;
-  --bg-sunken: #dcebe3;
-  --bg-scene: #c8ddd2;
-  --muted: #3d564a;
-  --label: #163126;
-  --line: rgba(4, 21, 14, 0.11);
-  --line-strong: rgba(4, 21, 14, 0.2);
-  --accent: #12a84a;
-  --accent-dim: rgba(18, 168, 74, 0.14);
-  --accent-fg: #ffffff;
-  --accent-ink: #ffffff;
-  --court: #0f7a3a;
-  --amber: #e09a12;
-  --sky: #0b9bb8;
-  --danger: #d44a3a;
-  --overlay-hover: rgba(4, 21, 14, 0.045);
-  --body-glow: rgba(18, 168, 74, 0.16);
-  --body-top: #f4faf6;
-  --body-bottom: #e2efe8;
-  --radius: 12px;
+  --bg-sunken: #e8e6e0;
+  --bg-scene: #d8d5ce;
+  --muted: #5c5a55;
+  --label: #2a2c2a;
+  --line: rgba(26, 28, 27, 0.12);
+  --line-strong: rgba(26, 28, 27, 0.22);
+  --accent: #0b8fa8;
+  --accent-dim: rgba(11, 143, 168, 0.12);
+  --accent-fg: #f3f1ec;
+  --accent-ink: #f3f1ec;
+  --court: #3d5c45;
+  --amber: #c4843a;
+  --sky: #0b8fa8;
+  --danger: #c44a3a;
+  --overlay-hover: rgba(26, 28, 27, 0.04);
+  --body-glow: transparent;
+  --body-top: #f3f1ec;
+  --body-bottom: #f3f1ec;
+  --radius: 5px;
   --header-bar: 64px;
   --header-h: calc(var(--header-bar) + env(safe-area-inset-top, 0px));
   --app-nav-h: 0px;
   --page-max: 72rem;
   --page-max-wide: 87.5rem;
   --gear-tab-h: 52px;
-  --shadow-soft: 0 10px 32px rgba(4, 21, 14, 0.08);
-  --chart-power: #e09a12;
-  --chart-spin: #0b9bb8;
-  --chart-control: #12a84a;
-  --chart-comfort: #c9921a;
-  --chart-fill: rgba(18, 168, 74, 0.16);
-  --silhouette: #0d2418;
-  --silhouette-rim: #2a4a38;
-  --hero-wash:
-    linear-gradient(105deg, rgba(244, 250, 246, 0.92) 0%, rgba(244, 250, 246, 0.55) 42%, rgba(244, 250, 246, 0.08) 72%, transparent 100%),
-    radial-gradient(ellipse 55% 50% at 18% 30%, rgba(18, 168, 74, 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 35% at 78% 70%, rgba(11, 155, 184, 0.12) 0%, transparent 55%);
-  --hero-grid: rgba(4, 21, 14, 0.35);
-  --hero-grid-opacity: 0.07;
+  --shadow-soft: none;
+  --chart-power: #c4843a;
+  --chart-spin: #0b8fa8;
+  --chart-control: #0b8fa8;
+  --chart-comfort: #b8954a;
+  --chart-fill: rgba(11, 143, 168, 0.14);
+  --silhouette: #2a2c2b;
+  --silhouette-rim: #4a4d4b;
+  --hero-wash: transparent;
+  --hero-grid: rgba(26, 28, 27, 0.28);
+  --hero-grid-opacity: 0.05;
+  --font-display: var(--font-sans);
 }
 
 [data-theme="dark"] {
-  --background: #0b1410;
-  --foreground: #eef7f1;
-  --panel: #132019;
-  --panel-raised: #1a2a21;
-  --bg-sunken: #08110d;
-  --bg-scene: #0f1c16;
-  --muted: #9ab5a6;
-  --label: #d5e8dc;
-  --line: rgba(238, 247, 241, 0.1);
-  --line-strong: rgba(238, 247, 241, 0.18);
-  --accent: #3ddc75;
-  --accent-dim: rgba(61, 220, 117, 0.14);
-  --accent-fg: #04150e;
-  --accent-ink: #04150e;
-  --court: #1a8f4a;
-  --amber: #f0b03a;
-  --sky: #4ec8e0;
+  --background: #0b0c0d;
+  --foreground: #e8e6e1;
+  --panel: #141516;
+  --panel-raised: #1a1c1d;
+  --bg-sunken: #080909;
+  --bg-scene: #121314;
+  --muted: #9a9892;
+  --label: #d4d2cc;
+  --line: rgba(232, 230, 225, 0.1);
+  --line-strong: rgba(232, 230, 225, 0.18);
+  --accent: #3ec4d4;
+  --accent-dim: rgba(62, 196, 212, 0.14);
+  --accent-fg: #0b0c0d;
+  --accent-ink: #0b0c0d;
+  --court: #2a4032;
+  --amber: #d4954a;
+  --sky: #3ec4d4;
   --danger: #e87668;
-  --overlay-hover: rgba(255, 255, 255, 0.045);
-  --body-glow: rgba(61, 220, 117, 0.12);
-  --body-top: #0b1410;
-  --body-bottom: #08110d;
+  --overlay-hover: rgba(255, 255, 255, 0.04);
+  --body-glow: transparent;
+  --body-top: #0b0c0d;
+  --body-bottom: #0b0c0d;
   --header-bar: 64px;
   --header-h: calc(var(--header-bar) + env(safe-area-inset-top, 0px));
   --app-nav-h: 0px;
   --page-max: 72rem;
   --page-max-wide: 87.5rem;
-  --shadow-soft: 0 12px 36px rgba(0, 0, 0, 0.45);
-  --chart-power: #f0b03a;
-  --chart-spin: #4ec8e0;
-  --chart-control: #3ddc75;
-  --chart-comfort: #e8c45a;
-  --chart-fill: rgba(61, 220, 117, 0.2);
-  --silhouette: #c5ddd0;
-  --silhouette-rim: #e4f2ea;
-  --hero-wash:
-    linear-gradient(105deg, rgba(11, 20, 16, 0.92) 0%, rgba(11, 20, 16, 0.58) 42%, rgba(11, 20, 16, 0.12) 72%, transparent 100%),
-    radial-gradient(ellipse 55% 50% at 18% 30%, rgba(61, 220, 117, 0.16) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 35% at 78% 70%, rgba(78, 200, 224, 0.14) 0%, transparent 55%);
-  --hero-grid: rgba(238, 247, 241, 0.4);
-  --hero-grid-opacity: 0.05;
+  --shadow-soft: none;
+  --chart-power: #d4954a;
+  --chart-spin: #3ec4d4;
+  --chart-control: #3ec4d4;
+  --chart-comfort: #c8b06a;
+  --chart-fill: rgba(62, 196, 212, 0.16);
+  --silhouette: #c5c3be;
+  --silhouette-rim: #e8e6e1;
+  --hero-wash: transparent;
+  --hero-grid: rgba(232, 230, 225, 0.35);
+  --hero-grid-opacity: 0.04;
+  --font-display: var(--font-sans);
 }
 
 @media (max-width: 767px) {
@@ -113,34 +109,21 @@
 }
 
 body {
-  background:
-    radial-gradient(ellipse 65% 45% at 12% -6%, color-mix(in srgb, var(--sky) 14%, transparent), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 78% -8%, var(--body-glow), transparent 58%),
-    linear-gradient(180deg, var(--body-top) 0%, var(--background) 42%, var(--body-bottom) 100%);
+  background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), "Source Sans 3", sans-serif;
+  font-family: var(--font-sans), "Geist", "IBM Plex Sans", sans-serif;
   font-feature-settings: "ss01" on, "kern" on;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.005em;
   -webkit-font-smoothing: antialiased;
   transition: background 0.2s ease, color 0.2s ease;
-}
-
-[data-theme="dark"] body {
-  background-image:
-    linear-gradient(rgba(238, 247, 241, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(238, 247, 241, 0.035) 1px, transparent 1px),
-    radial-gradient(ellipse 65% 45% at 12% -6%, color-mix(in srgb, var(--sky) 12%, transparent), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 78% -8%, var(--body-glow), transparent 58%),
-    linear-gradient(180deg, #0b1410 0%, #08110d 55%, #060d0a 100%);
-  background-size: 64px 64px, 64px 64px, auto, auto, auto;
 }
 
 h1,
 h2,
 h3,
 .font-display {
-  font-family: var(--font-display), "Syne", sans-serif;
-  letter-spacing: -0.03em;
+  font-family: var(--font-display), var(--font-sans), "Geist", sans-serif;
+  letter-spacing: -0.02em;
 }
 
 :focus-visible {
@@ -182,12 +165,11 @@ h3,
 }
 
 .sf-btn-primary:hover {
-  filter: brightness(1.08);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 28%, transparent);
+  filter: brightness(1.06);
 }
 
 .sf-btn-glow {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .sf-btn-secondary {
@@ -237,7 +219,7 @@ h3,
 }
 
 .sf-page-title {
-  font-family: var(--font-display), "Syne", sans-serif;
+  font-family: var(--font-display), var(--font-sans), sans-serif;
   font-size: 1.75rem;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -358,7 +340,7 @@ h3,
 }
 
 .sf-section-title {
-  font-family: var(--font-display), "Outfit", sans-serif;
+  font-family: var(--font-display), var(--font-sans), sans-serif;
   font-size: 1.125rem;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -505,7 +487,7 @@ input[type="range"]::-webkit-slider-thumb {
   color: var(--foreground);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius);
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -987,7 +969,16 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .sf-hero-stage-wash {
-  background: var(--hero-wash);
+  background: transparent;
+}
+
+.sf-lab-grid {
+  opacity: 0.06;
+  background-image:
+    linear-gradient(var(--hero-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hero-grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
 }
 
 .sf-hero-stage-grain {
@@ -1050,10 +1041,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 /* —— Featured racket —— */
 .sf-racket-stage-bg {
-  background:
-    radial-gradient(ellipse 50% 60% at 78% 40%, color-mix(in srgb, var(--sky) 14%, transparent), transparent 60%),
-    radial-gradient(ellipse 40% 50% at 12% 70%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 55%),
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-sunken) 55%, transparent), transparent);
+  background: var(--bg-sunken);
 }
 
 .sf-racket-feature-plane {
@@ -1095,9 +1083,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .sf-hero-select-wash {
-  background:
-    radial-gradient(ellipse 45% 40% at 90% 10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%),
-    linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-sunken) 40%, transparent));
+  background: transparent;
 }
 
 .sf-hero-pick {
@@ -1213,9 +1199,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .sf-boot-wash {
-  background:
-    radial-gradient(ellipse 55% 45% at 20% 30%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 60%),
-    radial-gradient(ellipse 40% 35% at 80% 70%, color-mix(in srgb, var(--sky) 14%, transparent), transparent 55%);
+  background: transparent;
 }
 
 .sf-boot-grid {

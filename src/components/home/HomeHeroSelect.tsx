@@ -14,13 +14,13 @@ export function HomeHeroSelect() {
 
       <div className="relative mx-auto w-full max-w-[var(--page-max-wide)] px-6 py-20 md:px-10 md:py-28 lg:px-14">
         <div className="max-w-2xl">
-          <p className="sf-kicker">Select your hero</p>
+          <p className="sf-kicker">Athletes</p>
           <h2 className="mt-4 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight md:text-5xl">
-            Whose rail do you want to scrub?
+            Load a clip library
           </h2>
           <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-[var(--muted)] md:text-base">
-            Pick a model athlete. Form Lab loads their stroke keyframes — same biomechanics, distinct
-            mechanical fingerprint.
+            Each athlete is a set of first-class clips — serve, both groundstrokes, slice, volley.
+            Same sampler on the home rail and in the lab.
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export function HomeHeroSelect() {
                 <div>
                   <span
                     className="sf-hero-pick-swatch"
-                    style={{ background: p.color, boxShadow: `0 0 0 2px ${p.accent}` }}
+                    style={{ background: p.accent, width: "1.5rem", height: "2px" }}
                     aria-hidden
                   />
                   <p className="mt-4 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight transition group-hover:text-[var(--accent)]">

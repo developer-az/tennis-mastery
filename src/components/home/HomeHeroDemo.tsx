@@ -4,7 +4,9 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect } from "react";
 import { PLAYERS } from "@/data/players";
-import { PHASE_LABELS, sampleStroke } from "@/lib/kinematics";
+import { PHASE_LABELS } from "@/lib/kinematics";
+import { sampleMotion } from "@/lib/motion/sample";
+import { getMotionClip } from "@/data/motion";
 import { useCoachStore } from "@/store/coachStore";
 import { HomeHeroCtas } from "@/components/home/HomeHeroCtas";
 
@@ -31,23 +33,29 @@ function HeroDemoChrome() {
 
   const player = PLAYERS.find((p) => p.id === playerId) ?? PLAYERS[0];
   const stroke = player.strokes[strokeType];
-  const pose = sampleStroke(stroke, t);
+  const clip = getMotionClip(stroke.clipId ?? `${player.id}/${strokeType}`);
+  const pose = clip ? sampleMotion(clip, stroke, player.anthropometrics, t) : null;
+  const phase = pose?.phase ?? stroke.keyframes[0]?.phase ?? "ready";
+  const cue = pose?.coachingCue ?? "";
+  const elbow = pose?.angles.elbowFlexion ?? 0;
+  const knee = pose?.angles.leadKneeFlexion ?? 0;
+  const trunk = pose ? Math.abs(pose.angles.spineTwist) : 0;
 
   return (
     <div className="sf-hero-demo-chrome pointer-events-auto">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-tight md:text-base">
-            {player.shortName} · {PHASE_LABELS[pose.phase]}
+            {player.shortName} · {PHASE_LABELS[phase]}
           </p>
           <p className="mt-0.5 max-w-md truncate text-xs text-[var(--muted)] md:text-[13px]">
-            {pose.coachingCue}
+            {cue}
           </p>
         </div>
         <div className="flex gap-4 tabular-nums">
-          <JointReadout label="Elbow" value={Math.round(pose.joints.elbowFlexion)} />
-          <JointReadout label="Knee" value={Math.round(pose.joints.leadKneeFlexion)} />
-          <JointReadout label="Trunk" value={Math.round(Math.abs(pose.joints.spineTwist))} />
+          <JointReadout label="Elbow" value={Math.round(elbow)} />
+          <JointReadout label="Knee" value={Math.round(knee)} />
+          <JointReadout label="Trunk" value={Math.round(trunk)} />
         </div>
       </div>
 
@@ -83,7 +91,7 @@ function HeroDemoChrome() {
                 setT(Number(e.target.value));
               }}
               className="sf-hero-scrub w-full"
-              aria-valuetext={PHASE_LABELS[pose.phase]}
+              aria-valuetext={PHASE_LABELS[phase]}
             />
             <div className="pointer-events-none absolute inset-x-0 top-1/2 h-0 -translate-y-1/2" aria-hidden>
               {stroke.keyframes.map((kf) => (
@@ -157,11 +165,11 @@ export function HomeHeroDemo() {
             FORM
           </p>
           <h1 className="mt-5 max-w-md text-lg font-medium leading-snug text-[var(--foreground)] md:text-xl md:leading-snug">
-            Scrub elite stroke rails in 3D — phases, joints, and path in one live mold.
+            Stroke clips. Planted feet. Measured path.
           </h1>
           <p className="mt-3 max-w-sm text-[15px] leading-relaxed text-[var(--muted)]">
-            Scrub the rail. Drag to orbit on desktop. Scroll anytime — the court will not steal the
-            page.
+            Same clip sampler as the lab. Scrub the rail. Orbit on desktop — the viewport will not
+            steal the page.
           </p>
           <HomeHeroCtas />
         </div>

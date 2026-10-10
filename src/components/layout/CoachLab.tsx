@@ -10,6 +10,7 @@ import {
 import { MetricsPanel, SciencePanel } from "@/components/ui/MetricsPanel";
 import { PlayerGripCue } from "@/components/lab/PlayerGripCue";
 import { LabPhaseOverlay } from "@/components/lab/LabPhaseOverlay";
+import { LabReferencePlate } from "@/components/lab/LabReferencePlate";
 import { CourtLoading } from "@/components/ui/CourtState";
 
 const FormCanvas = dynamic(
@@ -20,7 +21,7 @@ const FormCanvas = dynamic(
       <div className="flex h-full min-h-[240px] items-center justify-center bg-[var(--bg-scene)] lg:min-h-[420px]">
         <CourtLoading
           label="Loading biomechanics viewport…"
-          detail="Keyframed joint rails and court scale — orbit when ready."
+          detail="Motion clips, plant IK, court scale — orbit when ready."
         />
       </div>
     ),
@@ -34,8 +35,11 @@ export function CoachLab() {
         <aside className="order-2 flex w-full shrink-0 flex-col gap-5 border-b border-[var(--line)] bg-[var(--panel)] p-4 lg:order-1 lg:w-[300px] lg:gap-6 lg:overflow-y-auto lg:border-b-0 lg:border-r lg:p-6">
           <div className="hidden lg:block">
             <p className="sf-kicker">Form lab</p>
+            <p className="mt-2 font-mono text-[11px] tracking-[0.08em] text-[var(--muted)] uppercase">
+              Clip · plant IK · ground clamp
+            </p>
             <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-              Pick an athlete and stroke. Scrub phases — coaching cues update live.
+              Athlete × stroke clip. Constraints on. Scrub the rail.
             </p>
           </div>
           <PlayerStrokePicker />
@@ -44,9 +48,13 @@ export function CoachLab() {
           </div>
           <ViewToggles />
           <PlayerGripCue />
+          <div className="hidden lg:block">
+            <LabReferencePlate />
+          </div>
         </aside>
 
         <section className="relative order-1 z-10 h-[calc(100svh-var(--header-h)-var(--app-nav-h)-10.5rem)] min-h-[280px] w-full shrink-0 overflow-hidden bg-[var(--bg-scene)] max-lg:sticky max-lg:top-0 lg:order-2 lg:z-auto lg:h-auto lg:min-h-0 lg:flex-1">
+          <div className="sf-lab-grid absolute inset-0 z-[1]" aria-hidden />
           <FormCanvas />
           <LabPhaseOverlay />
           <div className="absolute inset-x-0 bottom-0 z-20 lg:hidden">
