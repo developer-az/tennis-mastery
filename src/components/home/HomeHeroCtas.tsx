@@ -19,7 +19,7 @@ export function HomeHeroCtas() {
   return (
     <div className="sf-rise mt-8 flex flex-wrap gap-3" style={{ animationDelay: "0.18s" }}>
       <Link href="/lab" className="sf-btn sf-btn-primary sf-btn-glow">
-        Enter form lab
+        Open form lab
       </Link>
       <Link href="/gear?tab=rackets" className="sf-btn sf-btn-secondary">
         Browse rackets

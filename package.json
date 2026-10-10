@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "motion:author": "npx tsx scripts/author-clips.mts",
+    "motion:check": "npx tsx scripts/fk-continuity.mts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

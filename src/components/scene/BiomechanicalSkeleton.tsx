@@ -3,12 +3,12 @@
 import { useLayoutEffect, useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import type { Anthropometrics, JointAngles } from "@/types/biomechanics";
-import { createSkeletonPose, solveSkeletonFk } from "@/lib/skeletonFk";
+import type { Anthropometrics } from "@/types/biomechanics";
+import { createSkeletonPose, type SkeletonPose } from "@/lib/motion/pose";
 
 /** Mutable pose feed — updated from the animation loop without React re-renders */
 export interface SkeletonDriver {
-  joints: JointAngles;
+  pose: SkeletonPose;
   racketSpeedMs: number;
   handedness: "right" | "left";
   oneHanded: boolean;
@@ -171,13 +171,19 @@ export function BiomechanicalSkeleton({
   });
 
   const skinMat = useMemo(
-    () => new THREE.MeshLambertMaterial({ color }),
-    [color],
+    () => new THREE.MeshLambertMaterial({ color: "#2c2e2d" }),
+    [],
   );
   const jointMat = useMemo(
-    () => new THREE.MeshLambertMaterial({ color: accent }),
-    [accent],
+    () => new THREE.MeshLambertMaterial({ color: "#4a4d4b" }),
+    [],
   );
+  const chainMat = useMemo(
+    () => new THREE.MeshLambertMaterial({ color: "#0b8fa8", emissive: "#0b8fa8", emissiveIntensity: 0.18 }),
+    [],
+  );
+  void color;
+  void accent;
   const darkMat = useMemo(
     () => new THREE.MeshLambertMaterial({ color: "#1a1a1a" }),
     [],
@@ -204,39 +210,33 @@ export function BiomechanicalSkeleton({
   const hoopMat = useMemo(
     () =>
       new THREE.MeshLambertMaterial({
-        color: accent,
-        emissive: accent,
-        emissiveIntensity: 0.12,
+        color: "#c4843a",
+        emissive: "#c4843a",
+        emissiveIntensity: 0.16,
       }),
-    [accent],
+    [],
   );
 
   useLayoutEffect(() => {
     return () => {
       skinMat.dispose();
       jointMat.dispose();
+      chainMat.dispose();
       darkMat.dispose();
       handleMat.dispose();
       throatMat.dispose();
       stringMat.dispose();
       hoopMat.dispose();
     };
-  }, [skinMat, jointMat, darkMat, handleMat, throatMat, stringMat, hoopMat]);
+  }, [skinMat, jointMat, chainMat, darkMat, handleMat, throatMat, stringMat, hoopMat]);
 
   useFrame((_, dt) => {
     const driver = driverRef.current;
     if (!driver || !root.current) return;
 
-    solveSkeletonFk(
-      pose,
-      driver.joints,
-      anthropometrics,
-      driver.handedness,
-      driver.oneHanded,
-    );
-
     const m = meshes.current;
-    const p = pose;
+    const p = driver.pose ?? pose;
+    void anthropometrics;
 
     placeCapsule(m.torso, p.pelvis, p.chest, 0.068, 0, 0.02);
     placeCapsule(m.neck, p.chest, p.head, 0.032, 0, 0.018);
@@ -434,15 +434,15 @@ export function BiomechanicalSkeleton({
       <mesh ref={bind("leadFoot")} geometry={geo.foot} material={darkMat} />
       <mesh ref={bind("trailFoot")} geometry={geo.foot} material={darkMat} />
 
-      <mesh ref={bind("hitUpper")} geometry={geo.limb} material={skinMat} />
-      <mesh ref={bind("hitFore")} geometry={geo.limb} material={skinMat} />
-      <mesh ref={bind("hitHand")} geometry={geo.limb} material={skinMat} />
+      <mesh ref={bind("hitUpper")} geometry={geo.limb} material={chainMat} />
+      <mesh ref={bind("hitFore")} geometry={geo.limb} material={chainMat} />
+      <mesh ref={bind("hitHand")} geometry={geo.limb} material={chainMat} />
       <mesh ref={bind("nonHitUpper")} geometry={geo.limb} material={skinMat} />
       <mesh ref={bind("nonHitFore")} geometry={geo.limb} material={skinMat} />
       <mesh ref={bind("nonHitHand")} geometry={geo.limb} material={skinMat} />
-      <mesh ref={bind("hitShoulder")} geometry={geo.joint} material={jointMat} />
-      <mesh ref={bind("hitElbow")} geometry={geo.joint} material={jointMat} />
-      <mesh ref={bind("hitWrist")} geometry={geo.joint} material={jointMat} />
+      <mesh ref={bind("hitShoulder")} geometry={geo.joint} material={chainMat} />
+      <mesh ref={bind("hitElbow")} geometry={geo.joint} material={chainMat} />
+      <mesh ref={bind("hitWrist")} geometry={geo.joint} material={chainMat} />
       <mesh ref={bind("nonHitShoulder")} geometry={geo.joint} material={jointMat} />
       <mesh ref={bind("nonHitElbow")} geometry={geo.joint} material={jointMat} />
       <mesh ref={bind("nonHitWrist")} geometry={geo.joint} material={jointMat} />

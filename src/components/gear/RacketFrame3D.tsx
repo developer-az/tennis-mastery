@@ -94,7 +94,7 @@ export function RacketFrame3D({
       {/* Inner hoop lip */}
       <mesh position={[0, 0.495, 0]}>
         <torusGeometry args={[0.097, 0.0035, 12, 48]} />
-        <meshStandardMaterial color="#2a4a3a" metalness={0.35} roughness={0.45} />
+        <meshStandardMaterial color="#2a2c2b" metalness={0.35} roughness={0.45} />
       </mesh>
 
       <Strings />

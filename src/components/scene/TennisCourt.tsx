@@ -2,26 +2,33 @@
 
 import { useMemo } from "react";
 import * as THREE from "three";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
-/** Static court — shared materials, no shadow maps, low segment counts */
+/** Court surface is the only green. Floor is epoxy / anodized; lines read as traces. */
 export function TennisCourt() {
+  const { theme, colors } = useTheme();
   const courtW = 10.97;
   const courtL = 23.77;
   const singlesW = 8.23;
 
-  const mats = useMemo(
-    () => ({
-      ground: new THREE.MeshLambertMaterial({ color: "#1a3328" }),
-      outer: new THREE.MeshLambertMaterial({ color: "#2d6a4f" }),
-      inner: new THREE.MeshLambertMaterial({ color: "#40916c" }),
-      line: new THREE.MeshBasicMaterial({ color: "#f8f7f2" }),
-      net: new THREE.MeshLambertMaterial({ color: "#e8e6e0", transparent: true, opacity: 0.35 }),
-      tape: new THREE.MeshBasicMaterial({ color: "#f5f5f0" }),
-      post: new THREE.MeshLambertMaterial({ color: "#333333" }),
-      mark: new THREE.MeshBasicMaterial({ color: "#52b788", transparent: true, opacity: 0.3 }),
-    }),
-    [],
-  );
+  const mats = useMemo(() => {
+    const floor = theme === "light" ? "#cfcbc2" : "#0e0f10";
+    const outer = theme === "light" ? "#c4c0b6" : "#161718";
+    const line = theme === "light" ? "#d5e4e8" : "#8aa8b0";
+    return {
+      ground: new THREE.MeshLambertMaterial({ color: floor }),
+      outer: new THREE.MeshLambertMaterial({ color: outer }),
+      inner: new THREE.MeshLambertMaterial({ color: colors.court }),
+      line: new THREE.MeshBasicMaterial({ color: line }),
+      net: new THREE.MeshLambertMaterial({
+        color: theme === "light" ? "#d8d4cc" : "#2a2c2b",
+        transparent: true,
+        opacity: 0.4,
+      }),
+      tape: new THREE.MeshBasicMaterial({ color: "#e8e6e1" }),
+      post: new THREE.MeshLambertMaterial({ color: "#3a3c3b" }),
+    };
+  }, [theme, colors.court]);
 
   return (
     <group>
@@ -37,16 +44,16 @@ export function TennisCourt() {
         <planeGeometry args={[courtW, courtL]} />
       </mesh>
 
-      <CourtLine w={courtW} d={0.05} z={courtL / 2} material={mats.line} />
-      <CourtLine w={courtW} d={0.05} z={-courtL / 2} material={mats.line} />
-      <CourtLine w={0.05} d={courtL} x={courtW / 2} material={mats.line} />
-      <CourtLine w={0.05} d={courtL} x={-courtW / 2} material={mats.line} />
-      <CourtLine w={singlesW} d={0.05} z={0} material={mats.line} />
-      <CourtLine w={0.05} d={courtL} x={singlesW / 2} material={mats.line} />
-      <CourtLine w={0.05} d={courtL} x={-singlesW / 2} material={mats.line} />
-      <CourtLine w={singlesW} d={0.05} z={6.4} material={mats.line} />
-      <CourtLine w={singlesW} d={0.05} z={-6.4} material={mats.line} />
-      <CourtLine w={0.05} d={12.8} x={0} material={mats.line} />
+      <CourtLine w={courtW} d={0.04} z={courtL / 2} material={mats.line} />
+      <CourtLine w={courtW} d={0.04} z={-courtL / 2} material={mats.line} />
+      <CourtLine w={0.04} d={courtL} x={courtW / 2} material={mats.line} />
+      <CourtLine w={0.04} d={courtL} x={-courtW / 2} material={mats.line} />
+      <CourtLine w={singlesW} d={0.04} z={0} material={mats.line} />
+      <CourtLine w={0.04} d={courtL} x={singlesW / 2} material={mats.line} />
+      <CourtLine w={0.04} d={courtL} x={-singlesW / 2} material={mats.line} />
+      <CourtLine w={singlesW} d={0.04} z={6.4} material={mats.line} />
+      <CourtLine w={singlesW} d={0.04} z={-6.4} material={mats.line} />
+      <CourtLine w={0.04} d={12.8} x={0} material={mats.line} />
 
       <mesh position={[0, 0.53, 0]} material={mats.net}>
         <boxGeometry args={[courtW + 0.6, 1.07, 0.04]} />
@@ -59,10 +66,6 @@ export function TennisCourt() {
       </mesh>
       <mesh position={[-(courtW / 2 + 0.35), 0.55, 0]} material={mats.post}>
         <cylinderGeometry args={[0.04, 0.04, 1.1, 6]} />
-      </mesh>
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 12]} material={mats.mark}>
-        <circleGeometry args={[2.2, 24]} />
       </mesh>
     </group>
   );

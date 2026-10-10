@@ -41,7 +41,7 @@ export function AppHeader() {
               Racket Form
             </span>
             <span className="mt-0.5 hidden text-[10px] tracking-[0.14em] text-[var(--muted)] uppercase sm:block">
-              Form · Gear · Court
+              Lab · Gear · You
             </span>
           </span>
         </Link>

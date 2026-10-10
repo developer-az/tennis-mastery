@@ -10,8 +10,8 @@ export function SiteFooter({ note }: { note?: string }) {
             Racket Form
           </p>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-[var(--muted)]">
-            Biomechanics you can scrub, multi-source gear intelligence with skill spans and quirks,
-            and a court that remembers every one-lever change.
+            Form lab clips with plant and ground constraints. Gear intelligence on the same
+            instrument. Logged feel outweighs spec math.
           </p>
         </div>
         <div>

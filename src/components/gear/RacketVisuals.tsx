@@ -296,8 +296,8 @@ export function LaunchAngleVisual({
             <stop offset="100%" stopColor="var(--chart-power)" stopOpacity="0.95" />
           </linearGradient>
           <linearGradient id={`court-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2f6f52" />
-            <stop offset="100%" stopColor="#1b4332" />
+            <stop offset="0%" stopColor="#3a3d40" />
+            <stop offset="100%" stopColor="#1a1c1b" />
           </linearGradient>
           <linearGradient id={`frame3d-${uid}`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#3a3a3a" />
@@ -413,7 +413,7 @@ export function LaunchAngleVisual({
           cx={faceCx + Math.cos(leaveRad) * 9}
           cy={faceCy - Math.sin(leaveRad) * 9}
           r="4"
-          fill="#d4e054"
+          fill="#c4843a"
           stroke="color-mix(in srgb, var(--foreground) 35%, transparent)"
           strokeWidth="0.6"
         />
@@ -617,7 +617,7 @@ export function SwingPathVisual({
           strokeWidth="2.4"
           strokeLinecap="round"
         />
-        <circle cx={cx + 5} cy={cy} r="3.4" fill="#d4e054" stroke="color-mix(in srgb, var(--foreground) 30%, transparent)" strokeWidth="0.5" />
+        <circle cx={cx + 5} cy={cy} r="3.4" fill="#c4843a" stroke="color-mix(in srgb, var(--foreground) 30%, transparent)" strokeWidth="0.5" />
       </svg>
       </div>
       <p className="mt-1 font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
@@ -933,7 +933,7 @@ export function FaceAngleAtContactVisual({
           cx={cx + Math.sin((closed * Math.PI) / 180) * 42 + 8}
           cy={cy - Math.cos((closed * Math.PI) / 180) * 42}
           r="5.4"
-          fill="#d4e054"
+          fill="#c4843a"
           stroke="color-mix(in srgb, var(--foreground) 25%, transparent)"
           strokeWidth="0.6"
         />

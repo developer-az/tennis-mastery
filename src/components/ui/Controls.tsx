@@ -41,10 +41,11 @@ export function PlayerStrokePicker() {
                 aria-pressed={active}
                 className="sf-chip cursor-pointer text-left"
                 style={{
-                  background: active ? p.color : "var(--overlay-hover)",
-                  color: active ? "#f8f6f0" : "var(--foreground)",
-                  outline: active ? `2px solid ${p.accent}` : "1px solid var(--line)",
-                  outlineOffset: 0,
+                  background: "var(--panel)",
+                  color: "var(--foreground)",
+                  boxShadow: active
+                    ? `inset 3px 0 0 ${p.accent}, inset 0 0 0 1px var(--line-strong)`
+                    : "inset 0 0 0 1px var(--line)",
                 }}
               >
                 <span className="block font-medium leading-tight">{p.shortName}</span>
